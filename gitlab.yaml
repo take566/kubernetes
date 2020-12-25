@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+  labels:
+    app: gitlab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      volumes:
+      - name: hostvolume
+        hostPath:
+          path: /tmp/gitlab
+          type: DirectoryOrCreate
+      hostname: gitlab
+      containers:
+      - name: gitlab
+        image: gitlab/gitlab-ce:latest
+        volumeMounts:
+        - mountPath: /etc/gitlab
+          subPath: config
+          name: hostvolume
+        - mountPath: /var/log/gitlab
+          subPath: logs
+          name: hostvolume
+        - mountPath: /var/opt/gitlab
+          subPath: data
+          name: hostvolume
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  labels:
+    app: gitlab
+spec:
+  selector:
+    app: gitlab
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+  - name: ssh
+    port: 22
+    targetPort: 22
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: gitlab
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: gitlab.minikube
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: gitlab
+          servicePort: 80
