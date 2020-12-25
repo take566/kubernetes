@@ -1,0 +1,22 @@
+# Override values for nginx-ingress
+ 
+controller:
+ 
+ ## Use host ports 80 and 443
+ daemonset:
+   useHostPort: true
+ 
+ kind: DaemonSet
+ 
+ service:
+ 
+   ## Set static IP for LoadBalancer
+   loadBalancerIP: 35.197.192.35
+ 
+   externalTrafficPolicy: Local
+ 
+ stats:
+   enabled: true
+ 
+ metrics:
+   enabled: true
