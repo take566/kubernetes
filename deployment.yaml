@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: simon-service
+spec:
+  selector:
+    app: simon
+  ports:
+  - protocol: "TCP"
+    port: 3001
+    targetPort: 3001
+    nodePort: 32023
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simon
+spec:
+  selector:
+    matchLabels:
+    app: simon
+  replicas: 2
+  template:
+    metadata:
+    labels:
+    app: simon
+    spec:
+    containers:
+    - name: log-simon
+        image: log-simon:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3001
