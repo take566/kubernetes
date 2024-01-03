@@ -1,0 +1,28 @@
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-issuer"
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  tls:
+  - hosts:
+      - example-sub.test.com
+    secretName: test-com-tls
+  rules:
+    - host: example-sub.test.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: argocd-server
+              port:
+                number: 443
