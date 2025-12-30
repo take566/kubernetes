@@ -1,0 +1,155 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: elk-stack
+data:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    xpack.monitoring.elasticsearch.hosts: [ "http://elasticsearch:9200" ]
+  pipelines.yml: |
+    - pipeline.id: main
+      path.config: "/usr/share/logstash/pipeline"
+  logstash.conf: |
+    input {
+      beats {
+        port => 5044
+      }
+      tcp {
+        port => 5000
+        codec => json
+      }
+      udp {
+        port => 5000
+        codec => json
+      }
+      # rsyslog input (UDP)
+      syslog {
+        port => 514
+        type => "syslog"
+      }
+    }
+    
+    filter {
+      if [type] == "syslog" {
+        grok {
+          match => { "message" => "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+        }
+        date {
+          match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+        }
+      }
+      
+      # Windows Event Log processing
+      if [agent][type] == "winlogbeat" {
+        mutate {
+          add_tag => [ "windows", "eventlog" ]
+        }
+        
+        # Parse Windows Event ID
+        if [winlog][event_id] {
+          mutate {
+            add_field => { "event_id" => "%{[winlog][event_id]}" }
+          }
+        }
+        
+        # Parse Windows Event Level
+        if [winlog][level] {
+          mutate {
+            add_field => { "event_level" => "%{[winlog][level]}" }
+          }
+        }
+        
+        # Parse Windows Event Source
+        if [winlog][provider_name] {
+          mutate {
+            add_field => { "event_source" => "%{[winlog][provider_name]}" }
+          }
+        }
+        
+        # Parse Windows Computer Name
+        if [winlog][computer_name] {
+          mutate {
+            add_field => { "computer_name" => "%{[winlog][computer_name]}" }
+          }
+        }
+        
+        # Parse Windows Process Information
+        if [winlog][process] {
+          if [winlog][process][pid] {
+            mutate {
+              add_field => { "process_id" => "%{[winlog][process][pid]}" }
+            }
+          }
+          if [winlog][process][thread][id] {
+            mutate {
+              add_field => { "thread_id" => "%{[winlog][process][thread][id]}" }
+            }
+          }
+        }
+        
+        # Parse Windows User Information
+        if [winlog][user] {
+          if [winlog][user][identifier] {
+            mutate {
+              add_field => { "user_sid" => "%{[winlog][user][identifier]}" }
+            }
+          }
+          if [winlog][user][name] {
+            mutate {
+              add_field => { "user_name" => "%{[winlog][user][name]}" }
+            }
+          }
+          if [winlog][user][domain] {
+            mutate {
+              add_field => { "user_domain" => "%{[winlog][user][domain]}" }
+            }
+          }
+        }
+        
+        # Parse Windows Event Data
+        if [winlog][event_data] {
+          mutate {
+            add_field => { "event_data" => "%{[winlog][event_data]}" }
+          }
+        }
+        
+        # Set log level based on Windows Event Level
+        if [winlog][level] == "Error" {
+          mutate {
+            add_field => { "log_level" => "ERROR" }
+          }
+        } else if [winlog][level] == "Warning" {
+          mutate {
+            add_field => { "log_level" => "WARN" }
+          }
+        } else if [winlog][level] == "Information" {
+          mutate {
+            add_field => { "log_level" => "INFO" }
+          }
+        } else if [winlog][level] == "Critical" {
+          mutate {
+            add_field => { "log_level" => "CRITICAL" }
+          }
+        } else if [winlog][level] == "Verbose" {
+          mutate {
+            add_field => { "log_level" => "DEBUG" }
+          }
+        }
+        
+        # Add message field for better searchability
+        if [message] == "" {
+          mutate {
+            add_field => { "message" => "%{[winlog][message]}" }
+          }
+        }
+      }
+    }
+    
+    output {
+      elasticsearch {
+        hosts => ["elasticsearch:9200"]
+        index => "logstash-%{+YYYY.MM.dd}"
+      }
+      stdout { codec => rubydebug }
+    }

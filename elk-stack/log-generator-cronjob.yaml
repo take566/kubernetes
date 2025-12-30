@@ -1,0 +1,145 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: log-generator
+  namespace: elk-stack
+  labels:
+    app: log-generator
+spec:
+  # 5分ごとにログを生成
+  schedule: "*/5 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: log-generator
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: log-generator
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              #!/bin/sh
+              
+              # 現在時刻を取得（BusyBox互換）
+              TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+              INDEX_DATE=$(date -u +"%Y.%m.%d")
+              
+              # ランダムなログメッセージを生成
+              RANDOM_NUM=$((RANDOM % 10 + 1))
+              
+              # ログプログラムとメッセージの配列（エラー検知用に拡張）
+              case $((RANDOM % 15)) in
+                0)
+                  PROGRAM="sshd"
+                  MESSAGE="Accepted password for pi from 192.168.0.$RANDOM_NUM port $((22000 + RANDOM_NUM))"
+                  SEVERITY="info"
+                  LEVEL="info"
+                  ;;
+                1)
+                  PROGRAM="sshd"
+                  MESSAGE="Failed password for invalid user from 192.168.0.$RANDOM_NUM port $((22000 + RANDOM_NUM))"
+                  SEVERITY="warning"
+                  LEVEL="warning"
+                  ;;
+                2)
+                  PROGRAM="sshd"
+                  MESSAGE="error: PAM: authentication error for illegal user admin from 192.168.0.$RANDOM_NUM"
+                  SEVERITY="error"
+                  LEVEL="error"
+                  ;;
+                3)
+                  PROGRAM="systemd"
+                  MESSAGE="Started Raspberry Pi Service - Session $RANDOM_NUM"
+                  SEVERITY="info"
+                  LEVEL="info"
+                  ;;
+                4)
+                  PROGRAM="systemd"
+                  MESSAGE="Failed to start Application Service - error code $RANDOM_NUM"
+                  SEVERITY="error"
+                  LEVEL="error"
+                  ;;
+                5)
+                  PROGRAM="kernel"
+                  MESSAGE="CPU temperature: $((40 + RANDOM % 20))C - Normal"
+                  SEVERITY="info"
+                  LEVEL="info"
+                  ;;
+                6)
+                  PROGRAM="kernel"
+                  MESSAGE="CPU temperature: $((60 + RANDOM % 15))C - High"
+                  SEVERITY="warning"
+                  LEVEL="warning"
+                  ;;
+                7)
+                  PROGRAM="kernel"
+                  MESSAGE="ERROR: CPU throttling detected - temperature critical"
+                  SEVERITY="error"
+                  LEVEL="error"
+                  ;;
+                8)
+                  PROGRAM="cron"
+                  MESSAGE="(root) CMD (backup script executed successfully)"
+                  SEVERITY="info"
+                  LEVEL="info"
+                  ;;
+                9)
+                  PROGRAM="cron"
+                  MESSAGE="ERROR: backup script failed with exit code 1"
+                  SEVERITY="error"
+                  LEVEL="error"
+                  ;;
+                10)
+                  PROGRAM="nginx"
+                  MESSAGE="192.168.0.$RANDOM_NUM - GET /api/status HTTP/1.1 200"
+                  SEVERITY="info"
+                  LEVEL="info"
+                  ;;
+                11)
+                  PROGRAM="nginx"
+                  MESSAGE="192.168.0.$RANDOM_NUM - GET /api/users HTTP/1.1 500 Internal Server Error"
+                  SEVERITY="error"
+                  LEVEL="error"
+                  ;;
+                12)
+                  PROGRAM="mysql"
+                  MESSAGE="ERROR 1045: Access denied for user 'root'@'localhost'"
+                  SEVERITY="error"
+                  LEVEL="error"
+                  ;;
+                13)
+                  PROGRAM="docker"
+                  MESSAGE="Error response from daemon: container not found"
+                  SEVERITY="error"
+                  LEVEL="error"
+                  ;;
+                14)
+                  PROGRAM="application"
+                  MESSAGE="Exception in thread main: NullPointerException at line $RANDOM_NUM"
+                  SEVERITY="error"
+                  LEVEL="error"
+                  ;;
+              esac
+              
+              # Elasticsearchにログを投入
+              curl -X POST "http://elasticsearch:9200/logstash-${INDEX_DATE}/_doc" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"@timestamp\": \"${TIMESTAMP}\",
+                  \"syslog_hostname\": \"raspberrypi\",
+                  \"syslog_program\": \"${PROGRAM}\",
+                  \"syslog_message\": \"${MESSAGE}\",
+                  \"type\": \"syslog\",
+                  \"severity\": \"${SEVERITY}\",
+                  \"level\": \"${LEVEL}\",
+                  \"source\": \"cronjob-generator\",
+                  \"tags\": [\"automated\", \"${LEVEL}\"]
+                }" && echo "✓ Log generated [${LEVEL}]: ${PROGRAM} - ${MESSAGE}"
+

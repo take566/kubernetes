@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-config
+  namespace: elk-stack
+data:
+  kibana.yml: |
+    server.name: kibana
+    server.host: "0.0.0.0"
+    elasticsearch.hosts: [ "http://elasticsearch:9200" ]
+    xpack.security.enabled: false
+    
+    # Default index patterns
+    kibana.defaultAppId: "discover"
+    
+    # Index patterns configuration
+    kibana.index: ".kibana"
+    
+    # Performance settings
+    elasticsearch.requestTimeout: 300000
+    elasticsearch.shardTimeout: 300000
+    
+    # Windows Event Log specific settings
+    server.maxPayloadBytes: 1048576
+    elasticsearch.maxResponseSize: 1048576
+    
+    # Logging configuration
+    logging.appenders:
+      file:
+        type: file
+        fileName: /usr/share/kibana/logs/kibana.log
+        layout:
+          type: json

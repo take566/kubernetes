@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: winlogbeat-config
+  namespace: elk-stack
+data:
+  winlogbeat.yml: |
+    winlogbeat.event_logs:
+      - name: Application
+        ignore_older: 24h
+        level: info
+        
+      - name: System
+        ignore_older: 24h
+        level: info
+        
+      - name: Security
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-Sysmon/Operational
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-PowerShell/Operational
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-Windows Defender/Operational
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-TaskScheduler/Operational
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-DNS-Client/Operational
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-NetworkProfile/Operational
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-WLAN-AutoConfig/Operational
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-TerminalServices-LocalSessionManager/Operational
+        ignore_older: 24h
+        level: info
+        
+      - name: Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational
+        ignore_older: 24h
+        level: info
+
+    output.logstash:
+      hosts: ["<ELK_STACK_HOST>:5044"]
+      
+    setup.kibana:
+      host: "<ELK_STACK_HOST>:5601"
+      
+    setup.template.settings:
+      index.number_of_shards: 1
+      index.number_of_replicas: 0
+      index.refresh_interval: 5s
+      
+    setup.template.name: "winlogbeat"
+    setup.template.pattern: "winlogbeat-*"
+    
+    # Processors for data enrichment
+    processors:
+      - add_host_metadata:
+          when.not.contains.tags: forwarded
+          
+      - add_cloud_metadata: ~
+      
+      - add_docker_metadata: ~
+      
+      - add_kubernetes_metadata: ~
+      
+      - timestamp:
+          field: '@timestamp'
+          layouts:
+            - '2006-01-02T15:04:05.000Z'
+            - '2006-01-02T15:04:05Z'
+          test:
+            - '2023-01-01T00:00:00.000Z'
+
+    # Logging configuration
+    logging.level: info
+    logging.to_files: true
+    logging.files:
+      path: C:\ProgramData\winlogbeat\logs
+      name: winlogbeat
+      keepfiles: 7
+      permissions: 0644
+      
+    # Monitoring
+    monitoring.enabled: false
+    
+    # HTTP endpoint for stats
+    http.enabled: true
+    http.host: localhost
+    http.port: 5066

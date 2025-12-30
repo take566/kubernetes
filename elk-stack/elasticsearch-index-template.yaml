@@ -1,0 +1,171 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-index-template
+  namespace: elk-stack
+data:
+  windows-events-template.json: |
+    {
+      "index_patterns": ["winlogbeat-*", "logstash-*"],
+      "template": {
+        "settings": {
+          "number_of_shards": 1,
+          "number_of_replicas": 0,
+          "index.refresh_interval": "5s"
+        },
+        "mappings": {
+          "properties": {
+            "@timestamp": {
+              "type": "date"
+            },
+            "agent": {
+              "properties": {
+                "type": {
+                  "type": "keyword"
+                },
+                "version": {
+                  "type": "keyword"
+                },
+                "hostname": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "winlog": {
+              "properties": {
+                "event_id": {
+                  "type": "long"
+                },
+                "level": {
+                  "type": "keyword"
+                },
+                "provider_name": {
+                  "type": "keyword"
+                },
+                "computer_name": {
+                  "type": "keyword"
+                },
+                "message": {
+                  "type": "text",
+                  "analyzer": "standard"
+                },
+                "process": {
+                  "properties": {
+                    "pid": {
+                      "type": "long"
+                    },
+                    "thread": {
+                      "properties": {
+                        "id": {
+                          "type": "long"
+                        }
+                      }
+                    }
+                  }
+                },
+                "user": {
+                  "properties": {
+                    "identifier": {
+                      "type": "keyword"
+                    },
+                    "name": {
+                      "type": "keyword"
+                    },
+                    "domain": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "event_data": {
+                  "type": "object",
+                  "dynamic": true
+                },
+                "keywords": {
+                  "type": "keyword"
+                },
+                "opcode": {
+                  "type": "keyword"
+                },
+                "task": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "event_id": {
+              "type": "long"
+            },
+            "event_level": {
+              "type": "keyword"
+            },
+            "event_source": {
+              "type": "keyword"
+            },
+            "computer_name": {
+              "type": "keyword"
+            },
+            "process_id": {
+              "type": "long"
+            },
+            "thread_id": {
+              "type": "long"
+            },
+            "user_sid": {
+              "type": "keyword"
+            },
+            "user_name": {
+              "type": "keyword"
+            },
+            "user_domain": {
+              "type": "keyword"
+            },
+            "event_data": {
+              "type": "object",
+              "dynamic": true
+            },
+            "log_level": {
+              "type": "keyword"
+            },
+            "message": {
+              "type": "text",
+              "analyzer": "standard"
+            },
+            "tags": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "host": {
+              "properties": {
+                "name": {
+                  "type": "keyword"
+                },
+                "ip": {
+                  "type": "ip"
+                }
+              }
+            },
+            "syslog": {
+              "properties": {
+                "timestamp": {
+                  "type": "keyword"
+                },
+                "hostname": {
+                  "type": "keyword"
+                },
+                "program": {
+                  "type": "keyword"
+                },
+                "pid": {
+                  "type": "long"
+                },
+                "message": {
+                  "type": "text",
+                  "analyzer": "standard"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
