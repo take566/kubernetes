@@ -130,6 +130,16 @@ kubectl delete namespace elk-stack
 3. **Kibanaにアクセスできない**
    - Ingress Controllerが動作していることを確認
    - ホスト名の設定を確認
+   - **DNS解決エラー（DNS_PROBE_POSSIBLE）の場合**: Windowsのhostsファイルに`kibana.local`のエントリを追加する必要があります
+     ```powershell
+     # 管理者権限でPowerShellを実行
+     .\fix-kibana-dns.ps1
+     ```
+     または、hostsファイル（`C:\Windows\System32\drivers\etc\hosts`）に手動で以下を追加:
+     ```
+     192.168.49.2    kibana.local
+     ```
+     （minikube IPは `minikube ip` コマンドで確認できます）
 
 ### ログの確認
 

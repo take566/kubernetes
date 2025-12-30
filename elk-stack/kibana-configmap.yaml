@@ -22,7 +22,6 @@ data:
     
     # Windows Event Log specific settings
     server.maxPayloadBytes: 1048576
-    elasticsearch.maxResponseSize: 1048576
     
     # Logging configuration
     logging.appenders:
