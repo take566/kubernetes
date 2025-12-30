@@ -79,6 +79,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 - **prometheus-app.yaml**: Prometheusアプリケーション（ネームスペース: `monitoring`）
 - **nginx-app.yaml**: Nginxアプリケーション（ネームスペース: `default`）
 - **cert-manager-app.yaml**: Cert-Managerアプリケーション（ネームスペース: `cert-manager`）
+- **gitlab-app.yaml**: GitLabアプリケーション（ネームスペース: `gitlab`）
 
 ### セットアップ手順
 
@@ -113,6 +114,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
    kubectl apply -f argocd/apps/prometheus-app.yaml -n argocd
    kubectl apply -f argocd/apps/nginx-app.yaml -n argocd
    kubectl apply -f argocd/apps/cert-manager-app.yaml -n argocd
+   kubectl apply -f argocd/apps/gitlab-app.yaml -n argocd
    ```
 
 4. アプリケーションの状態を確認
