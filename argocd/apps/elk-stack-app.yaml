@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/your-org/kubernetes  # TODO: 実際のGitリポジトリURLに変更してください
-    targetRevision: main  # TODO: ブランチ名を確認して変更してください
+    repoURL: https://github.com/take566/kubernetes.git
+    targetRevision: master
     path: elk-stack
   destination:
     server: https://kubernetes.default.svc
