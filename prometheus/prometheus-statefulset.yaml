@@ -7,7 +7,7 @@ metadata:
     k8s-3tier-webapp: prometheus
     kubernetes.io/cluster-service: "true"
     addonmanager.kubernetes.io/mode: Reconcile
-    version: v2.2.1
+    version: v3.8.0
 spec:
   serviceName: "prometheus"
   replicas: 1
@@ -25,7 +25,7 @@ spec:
       serviceAccountName: prometheus
       initContainers:
       - name: "init-chown-data"
-        image: "busybox:latest"
+        image: "busybox:1.36"
         imagePullPolicy: "IfNotPresent"
         command: ["chown", "-R", "65534:65534", "/data"]
         volumeMounts:
@@ -34,7 +34,7 @@ spec:
           subPath: ""
       containers:
         - name: prometheus-server
-          image: "prom/prometheus:v2.2.1"
+          image: "prom/prometheus:v3.8.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --config.file=/etc/config/prometheus.yml
@@ -56,7 +56,13 @@ spec:
               port: 9090
             initialDelaySeconds: 30
             timeoutSeconds: 30
-
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
           volumeMounts:
             - name: config-volume
               mountPath: /etc/config

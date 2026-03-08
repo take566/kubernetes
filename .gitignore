@@ -7,3 +7,6 @@
 .kiro/steering/byterover-rules.md
 .qoder/rules/byterover-rules.md
 .augment/rules/byterover-rules.md
+
+# Secret files - prevent credentials from being committed
+*-secret.yaml
