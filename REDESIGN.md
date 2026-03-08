@@ -147,8 +147,8 @@ kubernetes/
 
 ### Phase 2: 短期（1-2週間）
 - [x] 各ディレクトリに最小限の kustomization.yaml を追加
-- [ ] cert-manager: 1334行YAML → HelmChartInflator + values.yaml に移行
-- [ ] kube-prometheus-stack Helm導入（Grafana問題解決）
+- [x] cert-manager: 1334行YAML → HelmChartInflator + values.yaml に移行
+- [x] kube-prometheus-stack Helm導入（Grafana問題解決）
 - [x] ES_JAVA_OPTS を -Xms256m -Xmx256m に削減
 - [x] Skaffold導入（ローカル開発改善）
 - [ ] GitLab必要性の最終判断
