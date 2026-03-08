@@ -151,7 +151,7 @@ kubernetes/
 - [x] kube-prometheus-stack Helm導入（Grafana問題解決）
 - [x] ES_JAVA_OPTS を -Xms256m -Xmx256m に削減
 - [x] Skaffold導入（ローカル開発改善）
-- [ ] GitLab必要性の最終判断
+- [x] GitLab必要性の最終判断 → 維持決定
 - [x] GitHub Actions CIパイプライン導入（yamllint + kubeconform + Trivy）
 - [x] scripts/bootstrap.sh（Minikube + ArgoCD自動セットアップ）
 - [x] scripts/validate.sh（ローカルマニフェスト検証）
