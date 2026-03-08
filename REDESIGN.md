@@ -146,12 +146,16 @@ kubernetes/
 - [x] Elasticsearch xpack.security.enabled: true に変更
 
 ### Phase 2: 短期（1-2週間）
-- [ ] 各ディレクトリに最小限の kustomization.yaml を追加
+- [x] 各ディレクトリに最小限の kustomization.yaml を追加
 - [ ] cert-manager: 1334行YAML → HelmChartInflator + values.yaml に移行
 - [ ] kube-prometheus-stack Helm導入（Grafana問題解決）
-- [ ] ES_JAVA_OPTS を -Xms256m -Xmx256m に削減
-- [ ] Skaffold導入（ローカル開発改善）
+- [x] ES_JAVA_OPTS を -Xms256m -Xmx256m に削減
+- [x] Skaffold導入（ローカル開発改善）
 - [ ] GitLab必要性の最終判断
+- [x] GitHub Actions CIパイプライン導入（yamllint + kubeconform + Trivy）
+- [x] scripts/bootstrap.sh（Minikube + ArgoCD自動セットアップ）
+- [x] scripts/validate.sh（ローカルマニフェスト検証）
+- [x] policies/resource-quotas/dev-quota.yaml（ResourceQuota）
 
 ### Phase 3: 将来（必要時のみ）
 - [ ] SOPS+AGE によるSecret管理
