@@ -1,0 +1,57 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: kubernetes-platform
+deploy:
+  kubectl:
+    manifests:
+      - nginx/nginx-deployment.yaml
+      - nginx/nginx-service.yaml
+      - nginx/nginx-ingress.yaml
+profiles:
+  - name: elk
+    deploy:
+      kubectl:
+        manifests:
+          - elk-stack/namespace.yaml
+          - elk-stack/elasticsearch-configmap.yaml
+          - elk-stack/elasticsearch-pv.yaml
+          - elk-stack/elasticsearch-deployment.yaml
+          - elk-stack/elasticsearch-service.yaml
+          - elk-stack/logstash-configmap.yaml
+          - elk-stack/logstash-deployment.yaml
+          - elk-stack/logstash-service.yaml
+          - elk-stack/kibana-configmap.yaml
+          - elk-stack/kibana-deployment.yaml
+          - elk-stack/kibana-service.yaml
+          - elk-stack/kibana-ingress.yaml
+  - name: monitoring
+    deploy:
+      kubectl:
+        manifests:
+          - prometheus/monitoring-namespace.yaml
+          - prometheus/prometheus-rbac.yaml
+          - prometheus/prometheus-configmap.yaml
+          - prometheus/prometheus-pv.yaml
+          - prometheus/prometheus-statefulset.yaml
+          - prometheus/prometheus-service.yaml
+          - prometheus/prometheus-ingress.yaml
+          - prometheus/node-exporter-daemonset.yaml
+          - prometheus/node-exporter-service.yaml
+  - name: nexus
+    deploy:
+      kubectl:
+        manifests:
+          - nexus/namespace.yaml
+          - nexus/nexus-pv.yaml
+          - nexus/nexus-deployment.yaml
+          - nexus/nexus-service.yaml
+          - nexus/nexus-ingress.yaml
+  - name: full
+    deploy:
+      kustomize:
+        paths:
+          - elk-stack
+          - prometheus
+          - nexus
+          - nginx
