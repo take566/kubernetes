@@ -163,6 +163,7 @@ kubernetes/
 - [ ] GitLab CI + Trivyスキャンパイプライン
 - [ ] NetworkPolicy（クラウド移行時）
 - [ ] Velero バックアップ
+- [x] Phase 3 (進行中): Hermes Agent (NousResearch) を agents namespace に追加
 
 ### 導入しないもの
 - Service Mesh（Istio/Linkerd）
