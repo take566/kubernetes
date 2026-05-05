@@ -55,3 +55,8 @@ profiles:
           - prometheus
           - nexus
           - nginx
+  - name: agents
+    deploy:
+      kustomize:
+        paths:
+          - agents/hermes

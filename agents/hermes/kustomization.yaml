@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agents
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: agents
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: false
+resources:
+  - namespace.yaml
+  - resource-quota.yaml
+  - network-policy.yaml
+  - hermes-pvc.yaml
+  - hermes-deployment.yaml
+  - hermes-service.yaml
