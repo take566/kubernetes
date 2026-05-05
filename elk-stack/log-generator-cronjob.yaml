@@ -26,14 +26,14 @@ spec:
             - -c
             - |
               #!/bin/sh
-              
+
               # 現在時刻を取得（BusyBox互換）
               TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
               INDEX_DATE=$(date -u +"%Y.%m.%d")
-              
+
               # ランダムなログメッセージを生成
               RANDOM_NUM=$((RANDOM % 10 + 1))
-              
+
               # ログプログラムとメッセージの配列（エラー検知用に拡張）
               case $((RANDOM % 15)) in
                 0)
@@ -127,7 +127,7 @@ spec:
                   LEVEL="error"
                   ;;
               esac
-              
+
               # Elasticsearchにログを投入
               curl -X POST "http://elasticsearch:9200/logstash-${INDEX_DATE}/_doc" \
                 -H "Content-Type: application/json" \
@@ -142,4 +142,3 @@ spec:
                   \"source\": \"cronjob-generator\",
                   \"tags\": [\"automated\", \"${LEVEL}\"]
                 }" && echo "✓ Log generated [${LEVEL}]: ${PROGRAM} - ${MESSAGE}"
-

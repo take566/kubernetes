@@ -46,6 +46,8 @@ jobs:
             -not -name 'values.yaml' \
             -not -name 'Chart.yaml' \
             -not -name 'Chart.lock' \
+            -not -name 'nginx-ingress.yaml' \
+            -not -name 'prometheus-values.yaml' \
             | xargs kubeconform -strict -summary \
               -schema-location default \
               -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \

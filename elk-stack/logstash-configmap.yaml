@@ -29,7 +29,7 @@ data:
         type => "syslog"
       }
     }
-    
+
     filter {
       if [type] == "syslog" {
         grok {
@@ -39,41 +39,41 @@ data:
           match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
         }
       }
-      
+
       # Windows Event Log processing
       if [agent][type] == "winlogbeat" {
         mutate {
           add_tag => [ "windows", "eventlog" ]
         }
-        
+
         # Parse Windows Event ID
         if [winlog][event_id] {
           mutate {
             add_field => { "event_id" => "%{[winlog][event_id]}" }
           }
         }
-        
+
         # Parse Windows Event Level
         if [winlog][level] {
           mutate {
             add_field => { "event_level" => "%{[winlog][level]}" }
           }
         }
-        
+
         # Parse Windows Event Source
         if [winlog][provider_name] {
           mutate {
             add_field => { "event_source" => "%{[winlog][provider_name]}" }
           }
         }
-        
+
         # Parse Windows Computer Name
         if [winlog][computer_name] {
           mutate {
             add_field => { "computer_name" => "%{[winlog][computer_name]}" }
           }
         }
-        
+
         # Parse Windows Process Information
         if [winlog][process] {
           if [winlog][process][pid] {
@@ -87,7 +87,7 @@ data:
             }
           }
         }
-        
+
         # Parse Windows User Information
         if [winlog][user] {
           if [winlog][user][identifier] {
@@ -106,14 +106,14 @@ data:
             }
           }
         }
-        
+
         # Parse Windows Event Data
         if [winlog][event_data] {
           mutate {
             add_field => { "event_data" => "%{[winlog][event_data]}" }
           }
         }
-        
+
         # Set log level based on Windows Event Level
         if [winlog][level] == "Error" {
           mutate {
@@ -136,7 +136,7 @@ data:
             add_field => { "log_level" => "DEBUG" }
           }
         }
-        
+
         # Add message field for better searchability
         if [message] == "" {
           mutate {
@@ -145,7 +145,7 @@ data:
         }
       }
     }
-    
+
     output {
       elasticsearch {
         hosts => ["elasticsearch:9200"]
