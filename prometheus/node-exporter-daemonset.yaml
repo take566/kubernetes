@@ -18,10 +18,23 @@ spec:
       labels:
         k8s-3tier-webapp: node-exporter
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: prometheus-node-exporter
           image: "prom/node-exporter:v1.9.1"
           imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+              - ALL
           args:
             - --path.procfs=/host/proc
             - --path.sysfs=/host/sys

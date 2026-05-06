@@ -23,19 +23,24 @@ spec:
         k8s-3tier-webapp: prometheus
     spec:
       serviceAccountName: prometheus
-      initContainers:
-      - name: "init-chown-data"
-        image: "busybox:1.36"
-        imagePullPolicy: "IfNotPresent"
-        command: ["chown", "-R", "65534:65534", "/data"]
-        volumeMounts:
-        - name: prometheus-persistent-storage
-          mountPath: /data
-          subPath: ""
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: prometheus-server
           image: "prom/prometheus:v3.8.0"
           imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+              - ALL
           args:
             - --config.file=/etc/config/prometheus.yml
             - --storage.tsdb.path=/data
