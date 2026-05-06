@@ -14,5 +14,9 @@ resources:
   - node-exporter-pv-proc.yaml
   - node-exporter-pvc-proc.yaml
   - grafana-pv.yaml
-commonLabels:
-  app.kubernetes.io/part-of: monitoring
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: monitoring
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: false
