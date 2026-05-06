@@ -1,6 +1,5 @@
-[byterover-mcp]
 
-[byterover-mcp]
+実装前に必ずplanモードで設計を出してから書け
 
 You are given two tools from Byterover MCP server, including
 ## 1. `byterover-store-knowledge`
@@ -28,8 +27,8 @@ You `MUST` always use this tool when:
 
 いまプロジェクトをゼロから自由に再設計できるとしたら、どういう設計にしますか？
 
-
-Codexにチームを作成してチームで仕事をするように依頼して
+ollamaはcliを使うこと
+ollamaにチームを作成してチームで仕事をするように依頼して
 必ず反証するようなチームメンバーを追加してね
 また、各エージェントがどのような役割でどのような仕事をしたのかもレスポンスしてね
 
