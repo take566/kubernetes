@@ -4,5 +4,9 @@ resources:
   - nginx-deployment.yaml
   - nginx-service.yaml
   - nginx-ingress.yaml
-commonLabels:
-  app.kubernetes.io/part-of: nginx
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: nginx
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: false

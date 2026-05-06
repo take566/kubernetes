@@ -18,5 +18,9 @@ resources:
   - logstash-service.yaml
   - log-generator-cronjob.yaml
   - winlogbeat-config.yaml
-commonLabels:
-  app.kubernetes.io/part-of: elk-stack
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: elk-stack
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: false

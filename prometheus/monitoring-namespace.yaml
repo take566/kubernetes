@@ -4,3 +4,5 @@ metadata:
   name: monitoring
   labels:
     name: monitoring
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/warn: baseline
