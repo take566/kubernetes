@@ -13,9 +13,22 @@ spec:
       labels:
         app: nexus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 200
+        runAsGroup: 200
+        fsGroup: 200
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: nexus
         image: sonatype/nexus3:3.85.0
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
         ports:
         - name: nexus-web
           containerPort: 8081
