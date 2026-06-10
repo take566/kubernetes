@@ -10,3 +10,10 @@
 
 # Secret files - prevent credentials from being committed
 *-secret.yaml
+
+# Local runtime data (do not commit)
+data/
+
+# Python cache
+__pycache__/
+*.pyc

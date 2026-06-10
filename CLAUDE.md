@@ -1,3 +1,12 @@
+## リポジトリ構成（索引）
+
+- **Bootstrap:** `kind/`（ローカル）, `kubeadm/`（本番）
+- **Apps:** `vllm/`, `elk-stack/`, `nginx/`, `nexus/`, `gitlab/`, `prometheus/`, `agents/` 等
+- **GitOps:** `argocd/apps/`（App of Apps）
+- **Scripts:** `scripts/bootstrap.sh`, `scripts/validate.sh`
+- **Docs:** ルート [readme.md](readme.md), 補足 [docs/README.md](docs/README.md)
+
+vLLM は `vllm/base/` + `vllm/components/` + `vllm/overlays/{kubeadm,kind}/`。ルート `vllm/kustomization.yaml` や `vllm/amd/` は廃止済み。
 
 実装前に必ずplanモードで設計を出してから書け
 

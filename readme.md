@@ -1,70 +1,100 @@
-# kubectl
- ```
-$ curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-$ chmod +x kubectl
-$ sudo mv ./kubectl /usr/local/bin/
-$ kubectl version --client
- ```
+# Kubernetes Platform
 
-## クラスタ Bootstrap
+Kubernetes マニフェスト、クラスタ bootstrap、Argo CD GitOps をまとめたリポジトリです。
 
-| 用途 | 手順 |
-|------|------|
-| **本番 / kubeadm** | [kubeadm/README.md](kubeadm/README.md) |
-| **ローカル dev (kind)** | [kind/README.md](kind/README.md) |
+## ディレクトリ構成
 
-Argo CD セットアップ: `./scripts/bootstrap.sh`（既存クラスタ向け）
+### クラスタ Bootstrap
 
-# argocd
- ```
-kubectl apply -f ingress.yml -n argocd
- ```
+| ディレクトリ | 用途 | ドキュメント |
+|-------------|------|-------------|
+| [kind/](kind/) | ローカル開発（Docker + kind） | [kind/README.md](kind/README.md) |
+| [kubeadm/](kubeadm/) | 本番向け kubeadm クラスタ | [kubeadm/README.md](kubeadm/README.md) |
 
-## ArgoCDのログインページにログイン
- ```
-# kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+### アプリケーション / ワークロード
 
-# argocd account update-password
-*** Enter current password:
-*** Enter new password:
-*** Confirm new password:
- ```
- 
- 
-## ArgoCD CLIの導入
-```
-# wget https://github.com/argoproj/argo-cd/releases/download/v2.0.5/argocd-linux-amd64
+| ディレクトリ | 説明 | Argo CD Application |
+|-------------|------|---------------------|
+| [vllm/](vllm/) | vLLM 推論・AMD LoRA 学習・ベンチマーク | `vllm-kubeadm`, `vllm-kind`, `vllm-amd`, `vllm-finetune`, `vllm-benchmark` |
+| [elk-stack/](elk-stack/) | Elasticsearch / Logstash / Kibana | `elk-stack` |
+| [prometheus/](prometheus/) | Prometheus + Node Exporter | `prometheus` |
+| [monitoring/](monitoring/) | kube-prometheus-stack values | `monitoring` |
+| [nginx/](nginx/) | Nginx Ingress サンプル | `nginx` |
+| [nexus/](nexus/) | Nexus Repository Manager | `nexus` |
+| [gitlab/](gitlab/) | GitLab Helm values | `gitlab` |
+| [cert-manager/](cert-manager/) | cert-manager Helm wrapper | `cert-manager` |
+| [agents/](agents/) | Hermes 等エージェント | `agents` |
 
-# wget https://github.com/argoproj/argo-cd/releases/download/v2.0.5/argocd-util-linux-amd64
+### GitOps
 
-# install argocd-linux-amd64 /usr/local/bin/argocd
+| ディレクトリ | 説明 |
+|-------------|------|
+| [argocd/](argocd/) | Argo CD インストール手順・Ingress |
+| [argocd/apps/](argocd/apps/) | App of Apps（各 Application 定義） |
 
-# install argocd-util-linux-amd64 /usr/local/bin/argocd-util
- ```
+廃止済みパス: [argocd/apps/DEPRECATED.md](argocd/apps/DEPRECATED.md)
 
-# gitlab
-## GitLabのインストール
-```
-$ helm repo add gitlab https://charts.gitlab.io/
-"gitlab" has been added to your repositories
-$ helm repo update
-```
-## GitLabをデプロイ
-```
-$ NAMESPACE=gitlab
-$ helm upgrade --install gitlab gitlab/gitlab \
-  --namespace $NAMESPACE \
-  --version=2.1.0 \
-  --values gitlab_config.yaml
-```
-## podが起動しているか確認
-```
-$ kubectl get --namespace $NAMESPACE pods
+### ポリシー・スクリプト
+
+| ディレクトリ | 説明 |
+|-------------|------|
+| [policies/](policies/) | ResourceQuota 等 |
+| [scripts/](scripts/) | `bootstrap.sh`（Argo CD）、`validate.sh`（マニフェスト検証） |
+| [docs/](docs/) | 補足ドキュメント索引 |
+
+### 参考のみ（GitOps 対象外）
+
+| ディレクトリ | 説明 |
+|-------------|------|
+| [jenkins/](jenkins/) | Jenkins Helm 手順（参考） |
+
+## クイックスタート
+
+### 1. クラスタ作成
+
+```bash
+# ローカル dev
+./kind/scripts/create-cluster.sh
+
+# 本番 kubeadm（Linux ノード上で実行）
+# 手順: kubeadm/README.md
 ```
 
-## 初期ユーザとパスワードを確認
+### 2. Argo CD bootstrap（既存クラスタ）
+
+```bash
+./scripts/bootstrap.sh
+kubectl apply -f argocd/apps/root-application.yaml
 ```
- kubectl get secret gitlab-gitlab-initial-root-password \
-  --namespace $NAMESPACE \
-  -ojsonpath='{.data.password}' | base64 --decode ; echo
+
+### 3. マニフェスト検証
+
+```bash
+./scripts/validate.sh
 ```
+
+### 4. vLLM デプロイ（例）
+
+```bash
+# kubeadm 本番
+kubectl apply -k vllm/overlays/kubeadm/
+
+# kind ローカル
+kubectl apply -k vllm/overlays/kind/
+```
+
+詳細: [vllm/README.md](vllm/README.md)
+
+## ローカル開発（Skaffold）
+
+[skaffold.yaml](skaffold.yaml) に nginx / elk / prometheus / nexus / agents のプロファイルがあります。
+
+```bash
+skaffold dev -p full
+```
+
+## 関連ドキュメント
+
+- [docs/README.md](docs/README.md) — 補足ガイド一覧
+- [argocd/README.md](argocd/README.md) — Argo CD インストール
+- [docs/REDESIGN.md](docs/REDESIGN.md) — 再設計分析（参考）
