@@ -92,12 +92,12 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 | Application | Path | Auto sync | Namespace |
 |-------------|------|-----------|-----------|
 | vllm-kubeadm | `vllm/overlays/kubeadm` | Yes | vllm |
-| vllm-kind | `vllm/overlays/kind` | Yes | vllm |
+| vllm-kind | `vllm/overlays/kind` | No | vllm |
 | vllm-amd | `vllm/overlays/kubeadm/amd` | No | vllm |
 | vllm-finetune | `vllm/overlays/kubeadm/finetune` | No | vllm |
 | vllm-benchmark | `vllm/benchmark` | No | vllm |
 
-同一 `vllm` namespace では推論スタックの auto sync は **1 つだけ**（NVIDIA kubeadm **または** kind **または** AMD）。
+同一 `vllm` namespace では **NVIDIA 推論の auto sync は `vllm-kubeadm` のみ**。kind / AMD / benchmark / finetune は manual sync。
 
 ### セットアップ手順
 

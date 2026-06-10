@@ -13,12 +13,12 @@
 | Application | Path | Auto sync | Notes |
 |-------------|------|-----------|-------|
 | `vllm-kubeadm` | `vllm/overlays/kubeadm` | Yes | Production kubeadm (NVIDIA) |
-| `vllm-kind` | `vllm/overlays/kind` | Yes | Local kind dev (added by kind agent) |
+| `vllm-kind` | `vllm/overlays/kind` | No | Local kind dev (manual — no GPU auto-deploy) |
 | `vllm-amd` | `vllm/overlays/kubeadm/amd` | No | AMD inference — enable one stack only |
 | `vllm-finetune` | `vllm/overlays/kubeadm/finetune` | No | AMD LoRA Job |
 | `vllm-benchmark` | `vllm/benchmark` | No | On-demand perf Jobs |
 
-**Rule:** Only one inference Application with automated sync should target namespace `vllm` (NVIDIA kubeadm **or** kind **or** AMD — never two with auto sync).
+**Rule:** Only `vllm-kubeadm` uses automated sync for NVIDIA inference. Enable `vllm-amd` manual sync only after disabling/removing kubeadm auto sync in the same cluster.
 
 ### Migration from minikube
 
