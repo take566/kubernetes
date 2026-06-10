@@ -1,3 +1,4 @@
+# Manual sync — ELK stack is stateful; avoid unintended data/index changes.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,9 +16,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: elk-stack
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground

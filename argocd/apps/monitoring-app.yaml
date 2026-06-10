@@ -1,3 +1,4 @@
+# Manual sync — shares namespace `monitoring` with `prometheus`; enable one stack at a time.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,9 +16,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: monitoring
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground

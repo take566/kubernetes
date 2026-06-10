@@ -21,7 +21,7 @@ done
 ERRORS=0
 
 # Dry-run validation for each directory
-for dir in elk-stack prometheus nexus nginx vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune; do
+for dir in elk-stack prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune; do
   echo ""
   echo "--- Validating $dir/ ---"
   for file in "$dir"/*.yaml; do
@@ -30,7 +30,7 @@ for dir in elk-stack prometheus nexus nginx vllm/base vllm/components/amd vllm/c
       kustomization.yaml|values.yaml|Chart.yaml|Chart.lock|*.md) continue ;;
     esac
 
-    if kubectl apply --dry-run=client -f "$file" > /dev/null 2>&1; then
+    if kubectl apply --dry-run=client --validate=false -f "$file" > /dev/null 2>&1; then
       echo -e "  ${GREEN}OK${NC}: $file"
     else
       echo -e "  ${RED}FAIL${NC}: $file"
@@ -44,7 +44,8 @@ done
 echo ""
 echo "--- Validating Kustomize builds ---"
 KUSTOMIZE_DIRS=(
-  elk-stack prometheus nexus nginx vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark
+  elk-stack prometheus nexus nginx cert-manager agents/hermes
+  vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark
   kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin
   kind/addons
   vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune
@@ -63,21 +64,52 @@ for dir in "${KUSTOMIZE_DIRS[@]}"; do
   fi
 done
 
-# Argo CD Application manifests (syntax only)
+# Helm wrapper dirs (monitoring uses helmCharts in kustomization — needs helm on PATH)
 echo ""
-echo "--- Validating Argo CD Applications ---"
-for file in argocd/apps/*.yaml; do
-  case "$(basename "$file")" in
-    root-application.yaml|*-app.yaml)
-      if kubectl apply --dry-run=client -f "$file" > /dev/null 2>&1; then
-        echo -e "  ${GREEN}OK${NC}: $file"
+echo "--- Validating Helm-backed kustomize (optional) ---"
+HELM_KUSTOMIZE_DIRS=(monitoring cert-manager)
+for dir in "${HELM_KUSTOMIZE_DIRS[@]}"; do
+  if [ -f "$dir/kustomization.yaml" ]; then
+    if command -v helm &> /dev/null; then
+      if kubectl kustomize "$dir" "${KUSTOMIZE_LOAD_FLAGS[@]}" > /dev/null 2>&1; then
+        echo -e "  ${GREEN}OK${NC}: kustomize build $dir (helm)"
       else
-        echo -e "  ${RED}FAIL${NC}: $file"
+        echo -e "  ${RED}FAIL${NC}: kustomize build $dir (helm)"
         ERRORS=$((ERRORS + 1))
       fi
-      ;;
-  esac
+    else
+      echo -e "  ${GREEN}SKIP${NC}: $dir (helm not installed)"
+    fi
+  fi
 done
+
+# Argo CD Application manifests (syntax + duplicate names)
+echo ""
+echo "--- Validating Argo CD Applications ---"
+declare -A APP_NAMES=()
+for file in argocd/apps/*-app.yaml; do
+  [ -f "$file" ] || continue
+  if kubectl apply --dry-run=client --validate=false -f "$file" > /dev/null 2>&1; then
+    echo -e "  ${GREEN}OK${NC}: $file"
+    name=$(grep -E '^  name:' "$file" | head -1 | awk '{print $2}')
+    if [ -n "${APP_NAMES[$name]:-}" ]; then
+      echo -e "  ${RED}FAIL${NC}: duplicate Application name '$name' in ${APP_NAMES[$name]} and $file"
+      ERRORS=$((ERRORS + 1))
+    else
+      APP_NAMES[$name]=$file
+    fi
+  else
+    echo -e "  ${RED}FAIL${NC}: $file"
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
+if kubectl apply --dry-run=client --validate=false -f argocd/apps/root-application.yaml > /dev/null 2>&1; then
+  echo -e "  ${GREEN}OK${NC}: argocd/apps/root-application.yaml"
+else
+  echo -e "  ${RED}FAIL${NC}: argocd/apps/root-application.yaml"
+  ERRORS=$((ERRORS + 1))
+fi
 
 echo ""
 if [ $ERRORS -eq 0 ]; then

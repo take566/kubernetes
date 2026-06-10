@@ -1,3 +1,4 @@
+# Manual sync — GitLab Helm chart is heavy/stateful; review upgrades before sync.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -18,9 +19,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: gitlab
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground

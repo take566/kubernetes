@@ -1,84 +1,60 @@
-# ArgoCD セットアップ完了ガイド
+# Argo CD セットアップ・Application 一覧
 
-## ✅ 現在のステータス
+## Bootstrap
 
-ArgoCDが Kubernetes クラスタ上にインストールされました（legacy local clusters は非推奨 — kubeadm / kind を推奨）。
+```bash
+./scripts/bootstrap.sh
+kubectl apply -f argocd/apps/root-application.yaml
+```
 
-### サーバー情報
-- **版**: ArgoCD v3.2.1
-- **クラスター**: kubeadm / kind / 既存クラスタ
-- **ネームスペース**: argocd
-- **すべてのポッド**: Running ✓
+`root-application` が `argocd/apps/` 配下の全 Application を App of Apps パターンで管理します。
 
-## 🌐 アクセス方法
+## Application 一覧
 
-### 方法1: ポートフォワーディング（推奨）
+| Application | Source path | Namespace | Auto sync |
+|-------------|-------------|-----------|-----------|
+| `root-application` | `argocd/apps` | argocd | Yes |
+| `vllm-kubeadm` | `vllm/overlays/kubeadm` | vllm | Yes |
+| `vllm-kind` | `vllm/overlays/kind` | vllm | No |
+| `vllm-amd` | `vllm/overlays/kubeadm/amd` | vllm | No |
+| `vllm-finetune` | `vllm/overlays/kubeadm/finetune` | vllm | No |
+| `vllm-benchmark` | `vllm/benchmark` | vllm | No |
+| `nginx` | `nginx` | default | Yes |
+| `nexus` | `nexus` | nexus | Yes |
+| `cert-manager` | `cert-manager` | cert-manager | Yes |
+| `agents` | `agents/hermes` | agents | Yes |
+| `prometheus` | `prometheus` | monitoring | Yes |
+| `monitoring` | `monitoring` | monitoring | No |
+| `gitlab` | `gitlab` (Helm) | gitlab | No |
+| `elk-stack` | `elk-stack` | elk-stack | No |
 
-ターミナルで以下のコマンドを実行してください：
+詳細・廃止パス: [argocd/apps/DEPRECATED.md](../argocd/apps/DEPRECATED.md)
+
+## sync policy 方針
+
+- **Auto**: 軽量 infra（nginx, nexus, cert-manager, agents, prometheus）
+- **Manual**: GPU/排他 vLLM、stateful（gitlab, elk-stack）、namespace 競合（monitoring）
+
+### 注意
+
+- `prometheus` と `monitoring` は同一 namespace `monitoring` を使用。同時 auto-sync しないこと。
+- `vllm-kubeadm` と `vllm-amd` は namespace `vllm` で排他。
+- `jenkins/` は GitOps 対象外（Helm 手順のみ）。
+
+## 検証
+
+```bash
+./scripts/validate.sh
+```
+
+## UI アクセス
 
 ```bash
 kubectl port-forward svc/argocd-server -n argocd 8080:443
+# https://localhost:8080
 ```
 
-その後、以下のURLにアクセスしてください：
-```
-https://localhost:8080
-```
+## 参考
 
-> 注意: 自己署名証明書の警告が表示されるかもしれません。ブラウザの詳細設定で続行を選択してください。
-
-### 方法2: CLIでのログイン
-
-```bash
-# 初期パスワードを取得
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
-
-# CLIでログイン（Windows PowerShellの場合）
-argocd login localhost:8080 --username admin --password <上記で取得したパスワード> --insecure
-```
-
-## 🔐 ログイン情報
-
-| 項目 | 値 |
-|------|-----|
-| **ユーザー名** | admin |
-| **パスワード** | 2mbAz1gAY9BuAMC8 |
-
-## ⚙️ サービス確認コマンド
-
-```bash
-# すべてのポッドの確認
-kubectl get pods -n argocd
-
-# サービスの確認
-kubectl get svc -n argocd
-
-# Helmリリースの確認
-helm list -n argocd
-```
-
-## 📋 トラブルシューティング
-
-### ブラウザで表示されない場合
-
-1. ターミナルでポートフォワーディングが実行されているか確認
-2. https://localhost:8080 でアクセス（HTTPではなくHTTPSです）
-3. 証明書エラーが表示された場合は「詳細設定」→「続行」を選択
-
-### ポートが既に使用されている場合
-
-```bash
-# 別のポート（例：8081）を指定する
-kubectl port-forward svc/argocd-server -n argocd 8081:443
-```
-
-## 🚀 次のステップ
-
-1. UIにログインして、GitリポジトリをArgoCD に接続
-2. アプリケーションを登録してデプロイ管理を開始
-3. パスワードを変更（初期パスワードは変更を推奨）
-
-## 📚 参考リンク
-
-- [ArgoCD公式ドキュメント](https://argo-cd.readthedocs.io/)
-- [ArgoCD Helm Chart](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd)
+- [argocd/README.md](../argocd/README.md)
+- [Argo CD 公式ドキュメント](https://argo-cd.readthedocs.io/)
