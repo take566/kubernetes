@@ -1,0 +1,98 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vllm-finetune
+  namespace: vllm
+  labels:
+    app: vllm-finetune
+    app.kubernetes.io/name: vllm-finetune
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: vllm-finetune
+        app.kubernetes.io/name: vllm-finetune
+        app.kubernetes.io/part-of: vllm
+    spec:
+      restartPolicy: Never
+      # Uncomment when AMD GPU nodes are tainted (AMD GPU Operator / device plugin).
+      # tolerations:
+      #   - key: amd.com/gpu
+      #     operator: Exists
+      #     effect: NoSchedule
+      # Uncomment when AMD GPU Node Labeller is deployed (see AMD device plugin docs).
+      # nodeSelector:
+      #   amd.com/gpu.present: "true"
+      #   # Example VRAM filter: amd.com/gpu.vram: "98304"  # 96 GiB MI300X
+      containers:
+        - name: finetune
+          # Keep in sync with finetune-configmap.yaml FINETUNE_IMAGE; match host ROCm when possible.
+          image: rocm/pytorch:rocm6.3_ubuntu22.04_py3.10_pytorch_release_2.5.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - /entrypoint/entrypoint.sh
+          envFrom:
+            - configMapRef:
+                name: finetune-config
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vllm-secret
+                  key: HF_TOKEN
+                  optional: true
+            - name: HUGGING_FACE_HUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vllm-secret
+                  key: HF_TOKEN
+                  optional: true
+            # ROCm memory allocator tuning (MI200/MI300); adjust per cluster/GPU.
+            - name: PYTORCH_HIP_ALLOC_CONF
+              value: "expandable_segments:True"
+            # Consumer Radeon on ROCm may need override — set only when required.
+            # - name: HSA_OVERRIDE_GFX_VERSION
+            #   value: "11.0.0"
+          resources:
+            requests:
+              cpu: "4"
+              memory: 32Gi
+              amd.com/gpu: "1"
+            limits:
+              cpu: "8"
+              memory: 64Gi
+              amd.com/gpu: "1"
+          volumeMounts:
+            - name: finetune-entrypoint
+              mountPath: /entrypoint
+            - name: finetune-script
+              mountPath: /scripts
+            - name: dataset
+              mountPath: /data/dataset
+            - name: output
+              mountPath: /data/output
+            - name: hf-cache
+              mountPath: /data/huggingface
+      volumes:
+        - name: finetune-entrypoint
+          configMap:
+            name: finetune-entrypoint
+            defaultMode: 0755
+        - name: finetune-script
+          configMap:
+            name: finetune-script
+            defaultMode: 0755
+        - name: dataset
+          persistentVolumeClaim:
+            claimName: vllm-finetune-dataset
+        - name: output
+          persistentVolumeClaim:
+            claimName: vllm-finetune-output
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: vllm-finetune-hf-cache

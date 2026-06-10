@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vllm
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: vllm
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: false
+resources:
+  - finetune-configmap.yaml
+  - finetune-entrypoint-configmap.yaml
+  - finetune-pv.yaml
+  - finetune-job.yaml
+configMapGenerator:
+  - name: finetune-script
+    files:
+      - train_lora.py=scripts/train_lora.py
+generatorOptions:
+  disableNameSuffixHash: true

@@ -21,7 +21,7 @@ jobs:
             elk-stack/*.yaml \
             prometheus/*.yaml \
             nexus/*.yaml \
-            nginx/*.yaml \
+            nginx/*.yaml \`n            vllm/*.yaml \`n            vllm/amd/*.yaml \`n            vllm/finetune/*.yaml \
             argocd/apps/*.yaml
 
   validate:
@@ -65,3 +65,4 @@ jobs:
           scan-ref: '.'
           severity: 'HIGH,CRITICAL'
           exit-code: '0'
+

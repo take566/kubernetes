@@ -21,7 +21,7 @@ done
 ERRORS=0
 
 # Dry-run validation for each directory
-for dir in elk-stack prometheus nexus nginx; do
+for dir in elk-stack prometheus nexus nginx vllm vllm/amd vllm/finetune; do
   echo ""
   echo "--- Validating $dir/ ---"
   for file in "$dir"/*.yaml; do
@@ -43,7 +43,7 @@ done
 # Kustomize build validation
 echo ""
 echo "--- Validating Kustomize builds ---"
-for dir in elk-stack prometheus nexus nginx; do
+for dir in elk-stack prometheus nexus nginx vllm vllm/amd vllm/finetune; do
   if [ -f "$dir/kustomization.yaml" ]; then
     if kubectl kustomize "$dir" > /dev/null 2>&1; then
       echo -e "  ${GREEN}OK${NC}: kustomize build $dir"
