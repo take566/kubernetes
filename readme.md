@@ -224,4 +224,5 @@ skaffold dev -p full
 | [docs/ARGOCD_SETUP.md](docs/ARGOCD_SETUP.md) | Application 一覧・sync 方針 |
 | [argocd/README.md](argocd/README.md) | Argo CD Helm インストール |
 | [vllm/README.md](vllm/README.md) | vLLM overlay 構成 |
+| [docs/LOCAL_GPU_SETUP_WINDOWS.md](docs/LOCAL_GPU_SETUP_WINDOWS.md) | Windows ローカル GPU（ドライバー / ROCm / WSL） |
 | [docs/REDESIGN.md](docs/REDESIGN.md) | 再設計分析（参考） |

@@ -67,6 +67,9 @@ spec:
                   optional: true
             - name: PYTORCH_HIP_ALLOC_CONF
               value: "expandable_segments:True"
+            # Required for RDNA1 consumer GPUs (e.g. RX 5700 gfx1010) — not official ROCm targets.
+            - name: HSA_OVERRIDE_GFX_VERSION
+              value: "10.3.0"
             # Pin GPU when multiple amd.com/gpu devices are visible on the node.
             - name: HIP_VISIBLE_DEVICES
               value: "0"

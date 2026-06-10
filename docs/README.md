@@ -4,6 +4,7 @@
 
 | ドキュメント | 内容 |
 |-------------|------|
+| [LOCAL_GPU_SETUP_WINDOWS.md](LOCAL_GPU_SETUP_WINDOWS.md) | Windows ローカル GPU（RX 5700 等）ML スタック構築 |
 | [ARGOCD_SETUP.md](ARGOCD_SETUP.md) | Argo CD セットアップ完了後の運用メモ |
 | [argocd-helm-install.md](argocd-helm-install.md) | Helm による Argo CD インストール手順（概要） |
 | [cert-manager.md](cert-manager.md) | cert-manager Helm インストール |
