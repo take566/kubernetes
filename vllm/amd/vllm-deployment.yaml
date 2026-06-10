@@ -67,6 +67,12 @@ spec:
                   optional: true
             - name: PYTORCH_HIP_ALLOC_CONF
               value: "expandable_segments:True"
+            # Pin GPU when multiple amd.com/gpu devices are visible on the node.
+            - name: HIP_VISIBLE_DEVICES
+              value: "0"
+            # Reduce Python/log overhead under load (validated via benchmark Job).
+            - name: VLLM_LOGGING_LEVEL
+              value: "WARNING"
           resources:
             requests:
               cpu: "2"

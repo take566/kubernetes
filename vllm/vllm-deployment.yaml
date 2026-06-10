@@ -67,6 +67,8 @@ spec:
                   name: vllm-secret
                   key: HF_TOKEN
                   optional: true
+            - name: VLLM_LOGGING_LEVEL
+              value: "WARNING"
           resources:
             requests:
               cpu: "2"

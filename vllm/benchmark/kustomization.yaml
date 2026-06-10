@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vllm
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: vllm
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: false
+configMapGenerator:
+  - name: vllm-benchmark-scripts
+    files:
+      - scripts/bench_vllm.py
+      - scripts/run_benchmark.sh
+      - scripts/perf_stat_server.sh
+    options:
+      disableNameSuffixHash: true
+resources:
+  - benchmark-configmap.yaml
+  - benchmark-job.yaml
+  # Server-side perf profiling (privileged). Apply separately when needed:
+  # kubectl apply -f benchmark-perf-job.yaml
+  # - benchmark-perf-job.yaml

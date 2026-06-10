@@ -186,15 +186,50 @@ curl -s http://localhost:8000/v1/chat/completions \
 
 ---
 
+## パフォーマンスベンチマーク（`perf`）
+
+[vllm/benchmark/](benchmark/) で **Linux `perf`** と API 負荷テストを実行します。
+
+```bash
+# 1. ベースライン（チューニング前の ConfigMap のまま計測する場合は先にスナップショット）
+kubectl apply -k vllm/benchmark/
+kubectl -n vllm wait --for=condition=complete job/vllm-benchmark --timeout=15m
+kubectl -n vllm logs job/vllm-benchmark | tee baseline.json
+
+# 2. サーバ側 perf（vLLM と同一 GPU ノードに nodeSelector を設定）
+kubectl apply -f vllm/benchmark/benchmark-perf-job.yaml
+kubectl -n vllm logs job/vllm-benchmark-perf
+```
+
+詳細: [benchmark/README.md](benchmark/README.md)
+
+---
+
 ## 設定変更（推論）
 
-`vllm/vllm-configmap.yaml`:
+`vllm/vllm-configmap.yaml` / `vllm/amd/vllm-configmap.yaml`:
 
 | キー | 説明 |
 |------|------|
 | `VLLM_MODEL` | Hugging Face モデル ID またはローカルパス |
-| `VLLM_EXTRA_ARGS` | 追加 CLI 引数 |
+| `VLLM_EXTRA_ARGS` | 追加 CLI 引数（パフォーマンスチューニング済みデフォルトあり） |
 | `HF_HOME` | モデルキャッシュ（PVC と一致） |
+
+### パフォーマンスチューニング（`VLLM_EXTRA_ARGS`）
+
+ベンチマーク結果を見ながら調整してください。デフォルト値は `vllm/benchmark/` の手順で検証を想定しています。
+
+| フラグ | NVIDIA デフォルト | AMD デフォルト | 説明 |
+|--------|-------------------|----------------|------|
+| `--gpu-memory-utilization` | 0.92 | 0.90 | KV キャッシュ用 VRAM 割合 |
+| `--max-num-seqs` | 256 | 128 | 同時シーケンス上限 |
+| `--max-model-len` | 4096 | 4096 | 最大コンテキスト長 |
+| `--enable-prefix-caching` | on | on | プレフィックスキャッシュ |
+| `--disable-log-requests` | on | on | リクエストログ無効化 |
+
+AMD Deployment 追加 env: `PYTORCH_HIP_ALLOC_CONF`, `HIP_VISIBLE_DEVICES`, `VLLM_LOGGING_LEVEL=WARNING`
+
+マルチ GPU 時は `--tensor-parallel-size <N>` を `VLLM_EXTRA_ARGS` に追加。
 
 ```bash
 kubectl apply -k vllm/amd/   # AMD 推論
@@ -253,6 +288,11 @@ vllm/
 │   ├── kustomization.yaml
 │   ├── vllm-deployment.yaml      # vllm-openai-rocm + amd.com/gpu
 │   └── ...
+├── benchmark/                    # perf + API ベンチマーク Job
+│   ├── README.md
+│   ├── benchmark-job.yaml
+│   ├── benchmark-perf-job.yaml
+│   └── scripts/
 ├── .gitignore
 └── README.md
 ```

@@ -1,0 +1,78 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vllm-benchmark-perf
+  namespace: vllm
+  labels:
+    app: vllm-benchmark-perf
+    app.kubernetes.io/name: vllm-benchmark-perf
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: vllm-benchmark-perf
+        app.kubernetes.io/name: vllm-benchmark-perf
+        app.kubernetes.io/part-of: vllm
+    spec:
+      restartPolicy: Never
+      # Schedule on the same node as the vLLM server for meaningful server-side perf.
+      # Uncomment and set after: kubectl get pod -n vllm -l app=vllm -o wide
+      # nodeSelector:
+      #   kubernetes.io/hostname: <gpu-node-name>
+      hostPID: true
+      hostNetwork: false
+      containers:
+        - name: perf
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              apt-get update -qq
+              apt-get install -y -qq linux-tools-generic linux-tools-common procps
+              # Symlink perf to host kernel version when possible
+              KVER="$(uname -r)"
+              if [[ -x "/usr/lib/linux-tools/${KVER}/perf" ]]; then
+                ln -sf "/usr/lib/linux-tools/${KVER}/perf" /usr/local/bin/perf
+              fi
+              chmod +x /scripts/perf_stat_server.sh
+              /scripts/perf_stat_server.sh
+          envFrom:
+            - configMapRef:
+                name: vllm-benchmark-config
+          env:
+            - name: PERF_OUTPUT_DIR
+              value: /tmp/vllm-perf
+          resources:
+            requests:
+              cpu: "250m"
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: host-proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: results
+              mountPath: /tmp/vllm-perf
+      volumes:
+        - name: scripts
+          configMap:
+            name: vllm-benchmark-scripts
+            defaultMode: 0755
+        - name: host-proc
+          hostPath:
+            path: /proc
+        - name: results
+          emptyDir: {}

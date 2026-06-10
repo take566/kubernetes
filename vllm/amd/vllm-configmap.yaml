@@ -12,5 +12,11 @@ data:
   VLLM_MODEL: "facebook/opt-125m"
   VLLM_HOST: "0.0.0.0"
   VLLM_PORT: "8000"
-  VLLM_EXTRA_ARGS: ""
+  # ROCm: lower max-num-seqs than NVIDIA; validate with vllm/benchmark/ on MI210/MI300.
+  VLLM_EXTRA_ARGS: >-
+    --gpu-memory-utilization 0.90
+    --max-num-seqs 128
+    --max-model-len 4096
+    --enable-prefix-caching
+    --disable-log-requests
   HF_HOME: "/data/huggingface"

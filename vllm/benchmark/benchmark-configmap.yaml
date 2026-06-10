@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-benchmark-config
+  namespace: vllm
+  labels:
+    app: vllm-benchmark
+    app.kubernetes.io/name: vllm-benchmark
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+data:
+  # Target vLLM Service (ClusterIP). Override for NodePort/port-forward tests.
+  VLLM_BASE_URL: "http://vllm.vllm.svc.cluster.local:8000"
+  VLLM_MODEL: "facebook/opt-125m"
+  BENCH_PROMPT: "Write a short paragraph about Kubernetes GPU scheduling."
+  BENCH_MAX_TOKENS: "64"
+  BENCH_WARMUP: "3"
+  BENCH_LATENCY_SAMPLES: "20"
+  BENCH_THROUGHPUT_REQUESTS: "50"
+  # Sweep concurrency on AMD nodes: try 2, 4, 8 after baseline
+  BENCH_CONCURRENCY: "4"
+  BENCH_TIMEOUT_S: "120"
+  BENCH_HEALTH_TIMEOUT_S: "600"
+  # Wrap client benchmark with perf stat (requires perf in benchmark image)
+  PERF_ENABLE: "false"
+  # Server-side perf Job settings (benchmark-perf-job.yaml)
+  PERF_MODE: "stat"
+  PERF_DURATION_S: "30"
+  VLLM_CONTAINER_NAME: "vllm"
