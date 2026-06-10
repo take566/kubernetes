@@ -1,0 +1,19 @@
+# PVC only — dynamic provisioning via local-path StorageClass (kubeadm addon)
+# Replaces vllm/vllm-pv.yaml hostPath pattern used on minikube
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vllm-model-cache
+  namespace: vllm
+  labels:
+    app: vllm
+    app.kubernetes.io/name: vllm
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 50Gi

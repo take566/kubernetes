@@ -1,0 +1,54 @@
+# Finetune PVCs for kubeadm (local-path, no static hostPath PV)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vllm-finetune-dataset
+  namespace: vllm
+  labels:
+    app: vllm-finetune
+    app.kubernetes.io/name: vllm-finetune
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vllm-finetune-output
+  namespace: vllm
+  labels:
+    app: vllm-finetune
+    app.kubernetes.io/name: vllm-finetune
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 30Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vllm-finetune-hf-cache
+  namespace: vllm
+  labels:
+    app: vllm-finetune
+    app.kubernetes.io/name: vllm-finetune
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 50Gi

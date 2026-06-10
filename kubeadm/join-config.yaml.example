@@ -1,0 +1,23 @@
+# Worker join configuration template (optional — kubeadm join flags also work)
+# 1. On control plane after init: kubeadm token create --print-join-command
+# 2. Copy certificate key from init output or: kubeadm init phase upload-certs --upload-certs
+# 3. Replace placeholders below, then: kubeadm join --config kubeadm/join-config.yaml
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: JoinConfiguration
+controlPlane:
+  certificateKey: "REPLACE_WITH_CERTIFICATE_KEY_FROM_CONTROL_PLANE"
+nodeRegistration:
+  criSocket: unix:///var/run/containerd/containerd.sock
+  kubeletExtraArgs:
+    cgroup-driver: systemd
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "cp.example.com:6443"
+    token: "REPLACE_WITH_JOIN_TOKEN"
+    caCertHashes:
+      - "sha256:REPLACE_WITH_CA_CERT_HASH"
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
