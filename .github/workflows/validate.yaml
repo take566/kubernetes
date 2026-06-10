@@ -26,6 +26,13 @@ jobs:
             vllm/components/amd/*.yaml \
             vllm/components/finetune/*.yaml \
             vllm/benchmark/*.yaml \
+            vllm/overlays/kubeadm/*.yaml \
+            vllm/overlays/kubeadm/amd/*.yaml \
+            vllm/overlays/kubeadm/finetune/*.yaml \
+            vllm/overlays/kind/*.yaml \
+            vllm/overlays/kind/amd/*.yaml \
+            vllm/overlays/kind/finetune/*.yaml \
+            .github/workflows/*.yaml \
             kind/*.yaml \
             kind/addons/*.yaml \
             argocd/apps/*.yaml
@@ -62,6 +69,14 @@ jobs:
               -schema-location default \
               -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
               -ignore-missing-schemas
+
+  model-profiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate vLLM model profiles JSON
+        run: python3 vllm/benchmark/scripts/validate_model_profiles.py
 
   kustomize:
     runs-on: ubuntu-latest

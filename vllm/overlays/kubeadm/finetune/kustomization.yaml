@@ -11,3 +11,5 @@ labels:
 resources:
   - ../../../components/finetune
   - ../finetune-pvc.yaml
+patches:
+  - path: model-patch.yaml

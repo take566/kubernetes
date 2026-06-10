@@ -20,6 +20,20 @@ done
 
 ERRORS=0
 
+# vLLM model profiles JSON
+echo ""
+echo "--- Validating vllm/benchmark/model-profiles.json ---"
+if command -v python3 &> /dev/null; then
+  if python3 vllm/benchmark/scripts/validate_model_profiles.py; then
+    echo -e "  ${GREEN}OK${NC}: model-profiles.json"
+  else
+    echo -e "  ${RED}FAIL${NC}: model-profiles.json"
+    ERRORS=$((ERRORS + 1))
+  fi
+else
+  echo -e "  ${GREEN}SKIP${NC}: model-profiles.json (python3 not installed)"
+fi
+
 # Dry-run validation for each directory
 for dir in elk-stack prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune; do
   echo ""

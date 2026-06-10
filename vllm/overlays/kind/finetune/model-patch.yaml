@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: finetune-config
+  namespace: vllm
+data:
+  # Smaller model for kind / smoke LoRA runs
+  BASE_MODEL: "Qwen/Qwen2.5-0.5B-Instruct"
+  MAX_SEQ_LENGTH: "2048"
+  PER_DEVICE_BATCH_SIZE: "4"
+  GRADIENT_ACCUMULATION_STEPS: "4"

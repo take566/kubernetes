@@ -13,6 +13,8 @@
 | `scripts/perf_stat_server.sh` | vLLM サーバプロセスへの `perf stat` / `perf record` |
 | `benchmark-configmap.yaml` | ベンチパラメータ |
 | `benchmark-job.yaml` | クラスタ内から vLLM Service へ負荷をかける Job |
+| `model-candidates.yaml` | 比較候補モデル一覧（JSON） |
+| `scripts/compare_models.sh` | 候補を順にデプロイしてベンチマーク比較 |
 | `benchmark-perf-job.yaml` | GPU ノード上でサーバ側 `perf`（privileged / hostPID） |
 
 ## 前提
@@ -62,7 +64,35 @@ kubectl apply -k vllm/benchmark/
 kubectl -n vllm logs -f job/vllm-benchmark > baseline-after.json
 ```
 
-### 3. 並列度スイープ（バッチサイズ相当）
+### 3. 複数モデル比較（選定用）
+
+```bash
+chmod +x vllm/benchmark/scripts/compare_models.sh
+
+# デフォルト: opt-125m → Qwen2.5-0.5B → Qwen2.5-1.5B
+./vllm/benchmark/scripts/compare_models.sh
+
+# 拡張候補（LFM + Qwen3.6 + Gemma4）
+COMPARE_SET=extended ./vllm/benchmark/scripts/compare_models.sh
+
+# 候補を指定（model-profiles.json の extra_args を自動適用）
+MODELS="LiquidAI/LFM2.5-1.2B-Instruct google/gemma-4-E4B-it" \
+  ./vllm/benchmark/scripts/compare_models.sh
+```
+
+プロファイル定義: `model-profiles.json` · ドキュメント: [../docs/MODEL_CANDIDATES_EXTENDED.md](../docs/MODEL_CANDIDATES_EXTENDED.md)
+
+結果は `./vllm-bench-results/compare-<timestamp>/` に JSON 保存されます。選定ドキュメント: [../docs/MODEL_SELECTION.md](../docs/MODEL_SELECTION.md)
+
+### CI（セルフホスト runner）
+
+GPU 付きクラスタに ARC runner がある場合:
+
+1. GitHub → Actions → **vLLM Model Benchmark** → Run workflow
+2. 成果物 `vllm-benchmark-<run_id>` から JSON を取得
+3. [../docs/BENCHMARK_RESULTS.md](../docs/BENCHMARK_RESULTS.md) の実測ログ表を更新
+
+### 4. 並列度スイープ（バッチサイズ相当）
 
 `benchmark-configmap.yaml` の `BENCH_CONCURRENCY` を `2` → `4` → `8` と変更し、スループットと p99 のトレードオフを記録します。
 
@@ -119,7 +149,7 @@ Port-forward または NodePort 経由:
 ```bash
 kubectl -n vllm port-forward svc/vllm 8000:8000 &
 export VLLM_BASE_URL=http://127.0.0.1:8000
-export VLLM_MODEL=facebook/opt-125m
+export VLLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct
 
 pip install aiohttp
 python3 vllm/benchmark/scripts/bench_vllm.py
@@ -155,7 +185,7 @@ AMD 追加 env（Deployment）:
 
 ## 期待される改善（参考値）
 
-モデル・GPU により異なります。`facebook/opt-125m` のスモークテストでは:
+モデル・GPU により異なります。`Qwen/Qwen2.5-1.5B-Instruct`（kubeadm デフォルト）の目安:
 
 | 変更 | 期待 |
 |------|------|

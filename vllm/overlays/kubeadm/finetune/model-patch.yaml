@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: finetune-config
+  namespace: vllm
+data:
+  # Align with production inference — vllm/docs/MODEL_SELECTION.md
+  BASE_MODEL: "Qwen/Qwen2.5-1.5B-Instruct"
+  MAX_SEQ_LENGTH: "4096"
+  PER_DEVICE_BATCH_SIZE: "2"
+  GRADIENT_ACCUMULATION_STEPS: "8"

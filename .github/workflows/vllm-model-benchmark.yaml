@@ -1,0 +1,70 @@
+name: vLLM Model Benchmark
+
+# Runs on self-hosted ARC runner with kubectl + GPU access to the cluster.
+# Prerequisite: vllm deployment synced (argocd app sync vllm-kubeadm).
+on:
+  workflow_dispatch:
+    inputs:
+      compare_set:
+        description: "Candidate set: default | extended | all"
+        required: false
+        default: "default"
+      models:
+        description: "Space-separated HuggingFace model IDs (overrides compare_set)"
+        required: false
+        default: ""
+      skip_deploy_check:
+        description: "Skip vllm deployment preflight"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  model-benchmark:
+    runs-on: k8s-self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes -o wide
+          if [ "${{ inputs.skip_deploy_check }}" != "true" ]; then
+            kubectl -n vllm get deploy/vllm
+            kubectl -n vllm get pods -l app=vllm -o wide
+          fi
+
+      - name: Install benchmark dependencies
+        run: |
+          python3 -m pip install --quiet aiohttp
+
+      - name: Run model comparison
+        env:
+          RESULTS_DIR: ${{ github.workspace }}/vllm-bench-results
+          INPUT_MODELS: ${{ inputs.models }}
+          INPUT_COMPARE_SET: ${{ inputs.compare_set }}
+          COMPARE_PROFILES: vllm/benchmark/model-profiles.json
+          CONTINUE_ON_ERROR: "true"
+          NAMESPACE: vllm
+          DEPLOYMENT: vllm
+        run: |
+          chmod +x vllm/benchmark/scripts/compare_models.sh
+          if [ -n "${INPUT_MODELS}" ]; then
+            export MODELS="${INPUT_MODELS}"
+          else
+            export COMPARE_SET="${INPUT_COMPARE_SET}"
+          fi
+          ./vllm/benchmark/scripts/compare_models.sh
+
+      - name: Summarize results
+        if: always()
+        run: |
+          find vllm-bench-results -name '*.json' -print -exec head -c 500 {} \; 2>/dev/null || true
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vllm-benchmark-${{ github.run_id }}
+          path: vllm-bench-results/
+          if-no-files-found: warn

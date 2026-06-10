@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-model-candidates
+  namespace: vllm
+  labels:
+    app: vllm-benchmark
+    app.kubernetes.io/name: vllm-benchmark
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+data:
+  # JSON array — used by compare_models.sh / CI workflows
+  MODEL_CANDIDATES: |
+    [
+      {"id": "facebook/opt-125m", "family": "legacy", "tier": "smoke", "est_vram_gib": 0.5, "gated": false},
+      {"id": "Qwen/Qwen2.5-0.5B-Instruct", "family": "qwen2.5", "tier": "kind", "est_vram_gib": 1.0, "gated": false},
+      {"id": "Qwen/Qwen2.5-1.5B-Instruct", "family": "qwen2.5", "tier": "production", "est_vram_gib": 3.0, "gated": false},
+      {"id": "LiquidAI/LFM2.5-350M", "family": "lfm", "tier": "smoke", "est_vram_gib": 1.0, "gated": false},
+      {"id": "LiquidAI/LFM2.5-1.2B-Instruct", "family": "lfm", "tier": "candidate", "est_vram_gib": 2.5, "gated": false},
+      {"id": "Qwen/Qwen3.6-35B-A3B", "family": "qwen3.6", "tier": "candidate-moe", "est_vram_gib": 22.0, "gated": false},
+      {"id": "Qwen/Qwen3.6-27B", "family": "qwen3.6", "tier": "candidate-large", "est_vram_gib": 54.0, "gated": false},
+      {"id": "google/gemma-4-E2B-it", "family": "gemma4", "tier": "candidate", "est_vram_gib": 6.0, "gated": true},
+      {"id": "google/gemma-4-E4B-it", "family": "gemma4", "tier": "candidate", "est_vram_gib": 10.0, "gated": true},
+      {"id": "google/gemma-4-12B-it", "family": "gemma4", "tier": "candidate-large", "est_vram_gib": 24.0, "gated": true}
+    ]
+  SELECTED_PRODUCTION: "Qwen/Qwen2.5-1.5B-Instruct"
+  SELECTED_KIND: "Qwen/Qwen2.5-0.5B-Instruct"
+  EXTENDED_COMPARE_SET: "LiquidAI/LFM2.5-350M LiquidAI/LFM2.5-1.2B-Instruct Qwen/Qwen3.6-35B-A3B google/gemma-4-E2B-it google/gemma-4-E4B-it"
+  PROFILES_FILE: "model-profiles.json"

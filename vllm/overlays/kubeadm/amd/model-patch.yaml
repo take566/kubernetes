@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-config
+  namespace: vllm
+data:
+  VLLM_MODEL: "Qwen/Qwen2.5-1.5B-Instruct"
+  VLLM_EXTRA_ARGS: >-
+    --gpu-memory-utilization 0.88
+    --max-num-seqs 128
+    --max-model-len 8192
+    --max-num-batched-tokens 4096
+    --enable-prefix-caching
+    --enable-chunked-prefill
+    --disable-log-requests

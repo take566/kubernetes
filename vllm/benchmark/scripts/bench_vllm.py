@@ -67,6 +67,17 @@ def percentile(values: list[float], p: float) -> float:
     return ordered[f] + (ordered[c] - ordered[f]) * (k - f)
 
 
+def _disable_thinking_payload(model: str) -> dict[str, Any]:
+    """Extra API fields for Qwen3.6 / thinking models (fair latency benchmarks)."""
+    flag = os.environ.get("BENCH_DISABLE_THINKING", "").lower()
+    auto = "Qwen3.6" in model or "qwen3.6" in model.lower()
+    if flag not in ("1", "true", "yes") and not auto:
+        return {}
+    kwargs = {"enable_thinking": False}
+    # vLLM OpenAI-compatible API accepts chat_template_kwargs via extra_body
+    return {"extra_body": {"chat_template_kwargs": kwargs}}
+
+
 async def chat_completion(
     session: aiohttp.ClientSession,
     base_url: str,
@@ -77,13 +88,14 @@ async def chat_completion(
 ) -> tuple[float, int]:
     """Return (latency_ms, output_tokens)."""
     url = f"{base_url.rstrip('/')}/v1/chat/completions"
-    payload = {
+    payload: dict[str, Any] = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": max_tokens,
         "temperature": 0.0,
         "stream": False,
     }
+    payload.update(_disable_thinking_payload(model))
     start = time.perf_counter()
     async with session.post(
         url,

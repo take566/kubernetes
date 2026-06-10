@@ -11,7 +11,7 @@ metadata:
 data:
   # Target vLLM Service (ClusterIP). Override for NodePort/port-forward tests.
   VLLM_BASE_URL: "http://vllm.vllm.svc.cluster.local:8000"
-  VLLM_MODEL: "facebook/opt-125m"
+  VLLM_MODEL: "Qwen/Qwen2.5-1.5B-Instruct"
   BENCH_PROMPT: "Write a short paragraph about Kubernetes GPU scheduling."
   BENCH_MAX_TOKENS: "64"
   BENCH_WARMUP: "3"
@@ -21,6 +21,8 @@ data:
   BENCH_CONCURRENCY: "4"
   BENCH_TIMEOUT_S: "120"
   BENCH_HEALTH_TIMEOUT_S: "600"
+  # Disable Qwen3.6 thinking traces for comparable latency (see bench_vllm.py)
+  BENCH_DISABLE_THINKING: "true"
   # Wrap client benchmark with perf stat (requires perf in benchmark image)
   PERF_ENABLE: "false"
   # Server-side perf Job settings (benchmark-perf-job.yaml)

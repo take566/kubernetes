@@ -1,0 +1,79 @@
+[
+  {
+    "id": "LiquidAI/LFM2.5-350M",
+    "family": "lfm",
+    "tier": "smoke",
+    "est_vram_gib": 1.0,
+    "gated": false,
+    "vllm_min": "0.14.0",
+    "languages": ["en", "ja", "zh"],
+    "extra_args": "--gpu-memory-utilization 0.90 --max-num-seqs 128 --max-model-len 4096 --max-num-batched-tokens 2048 --enable-prefix-caching --enable-chunked-prefill --disable-log-requests",
+    "notes": "LFM2.5 on-device; vLLM 0.14+; Japanese supported"
+  },
+  {
+    "id": "LiquidAI/LFM2.5-1.2B-Instruct",
+    "family": "lfm",
+    "tier": "candidate",
+    "est_vram_gib": 2.5,
+    "gated": false,
+    "vllm_min": "0.14.0",
+    "languages": ["en", "ja", "zh"],
+    "extra_args": "--gpu-memory-utilization 0.92 --max-num-seqs 256 --max-model-len 8192 --max-num-batched-tokens 8192 --enable-prefix-caching --enable-chunked-prefill --disable-log-requests",
+    "notes": "LFM2.5 flagship text; strong edge/agent use case"
+  },
+  {
+    "id": "Qwen/Qwen3.6-35B-A3B",
+    "family": "qwen3.6",
+    "tier": "candidate-moe",
+    "est_vram_gib": 22.0,
+    "gated": false,
+    "vllm_min": "0.8.5",
+    "languages": ["en", "ja", "zh"],
+    "extra_args": "--gpu-memory-utilization 0.90 --max-num-seqs 64 --max-model-len 8192 --max-num-batched-tokens 4096 --enable-chunked-prefill --default-chat-template-kwargs '{\"enable_thinking\": false}' --disable-log-requests",
+    "notes": "MoE ~3B active; multimodal native; needs 24GB+ GPU for BF16; disable thinking for latency"
+  },
+  {
+    "id": "Qwen/Qwen3.6-27B",
+    "family": "qwen3.6",
+    "tier": "candidate-large",
+    "est_vram_gib": 54.0,
+    "gated": false,
+    "vllm_min": "0.8.5",
+    "languages": ["en", "ja", "zh"],
+    "extra_args": "--gpu-memory-utilization 0.90 --max-num-seqs 32 --max-model-len 4096 --tensor-parallel-size 2 --default-chat-template-kwargs '{\"enable_thinking\": false}' --disable-log-requests",
+    "notes": "Dense 27B; requires multi-GPU or 80GB+; include for cluster capability probe only"
+  },
+  {
+    "id": "google/gemma-4-E2B-it",
+    "family": "gemma4",
+    "tier": "candidate",
+    "est_vram_gib": 6.0,
+    "gated": true,
+    "vllm_min": "0.14.0",
+    "languages": ["en"],
+    "extra_args": "--gpu-memory-utilization 0.88 --max-num-seqs 64 --max-model-len 4096 --max-num-batched-tokens 2048 --limit-mm-per-prompt '{\"image\": 0, \"audio\": 0}' --enable-chunked-prefill --disable-log-requests",
+    "notes": "Gemma4 effective 2B; text-only via limit-mm-per-prompt; vLLM recipes recommend 24GB+"
+  },
+  {
+    "id": "google/gemma-4-E4B-it",
+    "family": "gemma4",
+    "tier": "candidate",
+    "est_vram_gib": 10.0,
+    "gated": true,
+    "vllm_min": "0.14.0",
+    "languages": ["en"],
+    "extra_args": "--gpu-memory-utilization 0.88 --max-num-seqs 64 --max-model-len 4096 --max-num-batched-tokens 4096 --limit-mm-per-prompt '{\"image\": 0, \"audio\": 0}' --enable-chunked-prefill --disable-log-requests",
+    "notes": "Gemma4 effective 4B; text-only; may need vllm-openai:gemma4 image"
+  },
+  {
+    "id": "google/gemma-4-12B-it",
+    "family": "gemma4",
+    "tier": "candidate-large",
+    "est_vram_gib": 24.0,
+    "gated": true,
+    "vllm_min": "0.14.0",
+    "languages": ["en"],
+    "extra_args": "--gpu-memory-utilization 0.90 --max-num-seqs 32 --max-model-len 4096 --limit-mm-per-prompt '{\"image\": 0, \"audio\": 0}' --enable-chunked-prefill --disable-log-requests",
+    "notes": "Unified multimodal 12B; vLLM min 40GB GPU per recipes"
+  }
+]

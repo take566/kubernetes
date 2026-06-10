@@ -13,10 +13,18 @@ configMapGenerator:
       - scripts/bench_vllm.py
       - scripts/run_benchmark.sh
       - scripts/perf_stat_server.sh
+      - scripts/compare_models.sh
+      - scripts/validate_model_profiles.py
+  - name: vllm-model-profiles
+    files:
+      - model-profiles.json
+    options:
+      disableNameSuffixHash: true
     options:
       disableNameSuffixHash: true
 resources:
   - benchmark-configmap.yaml
+  - model-candidates.yaml
   - benchmark-job.yaml
   # Server-side perf profiling (privileged). Apply separately when needed:
   # kubectl apply -f benchmark-perf-job.yaml

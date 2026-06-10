@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/part-of: vllm
     app.kubernetes.io/managed-by: kustomize
 data:
-  # Small public model for initial smoke tests. Change before production use.
+  # Base fallback (overlays patch per cluster). See vllm/docs/MODEL_SELECTION.md
   VLLM_MODEL: "facebook/opt-125m"
   VLLM_HOST: "0.0.0.0"
   VLLM_PORT: "8000"

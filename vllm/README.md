@@ -28,7 +28,7 @@ kubectl apply -k vllm/overlays/kubeadm/finetune/  # AMD 学習 Job
 | **GPU ノード（推論・AMD / 学習）** | ROCm 対応 AMD GPU（`amd.com/gpu`） |
 | **Device Plugin** | NVIDIA: [k8s-device-plugin](https://github.com/NVIDIA/k8s-device-plugin) / AMD: [ROCm k8s-device-plugin](https://github.com/ROCm/k8s-device-plugin) または [AMD GPU Operator](https://instinct.docs.amd.com/projects/gpu-operator/) |
 | **ストレージ** | モデルキャッシュ・学習データ・チェックポイント用 PV |
-| **モデル** | 推論デフォルト: `facebook/opt-125m`。学習デフォルト: `meta-llama/Llama-3.2-1B-Instruct`（要 HF トークンの場合あり） |
+| **モデル** | 推論・学習とも Qwen2.5 系（kubeadm: 1.5B / kind: 0.5B）— [docs/MODEL_SELECTION.md](docs/MODEL_SELECTION.md) |
 | **Hugging Face トークン** | ゲート付きモデル利用時は `vllm-secret.example.yaml` をコピーして Secret を作成 |
 
 ### GPU リソース名（AMD）
@@ -188,10 +188,29 @@ curl -s http://localhost:8000/v1/models | jq .
 curl -s http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "facebook/opt-125m",
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
     "messages": [{"role": "user", "content": "Hello!"}],
     "max_tokens": 64
   }' | jq .
+```
+
+---
+
+## モデル選定
+
+overlay ごとに `VLLM_MODEL` をパッチしています（`vllm/overlays/*/model-patch.yaml`）。
+
+| 環境 | モデル | 用途 |
+|------|--------|------|
+| kubeadm / kubeadm/amd | `Qwen/Qwen2.5-1.5B-Instruct` | 本番推論（日本語・ゲートなし） |
+| kind / kind/amd | `Qwen/Qwen2.5-0.5B-Instruct` | ローカル/CI スモーク |
+
+候補比較と選定根拠: [docs/MODEL_SELECTION.md](docs/MODEL_SELECTION.md)
+
+```bash
+# 複数候補を順にデプロイしてベンチマーク比較（GPU クラスタ上）
+chmod +x vllm/benchmark/scripts/compare_models.sh
+./vllm/benchmark/scripts/compare_models.sh
 ```
 
 ---
@@ -233,8 +252,10 @@ kubectl -n vllm logs job/vllm-benchmark-perf
 |--------|-------------------|----------------|------|
 | `--gpu-memory-utilization` | 0.92 | 0.90 | KV キャッシュ用 VRAM 割合 |
 | `--max-num-seqs` | 256 | 128 | 同時シーケンス上限 |
-| `--max-model-len` | 4096 | 4096 | 最大コンテキスト長 |
+| `--max-model-len` | 8192（kubeadm overlay） | 8192（kubeadm/amd） | 最大コンテキスト長 |
+| `--max-num-batched-tokens` | 8192 | 4096 | バッチあたりトークン上限 |
 | `--enable-prefix-caching` | on | on | プレフィックスキャッシュ |
+| `--enable-chunked-prefill` | on | on | 長コンテキスト TTFT 改善 |
 | `--disable-log-requests` | on | on | リクエストログ無効化 |
 
 AMD Deployment 追加 env: `PYTORCH_HIP_ALLOC_CONF`, `HIP_VISIBLE_DEVICES`, `VLLM_LOGGING_LEVEL=WARNING`

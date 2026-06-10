@@ -10,7 +10,8 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
 data:
   # --- Model & paths ---
-  BASE_MODEL: "meta-llama/Llama-3.2-1B-Instruct"
+  # Overlays patch per cluster. Default matches kubeadm inference (Qwen2.5-1.5B).
+  BASE_MODEL: "Qwen/Qwen2.5-1.5B-Instruct"
   DATASET_PATH: "/data/dataset"
   OUTPUT_DIR: "/data/output"
   HF_HOME: "/data/huggingface"
