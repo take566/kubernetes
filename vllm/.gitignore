@@ -1,1 +1,3 @@
 vllm-secret.yaml
+__pycache__/
+*.pyc
