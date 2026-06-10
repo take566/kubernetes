@@ -153,7 +153,7 @@ kubernetes/
 - [x] Skaffold導入（ローカル開発改善）
 - [x] GitLab必要性の最終判断 → 維持決定
 - [x] GitHub Actions CIパイプライン導入（yamllint + kubeconform + Trivy）
-- [x] scripts/bootstrap.sh（Minikube + ArgoCD自動セットアップ）
+- [x] scripts/bootstrap.sh（既存クラスタ + ArgoCD 自動セットアップ — minikube 非推奨）
 - [x] scripts/validate.sh（ローカルマニフェスト検証）
 - [x] policies/resource-quotas/dev-quota.yaml（ResourceQuota）
 

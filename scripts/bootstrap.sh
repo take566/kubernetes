@@ -1,5 +1,6 @@
 #!/bin/bash
-# Bootstrap script for Minikube + ArgoCD setup
+# Bootstrap Argo CD on an existing Kubernetes cluster (kubeadm / kind / cloud).
+# For cluster creation see kubeadm/README.md
 # Usage: ./scripts/bootstrap.sh
 
 set -euo pipefail
@@ -14,7 +15,7 @@ echo "=== Kubernetes Platform Bootstrap ==="
 # 1. Check prerequisites
 echo ""
 echo "--- Checking prerequisites ---"
-for tool in minikube kubectl helm; do
+for tool in kubectl helm; do
   if command -v "$tool" &> /dev/null; then
     echo -e "  ${GREEN}OK${NC}: $tool ($($tool version --short 2>/dev/null || $tool version 2>/dev/null | head -1))"
   else
@@ -23,18 +24,14 @@ for tool in minikube kubectl helm; do
   fi
 done
 
-# 2. Start Minikube if not running
-echo ""
-echo "--- Minikube ---"
-if minikube status | grep -q "Running"; then
-  echo -e "  ${GREEN}Already running${NC}"
-else
-  echo -e "  ${YELLOW}Starting Minikube...${NC}"
-  minikube start --cpus=8 --memory=16384 --driver=docker
-  echo -e "  ${GREEN}Minikube started${NC}"
+if ! kubectl cluster-info &> /dev/null; then
+  echo -e "  ${RED}ERROR${NC}: kubectl cannot reach a cluster. Bootstrap kubeadm first:"
+  echo "    See kubeadm/README.md"
+  exit 1
 fi
+echo -e "  ${GREEN}OK${NC}: cluster reachable ($(kubectl config current-context 2>/dev/null || echo unknown))"
 
-# 3. Install ArgoCD
+# 2. Install ArgoCD
 echo ""
 echo "--- ArgoCD ---"
 if kubectl get namespace argocd &> /dev/null; then
@@ -50,7 +47,7 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/st
 echo "  Waiting for ArgoCD to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
 
-# 4. Get ArgoCD admin password
+# 3. Get ArgoCD admin password
 echo ""
 echo "--- ArgoCD Credentials ---"
 ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" 2>/dev/null | base64 -d)
@@ -61,13 +58,16 @@ else
   echo -e "  ${YELLOW}Initial admin secret not found (may have been deleted)${NC}"
 fi
 
-# 5. Apply root application
+# 4. Apply root application
 echo ""
 echo "--- Deploying Root Application ---"
 kubectl apply -f argocd/apps/root-application.yaml
 echo -e "  ${GREEN}Root application deployed${NC}"
+echo ""
+echo -e "  ${YELLOW}vLLM:${NC} production syncs via vllm-kubeadm → vllm/overlays/kubeadm"
+echo "  See argocd/apps/DEPRECATED.md (minikube vllm-app removed)"
 
-# 6. Port forward ArgoCD UI
+# 5. Port forward ArgoCD UI
 echo ""
 echo -e "${GREEN}=== Bootstrap Complete ===${NC}"
 echo ""

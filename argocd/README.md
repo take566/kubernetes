@@ -80,6 +80,24 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 - **nginx-app.yaml**: Nginxアプリケーション（ネームスペース: `default`）
 - **cert-manager-app.yaml**: Cert-Managerアプリケーション（ネームスペース: `cert-manager`）
 - **gitlab-app.yaml**: GitLabアプリケーション（ネームスペース: `gitlab`）
+- **vllm-kubeadm-app.yaml**: vLLM NVIDIA 推論（kubeadm overlay、自動同期）
+- **vllm-amd-app.yaml**: vLLM AMD 推論（manual sync）
+- **vllm-finetune-app.yaml**: vLLM AMD 学習 Job（manual sync）
+- **vllm-benchmark-app.yaml**: vLLM ベンチマーク Job（manual sync）
+
+廃止済み: `vllm-app.yaml`（minikube / root `vllm/`）→ [apps/DEPRECATED.md](apps/DEPRECATED.md)
+
+### vLLM Application マトリクス
+
+| Application | Path | Auto sync | Namespace |
+|-------------|------|-----------|-----------|
+| vllm-kubeadm | `vllm/overlays/kubeadm` | Yes | vllm |
+| vllm-kind | `vllm/overlays/kind` | Yes | vllm |
+| vllm-amd | `vllm/overlays/kubeadm/amd` | No | vllm |
+| vllm-finetune | `vllm/overlays/kubeadm/finetune` | No | vllm |
+| vllm-benchmark | `vllm/benchmark` | No | vllm |
+
+同一 `vllm` namespace では推論スタックの auto sync は **1 つだけ**（NVIDIA kubeadm **または** kind **または** AMD）。
 
 ### セットアップ手順
 

@@ -75,8 +75,8 @@ kubectl -n vllm get pods -o wide
 ```bash
 # kubeadm + local-path ストレージ
 kubectl apply -k vllm/overlays/kubeadm/
-kubectl apply -k vllm/amd/          # AMD ノード
-kubectl apply -k vllm/finetune/     # 学習 Job（PVC は overlay で local-path）
+kubectl apply -k vllm/overlays/kubeadm/amd/
+kubectl apply -k vllm/overlays/kubeadm/finetune/
 ```
 
-Argo CD 利用時は `argocd/apps/vllm-app.yaml` の path を `vllm/overlays/kubeadm` に変更するか、別 Application を追加してください。
+Argo CD: `vllm-kubeadm`（NVIDIA auto sync）、`vllm-amd` / `vllm-finetune`（manual）。同一 namespace で推論スタックは 1 つのみ auto sync すること。

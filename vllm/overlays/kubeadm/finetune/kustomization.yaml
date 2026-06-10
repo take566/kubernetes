@@ -9,7 +9,7 @@ labels:
     includeSelectors: false
     includeTemplates: false
 resources:
-  - ../../finetune/finetune-configmap.yaml
-  - ../../finetune/finetune-entrypoint-configmap.yaml
-  - finetune-pvc.yaml
-  - ../../finetune/finetune-job.yaml
+  - ../../../finetune/finetune-configmap.yaml
+  - ../../../finetune/finetune-entrypoint-configmap.yaml
+  - ../finetune-pvc.yaml
+  - ../../../finetune/finetune-job.yaml

@@ -1,17 +1,16 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Base stack with hostPath PV — for minikube legacy only.
-# Production: use overlays/kubeadm/ or overlays/kind/ (see README.md).
 namespace: vllm
 labels:
   - pairs:
       app.kubernetes.io/part-of: vllm
       app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/cluster: kind
     includeSelectors: false
     includeTemplates: false
 resources:
-  - namespace.yaml
-  - vllm-configmap.yaml
-  - vllm-pv.yaml
-  - vllm-deployment.yaml
-  - vllm-service.yaml
+  - ../../../amd/namespace.yaml
+  - ../../../amd/vllm-configmap.yaml
+  - vllm-pvc.yaml
+  - ../../../amd/vllm-deployment.yaml
+  - ../../../amd/vllm-service.yaml

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: vllm
+  name: vllm-kind
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -10,14 +10,12 @@ spec:
   source:
     repoURL: https://github.com/take566/kubernetes.git
     targetRevision: master
-    path: vllm
+    path: vllm/overlays/kind
   destination:
     server: https://kubernetes.default.svc
     namespace: vllm
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    # Manual sync — kind has no GPU; avoid auto-deploying GPU workloads in dev/CI
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground

@@ -21,7 +21,12 @@ jobs:
             elk-stack/*.yaml \
             prometheus/*.yaml \
             nexus/*.yaml \
-            nginx/*.yaml \`n            vllm/*.yaml \`n            vllm/amd/*.yaml \`n            vllm/finetune/*.yaml \
+            nginx/*.yaml \
+            vllm/*.yaml \
+            vllm/amd/*.yaml \
+            vllm/finetune/*.yaml \
+            kind/*.yaml \
+            kind/addons/*.yaml \
             argocd/apps/*.yaml
 
   validate:
@@ -52,6 +57,30 @@ jobs:
               -schema-location default \
               -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
               -ignore-missing-schemas
+
+  kustomize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Validate Kustomize builds
+        run: |
+          set -euo pipefail
+          for dir in \
+            kubeadm/addons \
+            kind/addons \
+            vllm/overlays/kubeadm \
+            vllm/overlays/kubeadm/amd \
+            vllm/overlays/kubeadm/finetune \
+            vllm/overlays/kind \
+            vllm/overlays/kind/amd \
+            vllm/overlays/kind/finetune; do
+            echo "kubectl kustomize ${dir}"
+            kubectl kustomize "${dir}" --load-restrictor LoadRestrictionsNone > /dev/null
+          done
 
   security-scan:
     runs-on: ubuntu-latest

@@ -3,6 +3,9 @@ kind: Application
 metadata:
   name: vllm-finetune
   namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/cluster: kubeadm
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -10,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/take566/kubernetes.git
     targetRevision: master
-    path: vllm/finetune
+    path: vllm/overlays/kubeadm/finetune
   destination:
     server: https://kubernetes.default.svc
     namespace: vllm

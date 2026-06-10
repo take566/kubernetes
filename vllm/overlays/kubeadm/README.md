@@ -21,7 +21,14 @@ kubectl apply -k vllm/overlays/kubeadm/finetune/  # AMD 学習 Job
 
 ## Argo CD
 
-`argocd/apps/vllm-app.yaml` の `path` を `vllm/overlays/kubeadm` に変更するか、環境用 Application を追加してください。
+| Application | Path | Sync |
+|-------------|------|------|
+| `vllm-kubeadm` | `vllm/overlays/kubeadm` | automated |
+| `vllm-amd` | `vllm/overlays/kubeadm/amd` | manual |
+| `vllm-finetune` | `vllm/overlays/kubeadm/finetune` | manual |
+| `vllm-benchmark` | `vllm/benchmark` | manual |
+
+`vllm-app`（root `vllm/`）は削除済み。詳細: [argocd/apps/DEPRECATED.md](../../argocd/apps/DEPRECATED.md)
 
 ## Longhorn 利用時
 

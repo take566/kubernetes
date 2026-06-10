@@ -127,7 +127,7 @@ docker push docker-registry.local:8082/my-app:latest
 - **マウント先**: `/nexus-data`
 - **ホストパス**: `/data/nexus` (ノード上)
 
-> **注**: Minikube の場合は、ホスト側に `/data/nexus` ディレクトリを事前作成してください
+> **注**: hostPath 利用時は、各ノード上に `/data/nexus` を事前作成してください（minikube は [非推奨](../deprecated/minikube/README.md)）
 
 ## 🔍 トラブルシューティング
 
@@ -147,10 +147,7 @@ kubectl -n nexus describe pod <pod-name>
 # PersistentVolume の権限確認
 kubectl -n nexus describe pvc nexus-pvc
 
-# ホスト側の権限確認 (Minikube の場合)
-minikube ssh
-ls -la /data/nexus
-chmod -R 777 /data/nexus
+# ホスト側の権限確認 (hostPath 利用時)
 ```
 
 ### メモリ不足エラー

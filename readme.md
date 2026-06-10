@@ -5,16 +5,17 @@ $ chmod +x kubectl
 $ sudo mv ./kubectl /usr/local/bin/
 $ kubectl version --client
  ```
-# minikube インストール
-```
-$ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-$ sudo install minikube-linux-amd64 /usr/local/bin/minikube
-```
-```
-sudo usermod -aG docker $USER && newgrp docker
-minikube config set driver docker
-minikube start --driver=docker
-```
+
+## クラスタ Bootstrap
+
+| 用途 | 手順 |
+|------|------|
+| **本番 / kubeadm** | [kubeadm/README.md](kubeadm/README.md) |
+| **ローカル dev (kind)** | [kind/README.md](kind/README.md) |
+| minikube | **非推奨** — [deprecated/minikube/README.md](deprecated/minikube/README.md) |
+
+Argo CD セットアップ: `./scripts/bootstrap.sh`（既存クラスタ向け）
+
 # argocd
  ```
 kubectl apply -f ingress.yml -n argocd

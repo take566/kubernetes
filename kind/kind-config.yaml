@@ -1,0 +1,29 @@
+# kind cluster config for local dev / CI
+# Docs: https://kind.sigs.k8s.io/docs/user/configuration/
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: dev
+nodes:
+  # control-plane with ingress-ready label and host port mappings
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+  # optional workers — comment out for single-node (lower RAM)
+  - role: worker
+  - role: worker
+  # Uncomment to mount host paths into kind nodes (e.g. model cache seeding)
+  # extraMounts:
+  #   - hostPath: /data/vllm
+  #     containerPath: /data/vllm
+  #     readOnly: false

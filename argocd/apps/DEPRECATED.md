@@ -1,0 +1,29 @@
+# Deprecated Argo CD Applications
+
+## Removed: `vllm-app.yaml` (minikube / root `vllm/` path)
+
+| Old | Replacement |
+|-----|-------------|
+| `vllm` → `vllm/` (hostPath PV, minikube) | `vllm-kubeadm` → `vllm/overlays/kubeadm` |
+| `vllm-amd` → `vllm/amd/` | `vllm-amd` → `vllm/overlays/kubeadm/amd` |
+| `vllm-finetune` → `vllm/finetune/` | `vllm-finetune` → `vllm/overlays/kubeadm/finetune` |
+
+### Multi-environment naming (coordinate with kind overlay agent)
+
+| Application | Path | Auto sync | Notes |
+|-------------|------|-----------|-------|
+| `vllm-kubeadm` | `vllm/overlays/kubeadm` | Yes | Production kubeadm (NVIDIA) |
+| `vllm-kind` | `vllm/overlays/kind` | Yes | Local kind dev (added by kind agent) |
+| `vllm-amd` | `vllm/overlays/kubeadm/amd` | No | AMD inference — enable one stack only |
+| `vllm-finetune` | `vllm/overlays/kubeadm/finetune` | No | AMD LoRA Job |
+| `vllm-benchmark` | `vllm/benchmark` | No | On-demand perf Jobs |
+
+**Rule:** Only one inference Application with automated sync should target namespace `vllm` (NVIDIA kubeadm **or** kind **or** AMD — never two with auto sync).
+
+### Migration from minikube
+
+1. Delete old Application: `kubectl delete application vllm -n argocd` (if present)
+2. Commit pulls in `vllm-kubeadm-app.yaml` via root-application
+3. Sync `vllm-kubeadm` in Argo CD UI or `argocd app sync vllm-kubeadm`
+
+See [deprecated/minikube/README.md](../../deprecated/minikube/README.md).

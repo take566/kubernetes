@@ -1,12 +1,11 @@
-# Manual sync — mutually exclusive with vllm-kubeadm / vllm-kind auto-sync in namespace vllm.
+# Manual sync only — benchmark Jobs should not run continuously in production.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: vllm-amd
+  name: vllm-benchmark
   namespace: argocd
   labels:
     app.kubernetes.io/part-of: vllm
-    app.kubernetes.io/cluster: kubeadm
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -14,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/take566/kubernetes.git
     targetRevision: master
-    path: vllm/overlays/kubeadm/amd
+    path: vllm/benchmark
   destination:
     server: https://kubernetes.default.svc
     namespace: vllm

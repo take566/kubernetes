@@ -1,0 +1,6 @@
+# Reuse kubeadm add-on manifests (local-path + metrics-server).
+# kind and kubeadm share the same storage/metrics baseline for dev clusters.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../kubeadm/addons

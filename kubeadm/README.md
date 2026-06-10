@@ -108,14 +108,18 @@ kubectl apply -k nginx/
 
 ### 6. Argo CD 連携
 
-クラスタ準備後（既存 [scripts/bootstrap.sh](../scripts/bootstrap.sh) の minikube 部分の代わり）:
+クラスタ準備後:
 
 ```bash
+./scripts/bootstrap.sh
+# または手動:
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
 kubectl apply -f argocd/apps/root-application.yaml
 ```
+
+vLLM: `vllm-kubeadm` → `vllm/overlays/kubeadm`（auto sync）。AMD / finetune / benchmark は manual。 [argocd/apps/DEPRECATED.md](../argocd/apps/DEPRECATED.md)
 
 `root-application.yaml` の `repoURL` / `targetRevision` が本環境と一致していることを確認してください。
 
@@ -176,7 +180,9 @@ kubectl kustomize vllm/overlays/kubeadm/
 
 ## 関連ドキュメント
 
-- [minikube.md](../minikube.md) — 従来の開発手順
+- [kind/README.md](../kind/README.md) — ローカル dev / CI（推奨）
+- [deprecated/minikube/README.md](../deprecated/minikube/README.md) — minikube（非推奨）
 - [vllm/README.md](../vllm/README.md) — vLLM デプロイ
 - [vllm/overlays/kubeadm/README.md](../vllm/overlays/kubeadm/README.md) — ストレージ overlay
 - [argocd/README.md](../argocd/README.md) — App of Apps
+- [argocd/apps/DEPRECATED.md](../argocd/apps/DEPRECATED.md) — vLLM Application 移行

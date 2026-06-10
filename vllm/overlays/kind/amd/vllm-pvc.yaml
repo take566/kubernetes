@@ -1,0 +1,19 @@
+# AMD vLLM — kind storage overlay (local-path PVC, no hostPath PV)
+# NOTE: kind has no GPU — for kustomize/CI validation only
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vllm-model-cache
+  namespace: vllm
+  labels:
+    app: vllm
+    app.kubernetes.io/name: vllm
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 50Gi
