@@ -64,6 +64,26 @@ for dir in "${KUSTOMIZE_DIRS[@]}"; do
   fi
 done
 
+# Helm wrapper dirs (gitlab/jenkins use Chart.yaml — optional helm template check)
+echo ""
+echo "--- Validating Helm wrapper charts (optional) ---"
+HELM_WRAPPER_DIRS=(gitlab jenkins)
+for dir in "${HELM_WRAPPER_DIRS[@]}"; do
+  if [ -f "$dir/Chart.yaml" ]; then
+    if command -v helm &> /dev/null; then
+      if helm template test "$dir" -f "$dir/values.yaml" > /dev/null 2>&1; then
+        echo -e "  ${GREEN}OK${NC}: helm template $dir"
+      else
+        echo -e "  ${RED}FAIL${NC}: helm template $dir"
+        helm template test "$dir" -f "$dir/values.yaml" 2>&1 | sed 's/^/    /' | head -20
+        ERRORS=$((ERRORS + 1))
+      fi
+    else
+      echo -e "  ${GREEN}SKIP${NC}: $dir (helm not installed)"
+    fi
+  fi
+done
+
 # Helm wrapper dirs (monitoring uses helmCharts in kustomization — needs helm on PATH)
 echo ""
 echo "--- Validating Helm-backed kustomize (optional) ---"

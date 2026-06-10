@@ -47,6 +47,7 @@ jobs:
             -not -path './.github/*' \
             -not -path './data/*' \
             -not -path './gitlab/*' \
+            -not -path './jenkins/*' \
             -not -path './cert-manager/cert-manager.custom.yaml' \
             -not -name 'kustomization.yaml' \
             -not -name 'values.yaml' \
@@ -82,7 +83,8 @@ jobs:
             vllm/overlays/kubeadm/finetune \
             vllm/overlays/kind \
             vllm/overlays/kind/amd \
-            vllm/overlays/kind/finetune; do
+            vllm/overlays/kind/finetune \
+            nginx; do
             echo "kubectl kustomize ${dir}"
             kubectl kustomize "${dir}" --load-restrictor LoadRestrictionsNone > /dev/null
           done

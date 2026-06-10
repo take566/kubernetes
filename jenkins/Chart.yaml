@@ -1,0 +1,10 @@
+apiVersion: v2
+name: jenkins
+description: Jenkins CI/CD deployment via official Helm chart
+type: application
+version: 0.1.0
+appVersion: "2.555.3"
+dependencies:
+  - name: jenkins
+    version: 5.9.25
+    repository: https://charts.jenkins.io

@@ -1,0 +1,66 @@
+# Jenkins Helm Chart Values
+# Official chart: https://github.com/jenkinsci/helm-charts
+
+controller:
+  image:
+    tag: "2.555.3-jdk21"
+
+  admin:
+    username: admin
+    # Argo CD sync 前に Secret を作成するか、初回 sync 後に chart が生成するパスワードを取得
+    createSecret: true
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+
+  javaOpts: "-Djenkins.install.runSetupWizard=false"
+
+  serviceType: ClusterIP
+  servicePort: 8080
+
+  ingress:
+    enabled: false
+
+  podSecurityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+
+  installPlugins:
+    - kubernetes:latest
+    - workflow-aggregator:latest
+    - git:latest
+    - configuration-as-code:latest
+
+  JCasC:
+    defaultConfig: true
+
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+
+agent:
+  enabled: true
+  resources:
+    requests:
+      cpu: "256m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+
+serviceAccount:
+  create: true
+
+persistence:
+  enabled: true
+  size: 8Gi

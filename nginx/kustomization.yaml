@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   - nginx-deployment.yaml
   - nginx-service.yaml
-  - nginx-ingress.yaml
+  # nginx-ingress.yaml is Helm values for nginx-ingress.sh — not a K8s manifest
 labels:
   - pairs:
       app.kubernetes.io/part-of: nginx

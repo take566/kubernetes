@@ -25,6 +25,7 @@
 | `prometheus` | `prometheus` | Yes | monitoring | Lightweight Prometheus manifests |
 | `monitoring` | `monitoring` | No | monitoring | kube-prometheus-stack — conflicts with `prometheus` |
 | `gitlab` | `gitlab` | No | gitlab | GitLab Helm (heavy/stateful) |
+| `jenkins` | `jenkins` | No | jenkins | Jenkins Helm (stateful CI/CD) |
 | `elk-stack` | `elk-stack` | No | elk-stack | ELK stack (stateful) |
 
 ### GitOps excluded (bootstrap / reference only)
@@ -32,7 +33,6 @@
 | Path | Reason |
 |------|--------|
 | `kind/`, `kubeadm/` | Cluster bootstrap, not GitOps apps |
-| `jenkins/` | Helm docs only — no in-repo chart |
 | `vllm/base`, `vllm/components` | Consumed via overlays only |
 | `docs/`, `scripts/`, `policies/` | Operational helpers |
 

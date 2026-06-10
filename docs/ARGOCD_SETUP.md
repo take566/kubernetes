@@ -26,6 +26,7 @@ kubectl apply -f argocd/apps/root-application.yaml
 | `prometheus` | `prometheus` | monitoring | Yes |
 | `monitoring` | `monitoring` | monitoring | No |
 | `gitlab` | `gitlab` (Helm) | gitlab | No |
+| `jenkins` | `jenkins` (Helm) | jenkins | No |
 | `elk-stack` | `elk-stack` | elk-stack | No |
 
 詳細・廃止パス: [argocd/apps/DEPRECATED.md](../argocd/apps/DEPRECATED.md)
@@ -33,14 +34,12 @@ kubectl apply -f argocd/apps/root-application.yaml
 ## sync policy 方針
 
 - **Auto**: 軽量 infra（nginx, nexus, cert-manager, agents, prometheus）
-- **Manual**: GPU/排他 vLLM、stateful（gitlab, elk-stack）、namespace 競合（monitoring）
+- **Manual**: GPU/排他 vLLM、stateful（gitlab, jenkins, elk-stack）、namespace 競合（monitoring）
 
 ### 注意
 
 - `prometheus` と `monitoring` は同一 namespace `monitoring` を使用。同時 auto-sync しないこと。
 - `vllm-kubeadm` と `vllm-amd` は namespace `vllm` で排他。
-- `jenkins/` は GitOps 対象外（Helm 手順のみ）。
-
 ## 検証
 
 ```bash
