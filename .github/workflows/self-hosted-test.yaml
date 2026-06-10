@@ -18,4 +18,5 @@ jobs:
           kubectl version --client 2>/dev/null || true
 
       - name: Validate repo checkout
-        run: test -f scripts/validate.sh && echo "OK: repo mounted"
+        run: |
+          test -f scripts/validate.sh && echo "OK: repo mounted"
