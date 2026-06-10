@@ -26,6 +26,8 @@
 | `monitoring` | `monitoring` | No | monitoring | kube-prometheus-stack — conflicts with `prometheus` |
 | `gitlab` | `gitlab` | No | gitlab | GitLab Helm (heavy/stateful) |
 | `jenkins` | `jenkins` | No | jenkins | Jenkins Helm (stateful CI/CD) |
+| `actions-runner-controller` | `actions-runner-controller` | No | actions-runner-system | ARC v2 scale-set controller (sync before github-runners) |
+| `github-runners` | `github-runners` | No | github-runners | GitHub Actions self-hosted runners (Secret required) |
 | `elk-stack` | `elk-stack` | No | elk-stack | ELK stack (stateful) |
 
 ### GitOps excluded (bootstrap / reference only)

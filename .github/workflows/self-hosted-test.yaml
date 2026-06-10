@@ -1,0 +1,21 @@
+name: Self-Hosted Runner Test
+
+# Optional workflow — runs only when self-hosted ARC runners are registered.
+# Enable after: argocd app sync github-runners + Secret created.
+on:
+  workflow_dispatch:
+
+jobs:
+  self-hosted-smoke:
+    runs-on: k8s-self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runner environment
+        run: |
+          echo "Runner name: ${RUNNER_NAME:-unknown}"
+          uname -a
+          kubectl version --client 2>/dev/null || true
+
+      - name: Validate repo checkout
+        run: test -f scripts/validate.sh && echo "OK: repo mounted"

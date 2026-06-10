@@ -1,0 +1,45 @@
+# Runner scale set — values for gha-runner-scale-set subchart
+gha-runner-scale-set:
+  githubConfigUrl: "https://github.com/take566/kubernetes"
+
+  # Pre-defined Secret (create manually before Argo CD sync)
+  githubConfigSecret: github-runners-secret
+
+  runnerScaleSetName: k8s-self-hosted
+
+  scaleSetLabels:
+    - self-hosted
+    - linux
+    - k8s
+
+  minRunners: 0
+  maxRunners: 5
+
+  controllerServiceAccount:
+    namespace: actions-runner-system
+    name: actions-runner-controller-gha-rs-controller
+
+  containerMode:
+    type: kubernetes
+    kubernetesModeWorkVolumeClaim:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: ""
+      resources:
+        requests:
+          storage: 2Gi
+
+  template:
+    spec:
+      containers:
+        - name: runner
+          image: ghcr.io/actions/actions-runner:latest
+          command:
+            - /home/runner/run.sh
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi

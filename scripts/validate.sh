@@ -67,7 +67,7 @@ done
 # Helm wrapper dirs (gitlab/jenkins use Chart.yaml — optional helm template check)
 echo ""
 echo "--- Validating Helm wrapper charts (optional) ---"
-HELM_WRAPPER_DIRS=(gitlab jenkins)
+HELM_WRAPPER_DIRS=(gitlab jenkins actions-runner-controller github-runners)
 for dir in "${HELM_WRAPPER_DIRS[@]}"; do
   if [ -f "$dir/Chart.yaml" ]; then
     if command -v helm &> /dev/null; then

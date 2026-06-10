@@ -1,0 +1,22 @@
+# ARC v2 controller — values for gha-runner-scale-set-controller subchart
+gha-runner-scale-set-controller:
+  replicaCount: 1
+
+  flags:
+    logLevel: info
+    logFormat: text
+    watchSingleNamespace: github-runners
+    updateStrategy: eventual
+    excludeLabelPropagationPrefixes:
+      - argocd.argoproj.io/instance
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  serviceAccount:
+    create: true

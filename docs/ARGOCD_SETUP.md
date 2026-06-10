@@ -27,6 +27,8 @@ kubectl apply -f argocd/apps/root-application.yaml
 | `monitoring` | `monitoring` | monitoring | No |
 | `gitlab` | `gitlab` (Helm) | gitlab | No |
 | `jenkins` | `jenkins` (Helm) | jenkins | No |
+| `actions-runner-controller` | `actions-runner-controller` (Helm) | actions-runner-system | No |
+| `github-runners` | `github-runners` (Helm) | github-runners | No |
 | `elk-stack` | `elk-stack` | elk-stack | No |
 
 詳細・廃止パス: [argocd/apps/DEPRECATED.md](../argocd/apps/DEPRECATED.md)
@@ -34,7 +36,7 @@ kubectl apply -f argocd/apps/root-application.yaml
 ## sync policy 方針
 
 - **Auto**: 軽量 infra（nginx, nexus, cert-manager, agents, prometheus）
-- **Manual**: GPU/排他 vLLM、stateful（gitlab, jenkins, elk-stack）、namespace 競合（monitoring）
+- **Manual**: GPU/排他 vLLM、stateful（gitlab, jenkins, elk-stack）、namespace 競合（monitoring）、Secret 必須（github-runners）
 
 ### 注意
 

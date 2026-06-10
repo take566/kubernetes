@@ -48,6 +48,9 @@ jobs:
             -not -path './data/*' \
             -not -path './gitlab/*' \
             -not -path './jenkins/*' \
+            -not -path './actions-runner-controller/*' \
+            -not -path './github-runners/*' \
+            -not -path './github-runners/github-runners-secret.example.yaml' \
             -not -path './cert-manager/cert-manager.custom.yaml' \
             -not -name 'kustomization.yaml' \
             -not -name 'values.yaml' \
