@@ -18,4 +18,4 @@ kubectl apply -f https://raw.githubusercontent.com/ROCm/k8s-device-plugin/master
 kubectl label node <node> amd.com/gpu.present=true --overwrite
 ```
 
-vLLM AMD スタック: `kubectl apply -k vllm/amd/`
+vLLM AMD スタック: `kubectl apply -k vllm/overlays/kubeadm/amd/`

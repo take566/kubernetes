@@ -9,8 +9,5 @@ labels:
     includeSelectors: false
     includeTemplates: false
 resources:
-  - ../../../amd/namespace.yaml
-  - ../../../amd/vllm-configmap.yaml
+  - ../../../components/amd
   - vllm-pvc.yaml
-  - ../../../amd/vllm-deployment.yaml
-  - ../../../amd/vllm-service.yaml

@@ -1,5 +1,5 @@
 # PVC only — dynamic provisioning via local-path StorageClass (kubeadm addon)
-# Replaces vllm/vllm-pv.yaml hostPath pattern legacy hostPath pattern
+# Replaces legacy hostPath PV (vllm/base has no PV — use this overlay PVC)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

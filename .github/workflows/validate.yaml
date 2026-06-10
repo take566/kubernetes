@@ -22,9 +22,10 @@ jobs:
             prometheus/*.yaml \
             nexus/*.yaml \
             nginx/*.yaml \
-            vllm/*.yaml \
-            vllm/amd/*.yaml \
-            vllm/finetune/*.yaml \
+            vllm/base/*.yaml \
+            vllm/components/amd/*.yaml \
+            vllm/components/finetune/*.yaml \
+            vllm/benchmark/*.yaml \
             kind/*.yaml \
             kind/addons/*.yaml \
             argocd/apps/*.yaml
@@ -72,6 +73,10 @@ jobs:
           for dir in \
             kubeadm/addons \
             kind/addons \
+            vllm/base \
+            vllm/components/amd \
+            vllm/components/finetune \
+            vllm/benchmark \
             vllm/overlays/kubeadm \
             vllm/overlays/kubeadm/amd \
             vllm/overlays/kubeadm/finetune \

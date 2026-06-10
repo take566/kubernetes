@@ -17,7 +17,7 @@
 
 ## 前提
 
-1. vLLM 推論が稼働していること（`kubectl apply -k vllm/` または `vllm/amd/`）
+1. vLLM 推論が稼働していること（`kubectl apply -k vllm/overlays/kubeadm/` または `vllm/overlays/kubeadm/amd/`）
 2. ベンチ Job は **GPU 不要**（CPU のみのクライアント）
 3. サーバ側 `perf` は **vLLM と同一 GPU ノード** にスケジュールする必要あり
 

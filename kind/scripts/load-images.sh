@@ -20,7 +20,7 @@ if ! kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"; then
   exit 1
 fi
 
-# Default vLLM inference image (see vllm/vllm-deployment.yaml)
+# Default vLLM inference image (see vllm/base/vllm-deployment.yaml)
 IMAGES=(
   "vllm/vllm-openai:latest"
 )

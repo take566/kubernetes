@@ -17,7 +17,7 @@ Linux ワーカーに GPU ドライバを入れた後、クラスタ側で Devic
 kubectl label node <gpu-node> nvidia.com/gpu.present=true --overwrite
 kubectl label node <gpu-node> workload=vllm --overwrite
 
-# AMD 推論 / 学習 (vllm/amd/, vllm/finetune/)
+# AMD 推論 / 学習 (vllm/overlays/kubeadm/amd/, vllm/overlays/kubeadm/finetune/)
 kubectl label node <gpu-node> amd.com/gpu.present=true --overwrite
 kubectl label node <gpu-node> workload=vllm-amd --overwrite
 ```
@@ -30,7 +30,7 @@ kubectl taint nodes <gpu-node> nvidia.com/gpu=:NoSchedule --overwrite
 kubectl taint nodes <gpu-node> amd.com/gpu=:NoSchedule --overwrite
 ```
 
-`vllm/vllm-deployment.yaml` / `vllm/amd/vllm-deployment.yaml` 内の `tolerations` / `nodeSelector` コメントを解除してください。
+`vllm/base/vllm-deployment.yaml` / `vllm/components/amd/vllm-deployment.yaml` 内の `tolerations` / `nodeSelector` コメントを解除してください。
 
 ## 3. Device Plugin デプロイ
 

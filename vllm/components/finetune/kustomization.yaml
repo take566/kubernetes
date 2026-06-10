@@ -1,5 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+# AMD ROCm LoRA fine-tune Job (no PV). Compose via overlays/*/finetune.
 namespace: vllm
 labels:
   - pairs:
@@ -10,7 +11,6 @@ labels:
 resources:
   - finetune-configmap.yaml
   - finetune-entrypoint-configmap.yaml
-  - finetune-pv.yaml
   - finetune-job.yaml
 configMapGenerator:
   - name: finetune-script

@@ -4,9 +4,9 @@
 
 | Old | Replacement |
 |-----|-------------|
-| `vllm` → `vllm/` (hostPath PV, legacy) | `vllm-kubeadm` → `vllm/overlays/kubeadm` |
-| `vllm-amd` → `vllm/amd/` | `vllm-amd` → `vllm/overlays/kubeadm/amd` |
-| `vllm-finetune` → `vllm/finetune/` | `vllm-finetune` → `vllm/overlays/kubeadm/finetune` |
+| `vllm` → root `vllm/` or `vllm/base/` alone (no PVC) | `vllm-kubeadm` → `vllm/overlays/kubeadm` |
+| `vllm-amd` → `vllm/amd/` (removed) | `vllm-amd` → `vllm/overlays/kubeadm/amd` |
+| `vllm-finetune` → `vllm/finetune/` (removed) | `vllm-finetune` → `vllm/overlays/kubeadm/finetune` |
 
 ### Multi-environment naming (coordinate with kind overlay agent)
 
@@ -26,4 +26,4 @@
 2. Commit pulls in `vllm-kubeadm-app.yaml` via root-application
 3. Sync `vllm-kubeadm` in Argo CD UI or `argocd app sync vllm-kubeadm`
 
-See [kind/README.md](../../kind/README.md) and [kubeadm/README.md](../../kubeadm/README.md).`n
+See [kind/README.md](../../kind/README.md) and [kubeadm/README.md](../../kubeadm/README.md).

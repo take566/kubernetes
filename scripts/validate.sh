@@ -21,7 +21,7 @@ done
 ERRORS=0
 
 # Dry-run validation for each directory
-for dir in elk-stack prometheus nexus nginx vllm vllm/amd vllm/finetune vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune; do
+for dir in elk-stack prometheus nexus nginx vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune; do
   echo ""
   echo "--- Validating $dir/ ---"
   for file in "$dir"/*.yaml; do
@@ -44,7 +44,7 @@ done
 echo ""
 echo "--- Validating Kustomize builds ---"
 KUSTOMIZE_DIRS=(
-  elk-stack prometheus nexus nginx vllm vllm/amd vllm/finetune vllm/benchmark
+  elk-stack prometheus nexus nginx vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark
   kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin
   kind/addons
   vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune

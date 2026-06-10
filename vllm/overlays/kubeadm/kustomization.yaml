@@ -9,8 +9,5 @@ labels:
     includeSelectors: false
     includeTemplates: false
 resources:
-  - ../../namespace.yaml
-  - ../../vllm-configmap.yaml
+  - ../../base
   - vllm-pvc.yaml
-  - ../../vllm-deployment.yaml
-  - ../../vllm-service.yaml

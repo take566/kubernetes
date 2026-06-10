@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """LoRA fine-tuning for AMD ROCm (HIP) using HuggingFace TRL + PEFT.
 
-Canonical copy also lives at vllm/scripts/train_lora.py — keep both in sync.
+Canonical training script for vllm/components/finetune (mounted via finetune-script ConfigMap).
 """
 
 from __future__ import annotations
