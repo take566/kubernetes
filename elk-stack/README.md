@@ -139,7 +139,7 @@ kubectl delete namespace elk-stack
      ```
      192.168.49.2    kibana.local
      ```
-     （minikube IPは `minikube ip` コマンドで確認できます）
+     （ノード IP は `kubectl get nodes -o wide` で確認）
 
 ### ログの確認
 

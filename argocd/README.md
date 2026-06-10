@@ -85,7 +85,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 - **vllm-finetune-app.yaml**: vLLM AMD 学習 Job（manual sync）
 - **vllm-benchmark-app.yaml**: vLLM ベンチマーク Job（manual sync）
 
-廃止済み: `vllm-app.yaml`（minikube / root `vllm/`）→ [apps/DEPRECATED.md](apps/DEPRECATED.md)
+廃止済み: `vllm-app.yaml`（legacy root `vllm/`）→ [apps/DEPRECATED.md](apps/DEPRECATED.md)
 
 ### vLLM Application マトリクス
 

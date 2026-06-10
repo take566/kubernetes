@@ -1,5 +1,5 @@
 # PVC only — dynamic provisioning via local-path (kind addon / kubeadm addon reuse)
-# Replaces vllm/vllm-pv.yaml hostPath pattern used on minikube
+# Replaces vllm/vllm-pv.yaml hostPath pattern legacy hostPath pattern
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

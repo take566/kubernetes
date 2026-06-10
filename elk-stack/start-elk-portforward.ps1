@@ -16,7 +16,7 @@ Write-Host "Kubernetesクラスターの状態を確認中..." -ForegroundColor 
 $clusterInfo = kubectl cluster-info 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "エラー: Kubernetesクラスターに接続できません" -ForegroundColor Red
-    Write-Host "Minikubeが起動していることを確認してください: minikube status" -ForegroundColor Yellow
+    Write-Host "Kubernetes クラスタ（kind/kubeadm）が起動していることを確認してください: kubectl cluster-info" -ForegroundColor Yellow
     exit 1
 }
 

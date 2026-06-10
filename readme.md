@@ -12,7 +12,6 @@ $ kubectl version --client
 |------|------|
 | **本番 / kubeadm** | [kubeadm/README.md](kubeadm/README.md) |
 | **ローカル dev (kind)** | [kind/README.md](kind/README.md) |
-| minikube | **非推奨** — [deprecated/minikube/README.md](deprecated/minikube/README.md) |
 
 Argo CD セットアップ: `./scripts/bootstrap.sh`（既存クラスタ向け）
 

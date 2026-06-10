@@ -1,6 +1,6 @@
 # vLLM × kubeadm 移行メモ
 
-minikube の `hostPath` + `storageClassName: standard` から、kubeadm クラスタの **local-path** 動的プロビジョニングへ切り替えます。
+旧 `hostPath` + `storageClassName: standard` から、kubeadm クラスタの **local-path** 動的プロビジョニングへ切り替えます。
 
 ## デプロイ
 
@@ -11,10 +11,10 @@ kubectl apply -k vllm/overlays/kubeadm/amd/       # AMD 推論
 kubectl apply -k vllm/overlays/kubeadm/finetune/  # AMD 学習 Job
 ```
 
-## minikube からのデータ移行
+## 旧 hostPath からのデータ移行
 
-1. minikube 上でモデルキャッシュをエクスポート  
-   `minikube ssh -- 'sudo tar -C /data/vllm -czf - .' > vllm-cache.tgz`
+1. 旧 hostPath 環境 上でモデルキャッシュをエクスポート  
+   `旧 hostPath 環境 ssh -- 'sudo tar -C /data/vllm -czf - .' > vllm-cache.tgz`
 2. kubeadm GPU/ストレージノードで local-path の実パスを確認（Pod 起動後）  
    `kubectl -n vllm get pvc vllm-model-cache -o jsonpath='{.spec.volumeName}'`
 3. 該当ノード上の `/opt/local-path-provisioner/...` に展開（環境によりパスは異なる）

@@ -2,11 +2,11 @@
 
 ## ✅ 現在のステータス
 
-ArgoCDが Kubernetes クラスタ上にインストールされました（minikube は非推奨 — kubeadm / kind を推奨）。
+ArgoCDが Kubernetes クラスタ上にインストールされました（legacy local clusters は非推奨 — kubeadm / kind を推奨）。
 
 ### サーバー情報
 - **版**: ArgoCD v3.2.1
-- **クラスター**: kubeadm / kind / 既存クラスタ（minikube 非推奨）
+- **クラスター**: kubeadm / kind / 既存クラスタ
 - **ネームスペース**: argocd
 - **すべてのポッド**: Running ✓
 

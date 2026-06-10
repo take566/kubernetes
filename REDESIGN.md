@@ -96,7 +96,7 @@ kubernetes/
 5. コンテナリソース制限なし（CWE-770）
 
 ### Secret管理推奨: SOPS + AGE
-- Minikubeに外部プロバイダ不要
+- 旧ローカルクラスタに外部プロバイダ不要
 - CLIベースで復号可能（コントローラ障害時も安全）
 - ArgoCD + SOPS プラグインでGitOps統合可能
 
@@ -108,7 +108,7 @@ kubernetes/
 
 | 順位 | 提案 | 理由 |
 |------|------|------|
-| 1位 | Service Mesh (Istio/Linkerd) | Minikubeのリソースに収まらない。replicas:1で無意味 |
+| 1位 | Service Mesh (Istio/Linkerd) | 旧ローカルクラスタのリソースに収まらない。replicas:1で無意味 |
 | 2位 | dev/staging/prod環境分離 | 10GBメモリで3環境は物理的に不可能 |
 | 3位 | NetworkPolicy全通信制御 | kindnetが未対応。Calico追加で300-500MB消費 |
 
@@ -153,7 +153,7 @@ kubernetes/
 - [x] Skaffold導入（ローカル開発改善）
 - [x] GitLab必要性の最終判断 → 維持決定
 - [x] GitHub Actions CIパイプライン導入（yamllint + kubeconform + Trivy）
-- [x] scripts/bootstrap.sh（既存クラスタ + ArgoCD 自動セットアップ — minikube 非推奨）
+- [x] scripts/bootstrap.sh（既存クラスタ + ArgoCD 自動セットアップ — 旧ローカル 非推奨）
 - [x] scripts/validate.sh（ローカルマニフェスト検証）
 - [x] policies/resource-quotas/dev-quota.yaml（ResourceQuota）
 
@@ -168,11 +168,11 @@ kubernetes/
 ### 導入しないもの
 - Service Mesh（Istio/Linkerd）
 - 完全なdev/staging/prod 3環境分離
-- 全通信のNetworkPolicy制御（Minikube上では）
+- 全通信のNetworkPolicy制御（旧ローカルクラスタ上では）
 
 ---
 
-## リソース見積もり（dev環境 / Minikube）
+## リソース見積もり（dev環境 / 旧ローカルクラスタ）
 
 | サービス | CPU req | CPU lim | MEM req | MEM lim |
 |---|---|---|---|---|
@@ -187,4 +187,4 @@ kubernetes/
 | ArgoCD | 250m | 500m | 256Mi | 512Mi |
 | **合計** | **2600m** | **6200m** | **4.86Gi** | **11.12Gi** |
 
-Minikube推奨: `minikube start --cpus=8 --memory=16384`
+旧ローカルクラスタ推奨: `kind: リソースは kind 設定で調整`

@@ -114,15 +114,15 @@ WSL2内でsocatを使用してUDPポート転送：
 wsl -e sudo apt-get update
 wsl -e sudo apt-get install -y socat
 
-# MinikubeのIPとNodePortを確認
-kubectl get nodes -o wide  # Minikube IP: 192.168.58.2
+# クラスタのIPとNodePortを確認
+kubectl get nodes -o wide  # ノード IP: 192.168.58.2
 kubectl get svc logstash -n elk-stack  # NodePort: 32667
 
 # UDPポート転送
 wsl -e sudo socat UDP4-LISTEN:514,fork UDP4:192.168.58.2:32667 &
 ```
 
-#### 方法2: minikube tunnelを使用
+#### 方法2: port-forward / Ingressを使用
 
 LoadBalancerタイプのServiceを使用：
 
@@ -130,13 +130,13 @@ LoadBalancerタイプのServiceを使用：
 # logstash-service.yamlを変更
 type: LoadBalancer
 
-# minikube tunnelを起動（管理者権限が必要）
-minikube tunnel
+# port-forward / Ingressを起動（管理者権限が必要）
+port-forward / Ingress
 ```
 
 #### 方法3: NodePortに直接アクセス
 
-Raspberry Piから直接MinikubeのNodeIPにアクセス：
+Raspberry Piから直接クラスタのNodeIPにアクセス：
 
 **前提条件**: WSL2のネットワークモードを変更（Windows 11のみ）
 

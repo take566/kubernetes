@@ -2,20 +2,19 @@
 # 管理者権限で実行してください
 
 $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
-$minikubeIP = "192.168.49.2"
 $hostEntry = "kibana.local"
 
 Write-Host "Kibana DNS 設定を開始します..." -ForegroundColor Green
 
-# minikube IP を取得
+# cluster node IP を取得
 try {
-    $minikubeIPOutput = minikube ip 2>&1
+    $nodeIP = (kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>&1)
     if ($LASTEXITCODE -eq 0) {
-        $minikubeIP = $minikubeIPOutput.Trim()
-        Write-Host "minikube IP: $minikubeIP" -ForegroundColor Cyan
+        $clusterIP = ($nodeIP | Out-String).Trim()
+        Write-Host "cluster node IP: $clusterIP" -ForegroundColor Cyan
     }
 } catch {
-    Write-Host "minikube IP の取得に失敗しました。デフォルト値を使用します: $minikubeIP" -ForegroundColor Yellow
+    Write-Host "cluster node IP の取得に失敗しました。デフォルト値を使用します: $clusterIP" -ForegroundColor Yellow
 }
 
 # hosts ファイルの内容を確認
@@ -41,7 +40,7 @@ if ($entryExists) {
 }
 
 # 新しいエントリを追加
-$newEntry = "$minikubeIP`t$hostEntry"
+$newEntry = "$clusterIP`t$hostEntry"
 Add-Content -Path $hostsPath -Value $newEntry -Force
 
 Write-Host "`nhosts ファイルに以下のエントリを追加しました:" -ForegroundColor Green

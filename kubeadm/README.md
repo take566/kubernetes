@@ -123,19 +123,19 @@ vLLM: `vllm-kubeadm` → `vllm/overlays/kubeadm`（auto sync）。AMD / finetune
 
 `root-application.yaml` の `repoURL` / `targetRevision` が本環境と一致していることを確認してください。
 
-## minikube からの移行
+## 旧ローカルクラスタからの移行
 
-| 項目 | minikube | kubeadm |
+| 項目 | 旧環境 | kubeadm |
 |------|----------|---------|
-| kubeconfig | `~/.kube/config` (minikube context) | control-plane の `admin.conf` または merge |
+| kubeconfig | `~/.kube/config`（旧 context） | control-plane の `admin.conf` または merge |
 | ストレージ | hostPath PV (`standard`) | local-path 動的 PVC |
 | vLLM manifest | `kubectl apply -k vllm/` | `kubectl apply -k vllm/overlays/kubeadm/` |
-| Ingress | `minikube addons enable ingress` | `kubectl apply -k nginx/` |
+| Ingress | `kubectl apply -k nginx/` | `kubectl apply -k nginx/` |
 
 ### kubectl コンテキスト切替
 
 ```bash
-# minikube コンテキストを残したまま kubeadm を追加
+# 旧 context を残したまま kubeadm を追加
 scp user@cp:/etc/kubernetes/admin.conf ~/.kube/config-kubeadm
 export KUBECONFIG=~/.kube/config-kubeadm
 kubectl get nodes
@@ -143,12 +143,12 @@ kubectl get nodes
 
 ### vLLM データ
 
-- モデルキャッシュ: minikube の `/data/vllm` → kubeadm ノードの local-path ボリュームへ手動コピー（[vllm/overlays/kubeadm/README.md](../vllm/overlays/kubeadm/README.md)）
+- モデルキャッシュ: 旧ローカルクラスタ の `/data/vllm` → kubeadm ノードの local-path ボリュームへ手動コピー（[vllm/overlays/kubeadm/README.md](../vllm/overlays/kubeadm/README.md)）
 - finetune データセット: 同様に PVC バインド後の実パスへ配置
 
 ### Argo CD
 
-minikube 上の Argo CD は新クラスタに再インストールが必要です。Application 定義（`argocd/apps/`）は Git からそのまま再利用できます。
+旧クラスタ上の Argo CD は新クラスタに再インストールが必要です。Application 定義（`argocd/apps/`）は Git からそのまま再利用できます。
 
 ## CNI 選択
 
@@ -181,7 +181,6 @@ kubectl kustomize vllm/overlays/kubeadm/
 ## 関連ドキュメント
 
 - [kind/README.md](../kind/README.md) — ローカル dev / CI（推奨）
-- [deprecated/minikube/README.md](../deprecated/minikube/README.md) — minikube（非推奨）
 - [vllm/README.md](../vllm/README.md) — vLLM デプロイ
 - [vllm/overlays/kubeadm/README.md](../vllm/overlays/kubeadm/README.md) — ストレージ overlay
 - [argocd/README.md](../argocd/README.md) — App of Apps

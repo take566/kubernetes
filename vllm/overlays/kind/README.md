@@ -1,6 +1,6 @@
 # vLLM × kind ローカル開発 overlay
 
-minikube の `hostPath` + `storageClassName: standard` から、kind クラスタの **local-path** 動的プロビジョニングへ切り替えます。
+旧 `hostPath` + `storageClassName: standard` から、kind クラスタの **local-path** 動的プロビジョニングへ切り替えます。
 
 > **GPU 非対応**  
 > kind は Docker 内で動作するため **NVIDIA/AMD GPU を利用できません**。本 overlay はマニフェスト検証・Argo CD sync テスト・非 GPU スモーク用です。本番推論は [kubeadm overlay](../kubeadm/README.md) を使用してください。
@@ -14,10 +14,10 @@ kubectl apply -k vllm/overlays/kind/amd/       # AMD manifest（同上 — CI/ku
 kubectl apply -k vllm/overlays/kind/finetune/  # Finetune Job manifest
 ```
 
-## minikube からのデータ移行
+## 旧 hostPath からのデータ移行
 
-1. minikube 上でモデルキャッシュをエクスポート（非推奨環境）  
-   `minikube ssh -- 'sudo tar -C /data/vllm -czf - .' > vllm-cache.tgz`
+1. 旧 hostPath 環境 上でモデルキャッシュをエクスポート（非推奨環境）  
+   `旧 hostPath 環境 ssh -- 'sudo tar -C /data/vllm -czf - .' > vllm-cache.tgz`
 2. kind 上で PVC バインド後、デバッグ Pod 等で `/data` に展開  
    または `kind/kind-config.yaml` の `extraMounts` でホスト `/data/vllm` をマウント
 

@@ -7,11 +7,11 @@
 - **Raspberry Pi IP**: 192.168.0.133
 - **Logstash syslog UDP Port**: 32667
 - **Logstash syslog TCP Port**: 32667
-- **Minikube IP** (WSL2内): 192.168.58.2
+- **Kubernetes ノード IP** (WSL2内): 192.168.58.2
 
 ## ⚠️ 重要：ネットワーク設定について
 
-MinikubeがWSL2内で動作しているため、Raspberry Piから直接アクセスするには、以下のいずれかの方法が必要です：
+kind/kubeadm クラスタがWSL2内で動作しているため、Raspberry Piから直接アクセスするには、以下のいずれかの方法が必要です：
 
 ### 方法1: kubectl port-forwardを使用（推奨・簡単）
 
@@ -32,18 +32,18 @@ kubectl port-forward svc/logstash 514:514 -n elk-stack --address=0.0.0.0 --proto
 ipconfig | findstr "IPv4"
 ```
 
-### 方法2: minikube tunnelを使用
+### 方法2: kubectl port-forward または LoadBalancer/Ingressを使用
 
 ```powershell
-minikube tunnel
+kubectl port-forward または LoadBalancer/Ingress
 ```
 
-このコマンドを実行すると、Minikubeのサービスがローカルホストからアクセス可能になります。
+このコマンドを実行すると、kind/kubeadm クラスタのサービスがローカルホストからアクセス可能になります。
 
 ### 方法3: 直接NodePortを使用（最も簡単だが WSL2 では制限あり）
 
-Raspberry Piから直接Minikube NodeIPにアクセスを試みます：
-- **Minikube IP**: 192.168.58.2
+Raspberry Piから直接kind/kubeadm クラスタ NodeIPにアクセスを試みます：
+- **Kubernetes ノード IP**: 192.168.58.2
 - **Port**: 32667
 
 ただし、WSL2のネットワーク制限により、外部からのアクセスができない可能性があります。
@@ -257,7 +257,7 @@ $EscapeControlCharactersOnReceive off
 - [Logstash Syslog Input Plugin](https://www.elastic.co/guide/en/logstash/current/plugins-inputs-syslog.html)
 - [rsyslog Documentation](https://www.rsyslog.com/doc/)
 - [Kibana Guide](https://www.elastic.co/guide/en/kibana/current/index.html)
-- [Minikube Networking](https://minikube.sigs.k8s.io/docs/handbook/accessing/)
+- [kind/kubeadm クラスタ Networking](https://クラスタ.sigs.k8s.io/docs/handbook/accessing/)
 
 
 

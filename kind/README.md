@@ -2,8 +2,8 @@
 
 本ディレクトリは **Docker 上の [kind](https://kind.sigs.k8s.io/) クラスタ** をローカル開発・CI 向けに構築するための設定です。
 
-> **minikube 非推奨**  
-> ローカル開発の標準は kind に移行しました。[minikube.md](../minikube.md) はレガシー参照のみです。本番相当の構築は [kubeadm/README.md](../kubeadm/README.md) を参照してください。
+> **旧環境 非推奨**  
+> ローカル開発の標準は kind に移行しました。旧環境 は廃止済みです。本番相当の構築は [kubeadm/README.md](../kubeadm/README.md) を参照してください。
 
 ## 前提条件
 
@@ -102,17 +102,17 @@ kubectl apply -f argocd/apps/vllm-kind-app.yaml
 # Argo CD UI または CLI で Sync（automated sync なし — GPU なし環境向け）
 ```
 
-`vllm-app.yaml`（minikube hostPath ベース）は kind では使わないでください。`vllm-kind-app` が `vllm/overlays/kind` を指します。
+旧 `vllm-app.yaml`（root hostPath）は kind では使わないでください。`vllm-kind-app` が `vllm/overlays/kind` を指します。
 
-## minikube からの移行
+## 以前の hostPath 環境からの移行
 
-| 項目 | minikube（非推奨） | kind |
+| 項目 | 旧 hostPath 環境 | kind |
 |------|-------------------|------|
-| 起動 | `minikube start` | `./kind/scripts/create-cluster.sh` |
-| Ingress | `minikube addons enable ingress` | `kubectl apply -k nginx/` |
+| 起動 | `./kind/scripts/create-cluster.sh` | `./kind/scripts/create-cluster.sh` |
+| Ingress | `kubectl apply -k nginx/` | `kubectl apply -k nginx/` |
 | ストレージ | hostPath PV (`standard`) | local-path 動的 PVC |
 | vLLM | `kubectl apply -k vllm/` | `kubectl apply -k vllm/overlays/kind/` |
-| モデルキャッシュ | `minikube ssh` + `/data/vllm` | PVC バインド後に Pod 経由で配置、または `extraMounts` |
+| モデルキャッシュ | ノード上の `/data/vllm` またはエクスポート | PVC バインド後に Pod 経由で配置、または `extraMounts` |
 
 ## 検証
 
@@ -126,4 +126,4 @@ kubectl kustomize vllm/overlays/kind/
 
 - [kubeadm/README.md](../kubeadm/README.md) — 本番向け kubeadm
 - [vllm/overlays/kind/README.md](../vllm/overlays/kind/README.md) — vLLM overlay
-- [minikube.md](../minikube.md) — **非推奨**（レガシー）
+- [旧環境.md](../旧環境.md) — **非推奨**（レガシー）

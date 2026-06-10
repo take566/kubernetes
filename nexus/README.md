@@ -127,7 +127,7 @@ docker push docker-registry.local:8082/my-app:latest
 - **マウント先**: `/nexus-data`
 - **ホストパス**: `/data/nexus` (ノード上)
 
-> **注**: hostPath 利用時は、各ノード上に `/data/nexus` を事前作成してください（minikube は [非推奨](../deprecated/minikube/README.md)）
+> **注**: hostPath 利用時は、各ノード上に `/data/nexus` を事前作成してください（本番・開発とも overlay / local-path を推奨）
 
 ## 🔍 トラブルシューティング
 

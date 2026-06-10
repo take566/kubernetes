@@ -65,7 +65,7 @@ kubectl apply -f argocd/apps/root-application.yaml
 echo -e "  ${GREEN}Root application deployed${NC}"
 echo ""
 echo -e "  ${YELLOW}vLLM:${NC} production syncs via vllm-kubeadm → vllm/overlays/kubeadm"
-echo "  See argocd/apps/DEPRECATED.md (minikube vllm-app removed)"
+echo "  See argocd/apps/DEPRECATED.md (legacy vllm-app removed)"
 
 # 5. Port forward ArgoCD UI
 echo ""
