@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-config
+  namespace: vllm
+data:
+  # Smallest practical model for CPU smoke on kind/Mac
+  VLLM_MODEL: "Qwen/Qwen2.5-0.5B-Instruct"
+  VLLM_EXTRA_ARGS: >-
+    --device cpu
+    --dtype float16
+    --max-num-seqs 2
+    --max-model-len 1024
+    --max-num-batched-tokens 512
+    --enforce-eager
+    --disable-log-requests

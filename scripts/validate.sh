@@ -35,7 +35,7 @@ else
 fi
 
 # Dry-run validation for each directory
-for dir in elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export; do
+for dir in elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/cpu vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export; do
   echo ""
   echo "--- Validating $dir/ ---"
   for file in "$dir"/*.yaml; do
@@ -63,7 +63,7 @@ KUSTOMIZE_DIRS=(
   kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies
   kind/addons
   vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export
-  vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export
+  vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/cpu vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export
 )
 KUSTOMIZE_LOAD_FLAGS=(--load-restrictor LoadRestrictionsNone)
 for dir in "${KUSTOMIZE_DIRS[@]}"; do

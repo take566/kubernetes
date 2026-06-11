@@ -54,6 +54,9 @@ kubectl apply -k nginx/
 
 # vLLM スモークテスト（GPU なし — 下記制限参照）
 kubectl apply -k vllm/overlays/kind/
+
+# Mac / CPU 推論実験（Ollama 推奨 — vllm/overlays/macos-local/README.md）
+kubectl apply -k vllm/overlays/kind/cpu/
 ```
 
 ## クラスタ削除
@@ -78,7 +81,7 @@ docker pull vllm/vllm-openai:latest
 | 項目 | kind | kubeadm / 本番 |
 |------|------|----------------|
 | GPU (NVIDIA/AMD) | **不可** — Docker 内で GPU パススルーなし | Device Plugin + ラベル |
-| vLLM 推論 | マニフェスト検証・スモークのみ（Pod は GPU 不足で Pending になり得る） | 本番推論 |
+| vLLM 推論 | マニフェスト検証・スモークのみ（`kind/cpu` で CPU 実験可。Mac 実用は Ollama） | 本番推論 |
 | ストレージ | local-path（kubeadm addon 共用） | local-path / Longhorn |
 | Ingress | hostPort 80/443 → control-plane | LB / MetalLB 等 |
 

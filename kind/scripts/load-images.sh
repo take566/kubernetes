@@ -21,9 +21,13 @@ if ! kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"; then
 fi
 
 # Default vLLM inference image (see vllm/base/vllm-deployment.yaml)
+# Mac/kind CPU overlay: export VLLM_CPU_IMAGE=openeuler/vllm-cpu:0.20.1-oe2403sp3
 IMAGES=(
   "vllm/vllm-openai:latest"
 )
+if [[ -n "${VLLM_CPU_IMAGE:-}" ]]; then
+  IMAGES+=("${VLLM_CPU_IMAGE}")
+fi
 
 # Optional: pull before load
 # for img in "${IMAGES[@]}"; do docker pull "$img"; done

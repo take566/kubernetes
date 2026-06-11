@@ -10,6 +10,7 @@
 ```bash
 # 前提: kind/scripts/create-cluster.sh 実行済み（local-path addon 適用済み）
 kubectl apply -k vllm/overlays/kind/           # NVIDIA 推論 manifest（GPU Pending になり得る）
+kubectl apply -k vllm/overlays/kind/cpu/       # CPU 推論（Mac kind 実験 — Ollama 推奨）
 kubectl apply -k vllm/overlays/kind/amd/       # AMD manifest（同上 — CI/kustomize 検証用）
 kubectl apply -k vllm/overlays/kind/finetune/  # Finetune Job manifest
 ```
@@ -31,6 +32,7 @@ kubectl apply -k vllm/overlays/kind/finetune/  # Finetune Job manifest
 | overlay | 用途 |
 |---------|------|
 | `vllm/overlays/kind/` | ローカル dev / CI（GPU なし） |
+| `vllm/overlays/kind/cpu/` | Mac / CPU vLLM 実験（[macos-local](../macos-local/README.md) 参照） |
 | `vllm/overlays/kubeadm/` | 本番 kubeadm クラスタ（GPU あり） |
 
 PVC 定義は同一（`storageClassName: local-path`）。ラベル `app.kubernetes.io/cluster` のみ `kind` / `kubeadm` で区別します。

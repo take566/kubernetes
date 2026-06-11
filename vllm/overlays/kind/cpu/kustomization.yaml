@@ -14,7 +14,7 @@ resources:
   - ../../../components/teacher-stub
   - ../vllm-pvc.yaml
 patches:
-  - path: ../model-patch.yaml
+  - path: model-patch.yaml
   - path: ../teacher-stub-patch.yaml
   - path: ../cpu-deployment-patch.yaml
   - target:

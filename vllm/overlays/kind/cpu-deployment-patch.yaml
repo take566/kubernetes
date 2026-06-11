@@ -8,9 +8,16 @@ spec:
     spec:
       containers:
         - name: vllm
+          # Official vllm/vllm-openai requires CUDA. Use CPU build for kind/Mac.
+          image: openeuler/vllm-cpu:0.20.1-oe2403sp3
+          imagePullPolicy: IfNotPresent
           env:
             - name: VLLM_DEVICE
               value: cpu
+            - name: VLLM_CPU_KVCACHE_SPACE
+              value: "2"
+            - name: VLLM_CPU_OMP_THREADS_BIND
+              value: "0-3"
           command:
             - /bin/sh
             - -c
@@ -23,8 +30,15 @@ spec:
                 ${VLLM_EXTRA_ARGS}
           resources:
             requests:
-              cpu: "4"
-              memory: 6Gi
+              cpu: "2"
+              memory: 4Gi
             limits:
-              cpu: "8"
-              memory: 12Gi
+              cpu: "4"
+              memory: 8Gi
+          securityContext:
+            capabilities:
+              add:
+                - SYS_NICE
+      securityContext:
+        seccompProfile:
+          type: Unconfined
