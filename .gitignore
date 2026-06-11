@@ -1,4 +1,7 @@
 
+# ByteRover CLI local context tree (use brv push/pull for sync)
+.brv/
+
 .clinerules/byterover-rules.md
 .kilocode/rules/byterover-rules.md
 .roo/rules/byterover-rules.md
@@ -17,3 +20,31 @@ data/
 # Python cache
 __pycache__/
 *.pyc
+
+# Local tool binaries
+.bin/
+
+# Downloaded installers
+amdgpu-install_*.deb
+
+# Scratch / accidental root files
+bench-test.txt
+bench-api-lfm.json
+
+# Serena export temp
+.tmp-serena-export/
+
+# Vendor clones (clone externally)
+/librocdxg/
+/rocm-install-on-windows/
+
+# Benchmark ephemeral output
+vllm/benchmark/results/ci-artifacts/
+vllm/benchmark/results/bench-ollama-openai-*.json
+vllm/benchmark/results/ollama-compare-*.json
+vllm/benchmark/results/ollama-bench-*.json
+vllm/benchmark/results/ollama-rx5700-*.json
+
+# Helm vendor charts (regenerate via helm dependency update)
+gitlab/charts/*.tgz
+jenkins/charts/*.tgz
