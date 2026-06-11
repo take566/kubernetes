@@ -117,5 +117,6 @@ Write-Host '  3. wsl --shutdown   # closes all WSL sessions — YOU must run thi
 Write-Host '  4. Re-open WSL and: ./scripts/diagnose-wsl-gpu.sh'
 Write-Host ''
 Write-Host '  RX 5700: skip ROCm — use .\scripts\setup-ollama-rx5700.ps1 instead' -ForegroundColor Yellow
+Write-Host '  RX 5700 research: docs\RX5700_WSL_GPU.md + scripts\try-rx5700-wsl-gpu-experimental.sh' -ForegroundColor DarkGray
 
 exit $diagExit

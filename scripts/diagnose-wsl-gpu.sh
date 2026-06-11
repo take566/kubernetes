@@ -27,7 +27,9 @@ DXG_DMESG_ERRORS=0
 WDDM_FOUND=false
 GFX1010_LIKELY=false
 ROCR4WSL_INSTALLED=false
+ROCDXG_INSTALLED=false
 AMD_SMI_OK=false
+WIN_DRIVER=""
 VERDICT=""
 VERDICT_DETAIL=""
 
@@ -37,8 +39,12 @@ if ls /dev/dri/renderD* /dev/dri/card* >/dev/null 2>&1; then
   HAS_DRI=true
 fi
 
-if dpkg -l hsa-runtime-rocr4wsl-amdgpu 2>/dev/null | awk '/^ii/{exit 0} END{exit 1}'; then
+# dpkg -l | awk breaks under pipefail — use dpkg -s
+if dpkg -s hsa-runtime-rocr4wsl-amdgpu &>/dev/null; then
   ROCR4WSL_INSTALLED=true
+fi
+if dpkg -s librocdxg-amdgpu-hst &>/dev/null; then
+  ROCDXG_INSTALLED=true
 fi
 
 # dmesg dxg errors (EINVAL -22 = adapter query failed)
@@ -69,6 +75,7 @@ fi
 # WSL: lspci often empty — probe Windows GPU name via powershell.exe
 if $IN_WSL && command -v powershell.exe &>/dev/null; then
   WIN_GPU="$(powershell.exe -NoProfile -Command "(Get-CimInstance Win32_VideoController | Where-Object { \$_.Name -match 'AMD|Radeon' } | Select-Object -First 1 -ExpandProperty Name)" 2>/dev/null | tr -d '\r' || true)"
+  WIN_DRIVER="$(powershell.exe -NoProfile -Command "(Get-CimInstance Win32_VideoController | Where-Object { \$_.Name -match 'AMD|Radeon' } | Select-Object -First 1 -ExpandProperty DriverVersion)" 2>/dev/null | tr -d '\r' || true)"
   if echo "$WIN_GPU" | grep -qiE '5700|5600|5500|navi 10|rdna'; then
     GFX1010_LIKELY=true
   fi
@@ -86,7 +93,11 @@ if $HAS_KFD && $HAS_DRI && $WDDM_FOUND; then
   VERDICT_DETAIL="WSL GPU compute path healthy (/dev/kfd, /dev/dri, WDDM adapter)."
 elif $GFX1010_LIKELY; then
   VERDICT="GPU_UNSUPPORTED_WSL"
-  VERDICT_DETAIL="RX 5000 (gfx1010/RDNA1) is not in AMD WSL ROCm 7.2 support matrix. /dev/kfd will not appear. Use Windows Ollama instead."
+  if [[ "${DXG_DMESG_ERRORS:-0}" -gt 0 ]]; then
+    VERDICT_DETAIL="RX 5000 (gfx1010/RDNA1): Windows WDDM compute adapter not exposed (dxgk EINVAL). Not in AMD WSL ROCm 7.2 matrix — HSA_OVERRIDE_GFX_VERSION cannot fix this. Use Windows Ollama."
+  else
+    VERDICT_DETAIL="RX 5000 (gfx1010/RDNA1) is not in AMD WSL ROCm 7.2 support matrix. /dev/kfd will not appear. Use Windows Ollama instead."
+  fi
 elif $HAS_DXG && ! $HAS_KFD; then
   if [[ "${DXG_DMESG_ERRORS:-0}" -gt 0 ]]; then
     VERDICT="WDDM_NOT_EXPOSED"
@@ -119,6 +130,7 @@ print_human() {
   log ""
   log "--- ROCm packages ---"
   log "  hsa-runtime-rocr4wsl-amdgpu: $( $ROCR4WSL_INSTALLED && echo installed || echo missing )"
+  log "  librocdxg-amdgpu-hst (ROCDXG): $( $ROCDXG_INSTALLED && echo installed || echo missing )"
   if command -v amd-smi &>/dev/null; then
     log "  amd-smi: $( $AMD_SMI_OK && echo OK || echo installed-but-failed )"
   else
@@ -127,6 +139,12 @@ print_human() {
   log "  WDDM adapter (rocminfo): $( $WDDM_FOUND && echo found || echo NOT_FOUND )"
   if [[ -n "${WIN_GPU:-}" ]]; then
     log "  Windows GPU (via powershell): ${WIN_GPU}"
+  fi
+  if [[ -n "${WIN_DRIVER:-}" ]]; then
+    log "  Windows driver version: ${WIN_DRIVER}"
+    if ! echo "$WIN_DRIVER" | grep -qE '^32\.0\.2[6-9]|^32\.0\.3'; then
+      log "  Note: WSL ROCm expects Adrenalin for WSL2 (26.1.1+ branch); RX 5700 remains unsupported either way"
+    fi
   fi
   log "  gfx1010 / RX 5700 likely: $( $GFX1010_LIKELY && echo yes || echo no )"
   log ""
@@ -143,7 +161,8 @@ print_human() {
       log "  1. Windows: .\\scripts\\setup-ollama-rx5700.ps1"
       log "  2. Bridge:  .\\scripts\\configure-ollama-wsl-bridge.ps1 -ConfigureFirewall"
       log "  3. K8s:      ./kubeadm/scripts/register-windows-ollama-external.sh --verify"
-      log "  Docs: docs/LOCAL_GPU_SETUP_WINDOWS.md (WSL kubeadm GPU section)"
+      log "  Experiment: ./scripts/try-rx5700-wsl-gpu-experimental.sh (records all known attempts)"
+      log "  Docs: docs/RX5700_WSL_GPU.md"
       ;;
     WDDM_NOT_EXPOSED|KFD_MISSING|DXG_MISSING)
       log "  1. Windows: Install AMD Software: Adrenalin Edition 26.1.1 for WSL2"
@@ -161,9 +180,9 @@ print_human() {
 }
 
 print_json() {
-  printf '{"verdict":"%s","detail":"%s","dxg":%s,"kfd":%s,"dri":%s,"wddm":%s,"gfx1010":%s,"rocr4wsl":%s,"dxg_dmesg_errors":%d}\n' \
+  printf '{"verdict":"%s","detail":"%s","dxg":%s,"kfd":%s,"dri":%s,"wddm":%s,"gfx1010":%s,"rocr4wsl":%s,"rocdxg":%s,"win_driver":"%s","dxg_dmesg_errors":%d}\n' \
     "$VERDICT" "$VERDICT_DETAIL" \
-    "$HAS_DXG" "$HAS_KFD" "$HAS_DRI" "$WDDM_FOUND" "$GFX1010_LIKELY" "$ROCR4WSL_INSTALLED" "$DXG_DMESG_ERRORS"
+    "$HAS_DXG" "$HAS_KFD" "$HAS_DRI" "$WDDM_FOUND" "$GFX1010_LIKELY" "$ROCR4WSL_INSTALLED" "$ROCDXG_INSTALLED" "${WIN_DRIVER:-}" "$DXG_DMESG_ERRORS"
 }
 
 case "$VERDICT" in
