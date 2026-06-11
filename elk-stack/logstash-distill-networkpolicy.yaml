@@ -1,0 +1,27 @@
+# Allow distill-collector (vllm) to reach Logstash TCP ingest on port 5000.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: logstash-allow-distill-ingest
+  namespace: elk-stack
+  labels:
+    app: logstash
+    app.kubernetes.io/part-of: elk-stack
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  podSelector:
+    matchLabels:
+      app: logstash
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: vllm
+          podSelector:
+            matchLabels:
+              app: distill-collector
+      ports:
+        - protocol: TCP
+          port: 5000

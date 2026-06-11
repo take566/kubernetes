@@ -1,0 +1,27 @@
+# Allow vllm distill-export Job to query Elasticsearch.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: elasticsearch-allow-distill-export
+  namespace: elk-stack
+  labels:
+    app: elasticsearch
+    app.kubernetes.io/part-of: elk-stack
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  podSelector:
+    matchLabels:
+      app: elasticsearch
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: vllm
+          podSelector:
+            matchLabels:
+              app: vllm-distill-export
+      ports:
+        - protocol: TCP
+          port: 9200

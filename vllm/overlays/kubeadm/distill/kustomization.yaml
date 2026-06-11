@@ -10,5 +10,6 @@ labels:
     includeTemplates: false
 resources:
   - ../../../components/distill
+  - ../../../components/distill-export
 patches:
   - path: collector-patch.yaml

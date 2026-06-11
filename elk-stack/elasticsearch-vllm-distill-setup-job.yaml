@@ -43,9 +43,13 @@ spec:
                 return 1
               }
               wait_for_es
+              ILM_POLICY="${ILM_POLICY:-vllm-distill-kubeadm}"
+              TEMPLATE_FILE="$(mktemp)"
+              sed "s/\"index.lifecycle.name\": \"vllm-distill-kubeadm\"/\"index.lifecycle.name\": \"${ILM_POLICY}\"/" \
+                /config/vllm-distill-index-template.json > "${TEMPLATE_FILE}"
               curl -sfS -X PUT "${ES_URL}/_index_template/vllm-distill" \
                 -H "Content-Type: application/json" \
-                --data-binary @/config/vllm-distill-index-template.json
+                --data-binary @"${TEMPLATE_FILE}"
               curl -sfS -X PUT "${ES_URL}/_ilm/policy/vllm-distill-kind" \
                 -H "Content-Type: application/json" \
                 --data-binary @/config/vllm-distill-ilm-kind.json

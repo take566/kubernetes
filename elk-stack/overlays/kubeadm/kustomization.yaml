@@ -1,0 +1,5 @@
+# kubeadm / production: default ILM (vllm-distill-kubeadm, 30d retention).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base

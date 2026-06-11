@@ -1,0 +1,33 @@
+# Minimal egress: distill-export -> Elasticsearch :9200 + DNS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: distill-export-egress
+  namespace: vllm
+  labels:
+    app: vllm-distill-export
+    app.kubernetes.io/name: vllm-distill-export
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  podSelector:
+    matchLabels:
+      app: vllm-distill-export
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: elk-stack
+          podSelector:
+            matchLabels:
+              app: elasticsearch
+      ports:
+        - protocol: TCP
+          port: 9200
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

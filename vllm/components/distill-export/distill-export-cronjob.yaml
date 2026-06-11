@@ -1,0 +1,59 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vllm-distill-export
+  namespace: vllm
+  labels:
+    app: vllm-distill-export
+    app.kubernetes.io/name: vllm-distill-export
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  # Off-peak daily export (UTC). Override via overlay patch for local timezone.
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app: vllm-distill-export
+            app.kubernetes.io/name: vllm-distill-export
+            app.kubernetes.io/part-of: vllm
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: export
+              image: python:3.11-slim-bookworm
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/bash
+                - -c
+                - exec python /scripts/distill_export.py
+              envFrom:
+                - configMapRef:
+                    name: distill-export-config
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: 128Mi
+                limits:
+                  cpu: "500m"
+                  memory: 512Mi
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                - name: dataset
+                  mountPath: /data/dataset
+          volumes:
+            - name: scripts
+              configMap:
+                name: distill-export-script
+                defaultMode: 0755
+            - name: dataset
+              persistentVolumeClaim:
+                claimName: vllm-finetune-dataset

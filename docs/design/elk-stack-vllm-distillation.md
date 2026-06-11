@@ -1,7 +1,7 @@
 # ELK Stack × vLLM 蒸留（Distillation）統合設計
 
 > 作成日: 2026-06-11  
-> ステータス: **P1 実装済み**（Collector + Logstash パイプライン + ES テンプレート/ILM）  
+> ステータス: **P2 実装済み**（Collector + Logstash + ES テンプレート/ILM + NetworkPolicy + Export CronJob）  
 > 対象リポジトリ: `kubernetes/`（`elk-stack/` + `vllm/`）
 
 ---
@@ -303,8 +303,8 @@ vllm/
 |-------|------|----------|
 | P0 設計 | 本ドキュメント + design スケッチ | `docs/design/`, `elk-stack/design/` |
 | P1 MVP | index template、Logstash filter 追加、Collector Deployment | `elk-stack/`, `vllm/components/distill/` ✅ |
-| P2 エクスポート | export Job、finetune 連携手順 | `vllm/overlays/*/distill/` |
-| P3 本番 hardened | ES リソース、ILM、NetworkPolicy | `elk-stack/overlays/kubeadm/`（新設検討） |
+| P2 エクスポート | export CronJob、finetune 連携手順 | `vllm/components/distill-export/` ✅ |
+| P3 本番 hardened | ES リソース拡張、API Key ローテーション | `elk-stack/overlays/kubeadm/` |
 
 ---
 
@@ -323,21 +323,19 @@ vllm/
 
 ## デプロイ手順（P1 実装）
 
-### 1. ELK（Logstash パイプライン + ES テンプレート/ILM）
+### 1. ELK（Logstash パイプライン + ES テンプレート/ILM + NetworkPolicy）
 
 ```bash
+# kubeadm / 本番（ILM 30 日）
 kubectl apply -k elk-stack/
+# または明示的に
+kubectl apply -k elk-stack/overlays/kubeadm/
+
+# kind（ILM 7 日 — setup Job が vllm-distill-kind を自動適用）
+kubectl apply -k elk-stack/overlays/kind/
+
 kubectl wait --for=condition=complete job/elasticsearch-vllm-distill-setup -n elk-stack --timeout=300s
 kubectl rollout restart deployment/logstash -n elk-stack
-```
-
-kind クラスタで ILM を 7 日保持に切替える場合:
-
-```bash
-kubectl exec -n elk-stack deploy/elasticsearch -- curl -sS -X PUT \
-  localhost:9200/_index_template/vllm-distill \
-  -H 'Content-Type: application/json' \
-  -d '{"index_patterns":["logs-vllm-distill",".ds-logs-vllm-distill-*"],"data_stream":{},"priority":200,"template":{"settings":{"index.lifecycle.name":"vllm-distill-kind"}}}'
 ```
 
 ### 2. Distillation Collector
@@ -346,13 +344,35 @@ kubectl exec -n elk-stack deploy/elasticsearch -- curl -sS -X PUT \
 # kind（10% サンプル、QPS 0.5）
 kubectl apply -k vllm/overlays/kind/distill/
 
-# kubeadm（フル収集、QPS 2）
+# kubeadm（フル収集 + export CronJob、QPS 2）
 kubectl apply -k vllm/overlays/kubeadm/distill/
 ```
 
-前提: `vllm` namespace に Teacher Deployment が稼働、`elk-stack` Logstash が TCP 5000 を待受。
+前提: `vllm` namespace に Teacher Deployment が稼働、`elk-stack` Logstash が TCP 5000 を待受。  
+kubeadm export には `vllm-finetune-dataset` PVC（`vllm/overlays/kubeadm/finetune-pvc.yaml`）が必要。
 
-### 3. 確認
+### 3. Export CronJob（kubeadm のみ、日次 02:00 UTC）
+
+```bash
+# 手動トリガ（テスト）
+kubectl create job -n vllm --from=cronjob/vllm-distill-export vllm-distill-export-manual-$(date +%s)
+kubectl logs -f job/vllm-distill-export-manual-... -n vllm
+# 出力確認: /data/dataset/distill-export-YYYYMMDD.jsonl on vllm-finetune-dataset PVC
+```
+
+スケジュール変更: `vllm/components/distill-export/distill-export-cronjob.yaml` の `schedule` を patch。
+
+### 4. NetworkPolicy
+
+| 方向 | 許可 |
+|------|------|
+| `vllm` distill-collector → `elk-stack` logstash | TCP 5000 |
+| `vllm` distill-export → `elk-stack` elasticsearch | TCP 9200 |
+| `vllm` distill-collector → Teacher vLLM | TCP 8000 |
+
+deny-by-default は `agents/` のみ。`vllm` / `elk-stack` は最小 allow ルール。
+
+### 5. 確認
 
 ```bash
 kubectl logs -f deploy/distill-collector -n vllm

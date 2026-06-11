@@ -8,13 +8,12 @@ labels:
     includeSelectors: false
     includeTemplates: false
 resources:
-  - distill-collector-configmap.yaml
-  - distill-prompts-configmap.yaml
-  - distill-collector-deployment.yaml
-  - distill-collector-networkpolicy.yaml
+  - distill-export-configmap.yaml
+  - distill-export-cronjob.yaml
+  - distill-export-networkpolicy.yaml
 configMapGenerator:
-  - name: distill-collector-script
+  - name: distill-export-script
     files:
-      - distill_collector.py=scripts/distill_collector.py
+      - distill_export.py=scripts/distill_export.py
 generatorOptions:
   disableNameSuffixHash: true

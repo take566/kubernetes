@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: elk-stack
+resources:
+  - ../namespace.yaml
+  - ../elasticsearch-configmap.yaml
+  - ../elasticsearch-deployment.yaml
+  - ../elasticsearch-index-template.yaml
+  - ../elasticsearch-vllm-distill-template.yaml
+  - ../elasticsearch-vllm-distill-setup-job.yaml
+  - ../elasticsearch-pv.yaml
+  - ../elasticsearch-service.yaml
+  - ../kibana-configmap.yaml
+  - ../kibana-dashboard-config.yaml
+  - ../kibana-deployment.yaml
+  - ../kibana-service.yaml
+  - ../kibana-ingress.yaml
+  - ../logstash-configmap.yaml
+  - ../logstash-deployment.yaml
+  - ../logstash-distill-networkpolicy.yaml
+  - ../logstash-service.yaml
+  - ../elasticsearch-distill-export-networkpolicy.yaml
+  - ../log-generator-cronjob.yaml
+  - ../winlogbeat-config.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: elk-stack
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: false
