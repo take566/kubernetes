@@ -1,0 +1,55 @@
+{
+  "platform": "macos-arm64",
+  "backend": "vllm-cpu-docker",
+  "image": "openeuler/vllm-cpu:0.20.1-oe2403sp3",
+  "timestamp": "2026-06-11T19:28:02Z",
+  "bench_config": {
+    "max_tokens": 64,
+    "latency_samples": 10,
+    "throughput_requests": 20,
+    "concurrency": 2,
+    "vllm_extra_args": "--dtype float16 --max-num-seqs 2 --max-model-len 1024 --max-num-batched-tokens 512 --enforce-eager"
+  },
+  "results": [
+    {
+      "model": "facebook/opt-125m",
+      "status": "ok",
+      "api_mode": "completions",
+      "p50_ms": 430.25,
+      "p99_ms": 451.2,
+      "output_tokens_per_second": 279.04,
+      "requests_per_second": 4.36,
+      "notes": "Fastest raw throughput; base model only (no chat template)"
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "status": "ok",
+      "api_mode": "chat",
+      "p50_ms": 1562.69,
+      "p99_ms": 1621.26,
+      "output_tokens_per_second": 71.12,
+      "requests_per_second": 1.11,
+      "notes": "Recommended for Mac vLLM CPU: instruct, multilingual, kind overlay default"
+    },
+    {
+      "model": "LiquidAI/LFM2.5-350M",
+      "status": "deploy_timeout",
+      "notes": "Health timeout after 2400s; HF download + CPU load still in progress"
+    },
+    {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "status": "deploy_timeout",
+      "notes": "Health timeout after 2400s; HF download + CPU load still in progress"
+    }
+  ],
+  "recommendation": {
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "rationale": "Only instruct model that loaded reliably within timeout. 3.6x slower than opt-125m but supports chat/instruct API and matches kind/cpu overlay default."
+  },
+  "blockers": [
+    "kind/kubectl not installed; used Docker directly",
+    "LFM2.5-350M and Qwen2.5-1.5B exceed 40min startup on unauthenticated HF Hub",
+    "vLLM 0.20 CPU image drops --device and --disable-log-requests CLI flags"
+  ],
+  "reproduce": "./scripts/bench_vllm_macos_cpu.sh"
+}

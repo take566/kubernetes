@@ -94,6 +94,31 @@ Qwen2.5 公式コンテキスト（1.5B: 最大 32k）と単一 GPU 8–16 GiB P
 
 > **Note:** k8s vLLM 実測（p50/p99/tok/s）は引き続き _pending_ — [vLLM Model Benchmark](../../.github/workflows/vllm-model-benchmark.yaml) + GPU クラスタが必要。
 
+## macOS Apple Silicon (vLLM CPU Docker) · 2026-06-11
+
+**環境:** Mac arm64, Docker Desktop, `openeuler/vllm-cpu:0.20.1-oe2403sp3`  
+**経路:** kind/kubectl 未導入のため Docker 直起動（[`scripts/bench_vllm_macos_cpu.sh`](../../scripts/bench_vllm_macos_cpu.sh)）  
+**比較 JSON:** [../benchmark/results/vllm-cpu-macos-compare-2026-06-11.json](../benchmark/results/vllm-cpu-macos-compare-2026-06-11.json)
+
+プロンプト: _"Write a short paragraph about Kubernetes GPU scheduling."_ · `max_tokens=64` · `concurrency=2`
+
+| モデル | p50 (ms) | p99 (ms) | output tok/s | req/s | status | 備考 |
+|--------|----------|----------|--------------|-------|--------|------|
+| facebook/opt-125m | 430.25 | 451.2 | 279.04 | 4.36 | OK | completions API（chat template なし） |
+| Qwen/Qwen2.5-0.5B-Instruct | 1562.69 | 1621.26 | 71.12 | 1.11 | OK | **Mac vLLM CPU 推奨**（instruct / kind デフォルト） |
+| LiquidAI/LFM2.5-350M | — | — | — | — | TIMEOUT | 2400s 以内に health 未達（HF ダウンロード + CPU ロード） |
+| Qwen/Qwen2.5-1.5B-Instruct | — | — | — | — | TIMEOUT | 同上 |
+
+**推奨:** `Qwen/Qwen2.5-0.5B-Instruct` — instruct 対応で唯一安定起動。opt-125m は 3.9× 高速だが base モデルのみ。
+
+**再現:**
+
+```bash
+docker pull openeuler/vllm-cpu:0.20.1-oe2403sp3
+./scripts/bench_vllm_macos_cpu.sh
+# 単体: MODELS="Qwen/Qwen2.5-0.5B-Instruct" ./scripts/bench_vllm_macos_cpu.sh
+```
+
 ## 実測ログ（Kubernetes / vLLM）
 
 | 日付 | 環境 | モデル | p50_ms | p99_ms | tok/s | 実行者 | JSON |

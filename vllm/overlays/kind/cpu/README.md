@@ -33,3 +33,13 @@ WSL + RX 5700 で GPU が必要な場合は Windows Ollama ブリッジを使用
 - **ImagePullBackOff** → `kind load docker-image` でイメージをノードに載せる
 - **OOMKilled** → `cpu-deployment-patch.yaml` の memory limits を増やす
 - **CrashLoop (CUDA)** → cpu overlay が適用されているか確認
+
+## ベンチマーク（Mac Docker）
+
+kind/kubectl なしでも Docker 直起動で計測可能:
+
+```bash
+./scripts/bench_vllm_macos_cpu.sh
+```
+
+結果: `vllm/benchmark/results/bench-vllm-cpu-*.json` · 比較表: [../../docs/BENCHMARK_RESULTS.md](../../docs/BENCHMARK_RESULTS.md)

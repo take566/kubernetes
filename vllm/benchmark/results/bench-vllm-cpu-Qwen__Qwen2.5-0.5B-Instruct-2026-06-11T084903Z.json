@@ -24,5 +24,8 @@
     "requests_per_second": 1.1112,
     "output_tokens_per_second": 71.1179,
     "concurrency": 2
-  }
+  },
+  "backend": "vllm-cpu-docker",
+  "image": "openeuler/vllm-cpu:0.20.1-oe2403sp3",
+  "platform": "macos-arm64"
 }
