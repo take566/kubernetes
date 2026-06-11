@@ -1,0 +1,18 @@
+{
+  "description": "HuggingFace model IDs to Ollama tags for local RX5700 benchmarking when k8s vLLM is unavailable",
+  "gpu_profile": "rx5700-8gb",
+  "mappings": {
+    "Qwen/Qwen2.5-0.5B-Instruct": "qwen2.5:0.5b",
+    "Qwen/Qwen2.5-1.5B-Instruct": "qwen2.5:1.5b",
+    "LiquidAI/LFM2.5-1.2B-Instruct": "sam860/LFM2:1.2b",
+    "LiquidAI/LFM2.5-350M": "sam860/LFM2:350m",
+    "google/gemma-4-E2B-it": "gemma4:rx5700",
+    "google/gemma-4-E4B-it": "gemma4:rx5700",
+    "Qwen/Qwen3.6-35B-A3B": "qwen3.6:rx5700"
+  },
+  "notes": {
+    "google/gemma-4-E2B-it": "approximate tag; custom Modelfile for RX5700",
+    "google/gemma-4-E4B-it": "approximate tag; shares gemma4:rx5700 Modelfile",
+    "Qwen/Qwen3.6-35B-A3B": "community quant for 8GB VRAM; slow but no OOM expected"
+  }
+}

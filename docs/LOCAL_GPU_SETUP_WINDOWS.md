@@ -68,6 +68,29 @@ ollama run qwen2.5:1.5b "Kubernetes の GPU スケジューリングについて
 
 LFM / Qwen3.6 / Gemma4 は Ollama カタログの有無を `ollama search` で確認してください。結果は [vllm/docs/BENCHMARK_RESULTS.md](../vllm/docs/BENCHMARK_RESULTS.md) に手動記録可能です。
 
+### 手順 3b: `compare_models_ollama.ps1`（K8s なし・候補一括比較）
+
+vLLM クラスタが未接続でも、リポジトリの HuggingFace 候補を Ollama タグにマップして一括ベンチできます。
+
+**前提:** Ollama 起動済み、マップ内タグを `ollama pull` 済み（[vllm/benchmark/ollama-model-map.json](../vllm/benchmark/ollama-model-map.json)）
+
+```powershell
+# 拡張候補（LFM + Qwen3.6 + Gemma4 + Qwen2.5-1.5B）
+$env:COMPARE_SET = 'extended'
+.\scripts\compare_models_ollama.ps1
+
+# デフォルト（opt-125m はマップなしのため SKIP、Qwen2.5 0.5B/1.5B のみ計測）
+$env:COMPARE_SET = 'default'
+.\scripts\compare_models_ollama.ps1
+
+# 個別指定（HuggingFace ID）
+.\scripts\compare_models_ollama.ps1 -Models 'Qwen/Qwen2.5-1.5B-Instruct LiquidAI/LFM2.5-1.2B-Instruct'
+```
+
+**出力:** `vllm/benchmark/results/ollama-compare-<timestamp>.json`（HF ID + Ollama タグ + tok/s）
+
+**CI:** GitHub Actions → **vLLM Ollama Benchmark** → マップ検証のみ（`run_benchmark: false`）。GPU 実測は self-hosted Windows runner（ラベル `ollama`）で `run_benchmark: true`。
+
 ---
 
 ## 手順 4: WSL2 で ROCm 準備（RX 5700 / gfx1010）
