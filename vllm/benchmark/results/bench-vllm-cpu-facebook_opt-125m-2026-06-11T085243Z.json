@@ -1,0 +1,31 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "model": "facebook/opt-125m",
+  "timestamp": "2026-06-11T08:52:53Z",
+  "warmup_requests": 3,
+  "config": {
+    "max_tokens": 64,
+    "latency_samples": 10,
+    "throughput_requests": 20,
+    "concurrency": 2,
+    "api_mode": "completions"
+  },
+  "latency": {
+    "p50_ms": 430.25,
+    "p99_ms": 451.2,
+    "mean_ms": 433.16,
+    "count": 10
+  },
+  "throughput": {
+    "duration_s": 4.5872,
+    "total_requests": 20,
+    "successful_requests": 20,
+    "total_output_tokens": 1280,
+    "requests_per_second": 4.36,
+    "output_tokens_per_second": 279.0394,
+    "concurrency": 2
+  },
+  "backend": "vllm-cpu-docker",
+  "image": "openeuler/vllm-cpu:0.20.1-oe2403sp3",
+  "platform": "macos-arm64"
+}

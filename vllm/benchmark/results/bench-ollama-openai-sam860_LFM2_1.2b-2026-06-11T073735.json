@@ -1,0 +1,27 @@
+{
+  "base_url": "http://127.0.0.1:11434/v1",
+  "model": "sam860/LFM2:1.2b",
+  "timestamp": "2026-06-11T07:37:37Z",
+  "warmup_requests": 3,
+  "config": {
+    "max_tokens": 16,
+    "latency_samples": 2,
+    "throughput_requests": 2,
+    "concurrency": 4
+  },
+  "latency": {
+    "p50_ms": 261.64,
+    "p99_ms": 265.55,
+    "mean_ms": 261.64,
+    "count": 2
+  },
+  "throughput": {
+    "duration_s": 0.4691,
+    "total_requests": 2,
+    "successful_requests": 2,
+    "total_output_tokens": 32,
+    "requests_per_second": 4.2636,
+    "output_tokens_per_second": 68.218,
+    "concurrency": 4
+  }
+}

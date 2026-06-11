@@ -1,0 +1,28 @@
+{
+  "base_url": "http://127.0.0.1:11434/v1",
+  "model": "qwen2.5:0.5b",
+  "timestamp": "2026-06-11T11:55:31Z",
+  "warmup_requests": 3,
+  "config": {
+    "max_tokens": 64,
+    "latency_samples": 10,
+    "throughput_requests": 20,
+    "concurrency": 4,
+    "api_mode": "chat"
+  },
+  "latency": {
+    "p50_ms": 534.71,
+    "p99_ms": 546.65,
+    "mean_ms": 537.24,
+    "count": 10
+  },
+  "throughput": {
+    "duration_s": 9.2493,
+    "total_requests": 20,
+    "successful_requests": 20,
+    "total_output_tokens": 1280,
+    "requests_per_second": 2.1623,
+    "output_tokens_per_second": 138.3886,
+    "concurrency": 4
+  }
+}
