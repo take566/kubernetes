@@ -59,6 +59,9 @@ ensure_helm_deps() {
 
 resolve_github_token() {
   if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    if [[ "${GITHUB_TOKEN}" == gho_* ]]; then
+      warn "GITHUB_TOKEN looks like gh CLI OAuth (gho_*) — use a classic PAT (ghp_*) with repo + workflow scopes"
+    fi
     echo "${GITHUB_TOKEN}"
     return 0
   fi
@@ -132,7 +135,20 @@ fi
 # --- ARC controller ---
 echo ""
 echo "--- Installing ARC controller (${ARC_NS}) ---"
+# ARC values may reference github-runners (watchSingleNamespace) before runners deploy.
 kubectl create namespace "${ARC_NS}" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace "${RUNNERS_NS}" --dry-run=client -o yaml | kubectl apply -f -
+
+ARC_CRD_TGZ="$(ls "${ARC_CHART}"/charts/gha-runner-scale-set-controller-*.tgz 2>/dev/null | head -1)"
+if [[ -n "${ARC_CRD_TGZ}" && -f "${ARC_CRD_TGZ}" ]]; then
+  log "Installing ARC CRDs from ${ARC_CRD_TGZ##*/}"
+  # Server-side apply avoids kubectl last-applied annotation size limit on large CRDs.
+  helm show crds "${ARC_CRD_TGZ}" | kubectl apply --server-side --force-conflicts -f -
+  ok "ARC CRDs applied"
+else
+  warn "ARC CRD chart not found under ${ARC_CHART}/charts/ — controller may fail to start"
+fi
+
 helm template "${ARC_RELEASE}" "${ARC_CHART}" \
   -f "${ARC_CHART}/values.yaml" \
   -n "${ARC_NS}" | kubectl apply -f -
@@ -162,6 +178,15 @@ if TOKEN="$(resolve_github_token)"; then
     --from-literal=github_token="${TOKEN}" \
     --dry-run=client -o yaml | kubectl apply -f -
   ok "secret github-runners-secret applied"
+
+  echo "  Waiting for AutoscalingRunnerSet CRD..."
+  for _ in $(seq 1 60); do
+    if kubectl get crd autoscalingrunnersets.actions.github.com &>/dev/null; then
+      ok "CRD autoscalingrunnersets.actions.github.com ready"
+      break
+    fi
+    sleep 2
+  done
 
   helm template "${RUNNERS_RELEASE}" "${RUNNERS_CHART}" \
     -f "${RUNNERS_CHART}/values.yaml" \

@@ -53,6 +53,7 @@ K8s vLLM が未接続のときは `scripts/compare_models_ollama.ps1` で Huggin
 
 | モデル | status | total_time_s | tokens_per_s | notes |
 |--------|--------|--------------|--------------|-------|
+| qwen2.5:0.5b | OK | — | 62.95 | kind 向け; load 0.26s; API `/api/generate` |
 | sam860/LFM2:1.2b | OK | 4.21 | 37.38 | eval_count=143 |
 | qwen2.5:1.5b | OK | 11.23 | 28.43 | eval_count=256 |
 | qwen2.5:3b | OK | 14.09 | 16.27 | eval_count=114 |

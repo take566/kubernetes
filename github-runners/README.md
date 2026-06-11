@@ -26,6 +26,7 @@ Argo CD なしで ARC コントローラ + runner scale set を入れる場合:
 ./scripts/bootstrap-self-hosted-runner.sh --check
 
 # インストール（GITHUB_TOKEN または ~/.github-runner-token があれば Secret + runner も適用）
+# 注意: `gh auth token` の gho_* は不可。classic PAT (ghp_*) を使用すること。
 export GITHUB_TOKEN=ghp_YOUR_TOKEN
 ./scripts/bootstrap-self-hosted-runner.sh
 

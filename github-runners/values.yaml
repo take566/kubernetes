@@ -17,7 +17,8 @@ gha-runner-scale-set:
 
   controllerServiceAccount:
     namespace: actions-runner-system
-    name: actions-runner-controller-gha-rs-controller
+    # Must match helm release name in bootstrap-self-hosted-runner.sh (ARC_RELEASE=arc).
+    name: arc-gha-rs-controller
 
   containerMode:
     type: kubernetes

@@ -326,6 +326,8 @@ Actions → **vLLM Model Benchmark** → `compare_set: extended`
 | `kubectl` cluster 接続不可 | ローカル推論には不要。kind 作成 or リモート kubeconfig |
 | vLLM Pod Pending（K8s） | `nvidia.com/gpu` リソース不足 → Device Plugin 確認 |
 | ROCm `rocminfo` で GPU なし（AMD/WSL） | 付録 A の ROCm 未インストール、または gfx1010 非対応 |
+| `No WDDM adapters found` / `hsa_init Failed`（WSL） | **RX 5700 は ROCm 7.2 WSL 公式非対応**（RDNA3+ のみ）。WSL ROCm は諦め、**Ollama (Windows)** または **ネイティブ Linux** を使用 |
+| `amdgpu not found in modules`（WSL） | WSL では通常の `amdgpu` モジュールは使わない。上記と合わせて GPU 非対応を疑う |
 | `sudo` が PowerShell から失敗 | 正常 — WSL ターミナルで `install-wsl-rocm-interactive.sh` のブロックを実行 |
 | `lspci` / `helm` missing in WSL preflight | WSL 内で `sudo ./scripts/install-wsl-prerequisites.sh` |
 
