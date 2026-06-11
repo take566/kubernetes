@@ -37,6 +37,10 @@ gha-runner-scale-set:
           image: ghcr.io/actions/actions-runner:latest
           command:
             - /home/runner/run.sh
+          env:
+            # Allow smoke jobs without `container:` (dev/kind). See GitHub ARC k8s mode docs.
+            - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+              value: "false"
           resources:
             requests:
               cpu: 500m
