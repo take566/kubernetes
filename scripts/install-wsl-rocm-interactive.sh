@@ -41,9 +41,10 @@ sudo ./scripts/install-wsl-prerequisites.sh
 # Install ROCm stack (prompts for sudo password)
 sudo ./scripts/install-wsl-rocm.sh
 
-# Verify
-rocm-smi || true
+# Verify (amd-smi preferred on ROCm 7+; rocm-smi legacy fallback)
+amd-smi version || amd-smi static || true
 rocminfo | head -40 || true
+rocm-smi || true
 
 # gfx1010 (RX 5700) — not officially supported
 export HSA_OVERRIDE_GFX_VERSION=10.3.0

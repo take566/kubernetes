@@ -17,7 +17,7 @@ else
   echo "SKIP: lspci not installed (sudo apt install pciutils)"
 fi
 
-for tool in rocm-smi rocminfo docker kubectl; do
+for tool in amd-smi rocm-smi rocminfo docker kubectl; do
   if command -v "$tool" &>/dev/null; then
     echo "OK: $tool ($($tool --version 2>/dev/null | head -1 || echo present))"
   else
@@ -25,11 +25,14 @@ for tool in rocm-smi rocminfo docker kubectl; do
   fi
 done
 
-if command -v rocm-smi &>/dev/null; then
-  echo "--- rocm-smi ---"
+if command -v amd-smi &>/dev/null; then
+  echo "--- amd-smi ---"
+  amd-smi static 2>/dev/null || amd-smi version 2>/dev/null || true
+elif command -v rocm-smi &>/dev/null; then
+  echo "--- rocm-smi (legacy; amd-smi preferred on ROCm 7+) ---"
   rocm-smi || true
 elif [[ -e /dev/kfd ]]; then
-  echo "INFO: /dev/kfd exists but rocm-smi missing — install ROCm"
+  echo "INFO: /dev/kfd exists but amd-smi/rocm-smi missing — install ROCm"
 else
   echo "INFO: ROCm not installed. See docs/LOCAL_GPU_SETUP_WINDOWS.md"
 fi

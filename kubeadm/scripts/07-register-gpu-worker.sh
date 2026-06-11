@@ -101,6 +101,9 @@ if [[ -z "${ALLOCATABLE_GPU}" || "${ALLOCATABLE_GPU}" == "0" ]]; then
   kubectl get pods -A ${PLUGIN_SELECTOR} || true
   warn "Node resources:"
   kubectl describe node "${NODE_NAME}" | sed -n '1,140p' || true
+  if [[ "${VENDOR}" == "amd" ]]; then
+    warn "On the worker host, verify: rocminfo | head -40; amd-smi static || amd-smi version; ./scripts/verify-amd-smi.sh"
+  fi
   die "GPU is not allocatable. Check host driver/ROCm(or NVIDIA) install, then retry."
 fi
 

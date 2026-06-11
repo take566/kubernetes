@@ -333,8 +333,9 @@ sudo ./scripts/install-wsl-rocm.sh
 **確認:**
 
 ```bash
-rocm-smi || true
+amd-smi version || amd-smi static || true   # preferred on ROCm 7+
 rocminfo | head -40
+rocm-smi || true   # legacy fallback
 ```
 
 **ROCm インストール後（Windows）:**

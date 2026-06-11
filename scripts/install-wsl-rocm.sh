@@ -85,9 +85,14 @@ run_or_echo "amdgpu-install --list-usecase"
 log "Step 5: install WSL + ROCm stack (no DKMS)"
 run_or_echo "amdgpu-install -y --usecase=wsl,rocm --no-dkms"
 
+if ! $CHECK_ONLY && ! command -v amd-smi >/dev/null 2>&1; then
+  run_or_echo "apt-get install -y amd-smi-lib"
+fi
+
 log "Post-install verification commands (manual or next preflight run):"
-echo "  rocm-smi || true"
+echo "  amd-smi version || amd-smi static || true   # preferred on ROCm 7+"
 echo "  rocminfo | head -40 || true"
+echo "  rocm-smi || true   # legacy fallback if amd-smi missing"
 echo ""
 echo "gfx1010 (RX 5700) is NOT officially supported — set before PyTorch/vLLM:"
 echo "  export HSA_OVERRIDE_GFX_VERSION=10.3.0"

@@ -111,14 +111,42 @@ else
   run_or_echo "apt-get install -y rocm"
 fi
 
+if ! $CHECK_ONLY && ! command -v amd-smi >/dev/null 2>&1; then
+  run_or_echo "apt-get install -y amd-smi-lib"
+fi
+
 configure_rx5700_override
+
+verify_amd_smi() {
+  if $CHECK_ONLY; then
+    run_or_echo "amd-smi version || amd-smi --help || amd-smi static"
+    return 0
+  fi
+  if command -v amd-smi >/dev/null 2>&1; then
+    if amd-smi version >/tmp/amd-smi.out 2>&1; then
+      log "amd-smi looks healthy."
+      sed -n '1,20p' /tmp/amd-smi.out
+    elif amd-smi static >/tmp/amd-smi.out 2>&1; then
+      log "amd-smi static looks healthy."
+      sed -n '1,20p' /tmp/amd-smi.out
+    else
+      warn "amd-smi present but version/static failed; rocm-smi may still work on older ROCm."
+      sed -n '1,20p' /tmp/amd-smi.out >&2 || true
+    fi
+  else
+    warn "amd-smi not found (optional on ROCm 7+; rocm-smi fallback is OK for older installs)."
+  fi
+}
 
 echo ""
 echo "Verification:"
 echo "  source /etc/profile.d/rocm-rx5700.sh"
 echo "  rocminfo | head -40"
+echo "  amd-smi version || amd-smi static"
+echo "  rocm-smi || true   # legacy fallback"
 if $CHECK_ONLY; then
   run_or_echo "rocminfo | head -40"
+  verify_amd_smi
 else
   if command -v rocminfo >/dev/null 2>&1; then
     rocminfo >/tmp/rocminfo.out 2>&1 || true
@@ -133,4 +161,5 @@ else
   else
     die "rocminfo command not found after install."
   fi
+  verify_amd_smi
 fi

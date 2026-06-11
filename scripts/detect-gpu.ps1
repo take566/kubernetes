@@ -63,8 +63,40 @@ if (-not $gpus) {
     }
 }
 
+$isNvidiaGpu = $gpus | Where-Object { $_.Name -match 'NVIDIA|GeForce|RTX|GTX' }
+$isAmdGpu = $gpus | Where-Object { $_.Name -match 'AMD|Radeon' }
+$wslProbeDistro = Get-WslDefaultDistro
+
 Write-Host "`n--- Tooling ---" -ForegroundColor Cyan
-@('nvidia-smi', 'rocm-smi', 'docker', 'kubectl', 'kind', 'wsl') | ForEach-Object {
+$nvSmi = Test-Command 'nvidia-smi'
+if ($isNvidiaGpu) {
+    $nvStatus = if ($nvSmi.Present) { 'OK' } else { 'MISSING' }
+    $nvColor = if ($nvSmi.Present) { 'Green' } else { 'Red' }
+} else {
+    $nvStatus = if ($nvSmi.Present) { 'OK' } else { 'N/A' }
+    $nvColor = if ($nvSmi.Present) { 'Green' } else { 'DarkGray' }
+}
+Write-Host ("  {0,-12} {1}" -f 'nvidia-smi', $nvStatus) -ForegroundColor $nvColor
+
+if ($isAmdGpu) {
+    Write-Host ("  {0,-12} {1}" -f 'amd-smi', 'N/A (Linux/WSL only)') -ForegroundColor DarkGray
+    Write-Host ("  {0,-12} {1}" -f 'rocm-smi', 'N/A (Linux/WSL only)') -ForegroundColor DarkGray
+    $wslAmdSmi = Normalize-WslText (wsl -d $wslProbeDistro -- bash -lc 'command -v amd-smi && amd-smi version 2>/dev/null | head -1' 2>$null)
+    if ($wslAmdSmi) {
+        Write-Host ("  {0,-12} {1}" -f 'amd-smi (WSL)', $wslAmdSmi) -ForegroundColor Green
+    } else {
+        Write-Host ("  {0,-12} {1}" -f 'amd-smi (WSL)', 'MISSING') -ForegroundColor Yellow
+    }
+} else {
+    foreach ($tool in @('amd-smi', 'rocm-smi')) {
+        $t = Test-Command $tool
+        $status = if ($t.Present) { 'OK' } else { 'MISSING' }
+        $color = if ($t.Present) { 'Green' } else { 'Red' }
+        Write-Host ("  {0,-12} {1}" -f $tool, $status) -ForegroundColor $color
+    }
+}
+
+@('docker', 'kubectl', 'kind', 'wsl') | ForEach-Object {
     $t = Test-Command $_
     $status = if ($t.Present) { 'OK' } else { 'MISSING' }
     $color = if ($t.Present) { 'Green' } else { 'Red' }
@@ -132,9 +164,9 @@ try {
 }
 
 Write-Host "`n--- Recommendations ---" -ForegroundColor Cyan
-$isNvidia = $gpus | Where-Object { $_.Name -match 'NVIDIA|GeForce|RTX|GTX' }
+$isNvidia = $isNvidiaGpu
 $isGtx1650 = $gpus | Where-Object { $_.Name -match '1650' }
-$isAmd = $gpus | Where-Object { $_.Name -match 'AMD|Radeon' }
+$isAmd = $isAmdGpu
 
 if ($isGtx1650) {
     Write-Host "  0. CUDA/Docker audit: .\scripts\install-nvidia-toolkit-windows.ps1"

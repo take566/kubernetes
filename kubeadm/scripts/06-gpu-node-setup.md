@@ -6,7 +6,7 @@ Linux ワーカーに GPU ドライバを入れた後、クラスタ側で Devic
 
 | 項目 | NVIDIA | AMD (ROCm) |
 |------|--------|------------|
-| ホスト | ドライバ + `nvidia-smi` | ROCm + `rocminfo` |
+| ホスト | ドライバ + `nvidia-smi` | ROCm + `rocminfo`（必須）、`amd-smi`（推奨・gfx1010 では任意） |
 | Device Plugin | [NVIDIA k8s-device-plugin](https://github.com/NVIDIA/k8s-device-plugin) | [ROCm k8s-device-plugin](https://github.com/ROCm/k8s-device-plugin) |
 | リソース名 | `nvidia.com/gpu` | `amd.com/gpu` |
 

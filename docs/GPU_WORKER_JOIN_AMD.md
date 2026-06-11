@@ -54,6 +54,8 @@ sudo kubeadm/scripts/05-install-rocm-worker.sh --check
 sudo kubeadm/scripts/05-install-rocm-worker.sh
 source /etc/profile.d/rocm-rx5700.sh
 rocminfo | head -40
+amd-smi version || amd-smi static || rocm-smi
+./scripts/verify-amd-smi.sh
 ```
 
 RX 5700（RDNA1/gfx1010）は下記が必要です:
