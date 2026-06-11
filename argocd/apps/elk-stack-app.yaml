@@ -1,9 +1,13 @@
 # Manual sync — ELK stack is stateful; avoid unintended data/index changes.
+# Use cluster-specific overlay paths (kind ILM 7d vs kubeadm ILM 30d).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: elk-stack
+  name: elk-stack-kubeadm
   namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: elk-stack
+    app.kubernetes.io/cluster: kubeadm
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -11,7 +15,32 @@ spec:
   source:
     repoURL: https://github.com/take566/kubernetes.git
     targetRevision: master
-    path: elk-stack
+    path: elk-stack/overlays/kubeadm
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: elk-stack
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: elk-stack-kind
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: elk-stack
+    app.kubernetes.io/cluster: kind
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/take566/kubernetes.git
+    targetRevision: master
+    path: elk-stack/overlays/kind
   destination:
     server: https://kubernetes.default.svc
     namespace: elk-stack

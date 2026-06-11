@@ -237,6 +237,8 @@ Saved Search 例: `quality.score >= 0.7 AND NOT quality.flags: refusal`
 | Collector | 同一 overlay の `components/distill` | 同上 |
 | エクスポート先 PVC | `vllm-finetune-dataset`（kind 用小容量） | 本番 PVC |
 
+kind overlay でも export CronJob + finetune PVC を同梱（`suspend: true` で手動トリガのみ）。
+
 Kustomize 配置案（将来）:
 
 ```
@@ -254,7 +256,7 @@ vllm/
 | 項目 | 対策 |
 |------|------|
 | PII | Logstash `fingerprint` + 正規表現マスク（メール/電話）。`distill.prompt_hash` のみ保持オプション |
-| 認証 | ES `xpack.security.enabled=true`（現行 deployment 準拠）。Collector / Export Job に ES API Key（K8s Secret） |
+| 認証 | ES `xpack.security.enabled=false`（MVP）。P3 で API Key + Secret を `elk-stack/overlays/kubeadm/` に追加予定 |
 | ネットワーク | NetworkPolicy: `vllm` → `elk-stack:5000,9200` のみ許可 |
 | 保持 | ILM で自動削除。エクスポート JSONL も PVC ライフサイクルポリシー |
 | Secret | ログに HF_TOKEN / API キーを出さない。Collector env は Secret 参照 |
@@ -315,7 +317,7 @@ vllm/
 - `vllm/base/vllm-configmap.yaml` — `--disable-log-requests`
 - `vllm/components/finetune/` — `train.jsonl` 形式
 - `vllm/benchmark/scripts/bench_vllm.py` — レイテンシ/スループット（蒸留メタと突合可能）
-- `argocd/apps/elk-stack-app.yaml` — manual sync
+- `argocd/apps/elk-stack-app.yaml` — kind / kubeadm overlay 別 Application（manual sync）
 - `argocd/apps/vllm-distill-app.yaml` — kind / kubeadm distill overlays
 - `docs/REDESIGN.md` — ELK 維持 + 段階的強化方針
 
@@ -341,8 +343,11 @@ kubectl rollout restart deployment/logstash -n elk-stack
 ### 2. Distillation Collector
 
 ```bash
-# kind（10% サンプル、QPS 0.5）
+# kind（10% サンプル、export は suspend — 手動 Job のみ）
 kubectl apply -k vllm/overlays/kind/distill/
+
+# kind export 手動テスト（PVC 同梱済み）
+kubectl create job -n vllm --from=cronjob/vllm-distill-export vllm-distill-export-manual-$(date +%s)
 
 # kubeadm（フル収集 + export CronJob、QPS 2）
 kubectl apply -k vllm/overlays/kubeadm/distill/
@@ -379,3 +384,78 @@ kubectl logs -f deploy/distill-collector -n vllm
 kubectl port-forward svc/elasticsearch 9200:9200 -n elk-stack
 curl -s 'http://localhost:9200/logs-vllm-distill/_search?size=1&pretty'
 ```
+
+---
+
+## E2E 検証（2026-06-11）
+
+### 環境
+
+| 項目 | 結果 |
+|------|------|
+| kind CLI | 未インストール（Windows 開発端末） |
+| kubectl クラスタ | 接続不可（context `awx` → localhost:53847 refused） |
+| マニフェスト検証 | `kubectl kustomize` 全 distill パス **PASS**（8/8） |
+
+### 実施した検証（ローカル）
+
+```powershell
+# kustomize build（全 PASS）
+kubectl kustomize elk-stack/overlays/kind --load-restrictor LoadRestrictionsNone
+kubectl kustomize elk-stack/overlays/kubeadm --load-restrictor LoadRestrictionsNone
+kubectl kustomize vllm/overlays/kind/distill --load-restrictor LoadRestrictionsNone
+kubectl kustomize vllm/overlays/kubeadm/distill --load-restrictor LoadRestrictionsNone
+kubectl kustomize vllm/components/distill --load-restrictor LoadRestrictionsNone
+kubectl kustomize vllm/components/distill-export --load-restrictor LoadRestrictionsNone
+```
+
+| チェック | 結果 |
+|----------|------|
+| `scripts/validate.sh` CRLF | **修正済**（154 行 LF 化） |
+| ES security 矛盾 | **修正済**（deployment env `xpack.security.enabled=true` 削除、configmap `false` に統一） |
+| Argo CD elk overlays | **修正済**（`elk-stack-kind` / `elk-stack-kubeadm` に分割） |
+| kind export + PVC | **追加済**（export CronJob `suspend: true` + `finetune-pvc.yaml`） |
+| Mock ingest スクリプト | **追加** `scripts/test-distill-mock.sh` |
+
+### クラスタ上で実行する手順（kind 推奨）
+
+```bash
+# 1. kind クラスタ作成
+./kind/scripts/create-cluster.sh
+
+# 2. ELK デプロイ + setup Job
+kubectl apply -k elk-stack/overlays/kind/
+kubectl wait --for=condition=complete job/elasticsearch-vllm-distill-setup -n elk-stack --timeout=300s
+kubectl rollout restart deployment/logstash -n elk-stack
+kubectl rollout status deployment/logstash -n elk-stack --timeout=180s
+
+# 3. Teacher なしでも mock テスト可能
+./scripts/test-distill-mock.sh
+kubectl port-forward svc/elasticsearch 9200:9200 -n elk-stack &
+sleep 3
+curl -s 'http://localhost:9200/logs-vllm-distill/_search?size=1&pretty'
+
+# 4. distill overlay（collector + export + PVC）
+kubectl apply -k vllm/overlays/kind/distill/
+
+# 5. export 手動 Job
+kubectl create job -n vllm --from=cronjob/vllm-distill-export vllm-distill-export-test
+kubectl logs -f job/vllm-distill-export-test -n vllm
+```
+
+### 未検証（クラスタ/GPU 不足）
+
+| 項目 | 理由 |
+|------|------|
+| Collector → Teacher vLLM 実リクエスト | GPU Teacher 未デプロイ |
+| finetune Job スモーク | kind は GPU 非対応 |
+| ES 100 件収集 DoD | クラスタ未接続 |
+| P3 ES API Key 認証 | 意図的に P3 保留 |
+
+### kubeadm 本番での残作業
+
+1. Argo CD で `elk-stack-kubeadm` + `vllm-distill-kubeadm` を manual sync（旧 `elk-stack` Application は削除）
+2. `vllm-finetune-dataset` PVC を finetune overlay で先に作成
+3. Teacher vLLM 稼働確認後 distill overlay sync
+4. export CronJob または手動 Job → `distill-export-*.jsonl` を `train.jsonl` にマージ
+5. P3: ES heap 1g+ / API Key ローテーション（`elk-stack/overlays/kubeadm/`）

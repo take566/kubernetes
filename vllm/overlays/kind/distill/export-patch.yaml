@@ -1,0 +1,9 @@
+# kind: export CronJob is manual-only (suspend schedule). Trigger with:
+#   kubectl create job -n vllm --from=cronjob/vllm-distill-export vllm-distill-export-manual
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vllm-distill-export
+  namespace: vllm
+spec:
+  suspend: true

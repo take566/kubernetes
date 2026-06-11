@@ -288,9 +288,12 @@ kubectl rollout restart deployment/logstash -n elk-stack
 
 # Collector + Export（vLLM Teacher 稼働後）
 kubectl apply -k vllm/overlays/kubeadm/distill/   # 本番 + 日次 export CronJob
-kubectl apply -k vllm/overlays/kind/distill/      # kind 試験（10% サンプル）
+kubectl apply -k vllm/overlays/kind/distill/      # kind 試験（10% サンプル + export 手動 + PVC）
 
-# Export 手動テスト（kubeadm）
+# Mock ingest（Teacher 不要）
+./scripts/test-distill-mock.sh
+
+# Export 手動テスト（kind / kubeadm 共通）
 kubectl create job -n vllm --from=cronjob/vllm-distill-export vllm-distill-export-test
 ```
 

@@ -10,5 +10,8 @@ labels:
     includeTemplates: false
 resources:
   - ../../../components/distill
+  - ../../../components/distill-export
+  - ../finetune-pvc.yaml
 patches:
   - path: collector-patch.yaml
+  - path: export-patch.yaml
