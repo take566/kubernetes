@@ -1,0 +1,6 @@
+# GTX 1650 4GB 向け phi4-mini チューニング
+# 作成: ollama create phi4-mini:gtx1650 -f ollama/modelfiles/phi4-mini-gtx1650.Modelfile
+FROM phi4-mini
+
+PARAMETER num_ctx 4096
+PARAMETER temperature 0.5

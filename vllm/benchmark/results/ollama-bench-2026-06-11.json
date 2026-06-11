@@ -1,0 +1,16 @@
+﻿[
+    {
+        "model":  "qwen2.5:0.5b",
+        "status":  "OK",
+        "total_time_s":  7.48,
+        "tokens_per_s":  32.29,
+        "notes":  "eval_count=2; api_total_s=7.48"
+    },
+    {
+        "model":  "phi4-mini:gtx1650",
+        "status":  "OK",
+        "total_time_s":  21.57,
+        "tokens_per_s":  3.26,
+        "notes":  "eval_count=17; api_total_s=21.56"
+    }
+]

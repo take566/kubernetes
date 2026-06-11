@@ -44,6 +44,10 @@ if (-not $gpus) {
         if ($g.Name -match '5700 XT|5700' -and $vramGiB -lt 6) {
             Write-Host "  Note: WMI often under-reports VRAM; RX 5700 is typically 8 GiB" -ForegroundColor DarkGray
         }
+        if ($g.Name -match 'GTX 1650|1650') {
+            Write-Host "  Profile: GTX 1650 — 4 GiB VRAM; use models <= 3B, num_ctx 2048-4096" -ForegroundColor DarkYellow
+            Write-Host "  Quick start: .\scripts\setup-vllm-windows.ps1" -ForegroundColor DarkGray
+        }
         if ($g.Name -match 'AMD|Radeon') {
             Write-Host "  Vendor: AMD — Windows display driver OK; ROCm is Linux/WSL only" -ForegroundColor DarkYellow
             if ($g.Name -match '5700|5600|5500|Navi 10|RDNA') {
@@ -51,7 +55,10 @@ if (-not $gpus) {
             }
         }
         if ($g.Name -match 'NVIDIA|GeForce|RTX|GTX') {
-            Write-Host "  Vendor: NVIDIA — install CUDA driver + nvidia-smi for ML stack" -ForegroundColor DarkYellow
+            Write-Host "  Vendor: NVIDIA — CUDA driver + nvidia-smi; Ollama (Windows) or Docker vLLM recommended" -ForegroundColor DarkYellow
+            if ($g.Name -match '1650' -and $vramGiB -le 4.5) {
+                Write-Host "  VRAM hint: prefer qwen2.5:0.5b, phi4-mini:gtx1650; avoid 7B+ on 4GB" -ForegroundColor Yellow
+            }
         }
     }
 }
@@ -109,7 +116,27 @@ try {
 }
 
 Write-Host "`n--- Recommendations ---" -ForegroundColor Cyan
-Write-Host "  1. Start Docker Desktop + enable WSL integration (Ubuntu-24.04)"
-Write-Host "  2. For vLLM/K8s GPU: Linux + ROCm path — see docs/LOCAL_GPU_SETUP_WINDOWS.md"
-Write-Host "  3. Quick local model smoke: Ollama (Windows) while GPU ML stack is prepared"
-Write-Host "  4. Cluster benchmark: GitHub Actions vLLM Model Benchmark (self-hosted runner)"
+$isNvidia = $gpus | Where-Object { $_.Name -match 'NVIDIA|GeForce|RTX|GTX' }
+$isGtx1650 = $gpus | Where-Object { $_.Name -match '1650' }
+$isAmd = $gpus | Where-Object { $_.Name -match 'AMD|Radeon' }
+
+if ($isGtx1650) {
+    Write-Host "  1. Run .\scripts\setup-vllm-windows.ps1 (Ollama + optional Docker vLLM)"
+    Write-Host "  2. Models: qwen2.5:0.5b, phi4-mini:gtx1650 — see ollama/modelfiles/README.md"
+    Write-Host "  3. Docker vLLM: .\scripts\run-vllm-docker.ps1 (Qwen2.5-0.5B, max-model-len 2048)"
+    Write-Host "  4. K8s GPU benchmark: kubeadm or GitHub Actions (kind is CI-only, no GPU)"
+} elseif ($isNvidia) {
+    Write-Host "  1. Verify nvidia-smi; install Ollama for quick GPU inference on Windows"
+    Write-Host "  2. Docker vLLM: .\scripts\run-vllm-docker.ps1 (tune --gpu-memory-utilization for VRAM)"
+    Write-Host "  3. Full setup: .\scripts\setup-vllm-windows.ps1"
+    Write-Host "  4. K8s benchmark: kubeadm NVIDIA overlay or GitHub Actions self-hosted runner"
+} elseif ($isAmd) {
+    Write-Host "  1. Start Docker Desktop + enable WSL integration (Ubuntu-24.04)"
+    Write-Host "  2. AMD GPU vLLM: Linux + ROCm path — see docs/LOCAL_GPU_SETUP_WINDOWS.md (AMD section in git history)"
+    Write-Host "  3. Quick local model smoke: Ollama (Windows)"
+    Write-Host "  4. Cluster benchmark: GitHub Actions vLLM Model Benchmark (self-hosted runner)"
+} else {
+    Write-Host "  1. Start Docker Desktop if using containers or kind"
+    Write-Host "  2. Quick local model smoke: Ollama (Windows)"
+    Write-Host "  3. See docs/LOCAL_GPU_SETUP_WINDOWS.md"
+}
