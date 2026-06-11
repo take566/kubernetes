@@ -13,3 +13,8 @@ resources:
   - ../../../components/distill-export
 patches:
   - path: collector-patch.yaml
+
+images:
+  - name: distill-collector
+    newName: distill-collector
+    newTag: 3.11-aiohttp

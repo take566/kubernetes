@@ -34,3 +34,19 @@ kubectl apply -k vllm/overlays/kind/finetune/  # Finetune Job manifest
 | `vllm/overlays/kubeadm/` | 本番 kubeadm クラスタ（GPU あり） |
 
 PVC 定義は同一（`storageClassName: local-path`）。ラベル `app.kubernetes.io/cluster` のみ `kind` / `kubeadm` で区別します。
+
+## Distillation × ELK（kind）
+
+GPU Teacher は Pending になるため、本 overlay は **OpenAI 互換 teacher stub** でパイプライン検証します（実推論は [kubeadm overlay](../kubeadm/README.md)）。
+
+1. Collector イメージをビルドして kind に載せる（オフラインクラスタで pip 不可のため）:
+
+`ash
+docker build -t distill-collector:3.11-aiohttp -f vllm/components/distill/Dockerfile vllm/components/distill
+kind load docker-image distill-collector:3.11-aiohttp --name dev
+`
+
+2. デプロイ: kubectl kustomize vllm/overlays/kind --load-restrictor LoadRestrictionsNone | kubectl apply -f - および .../kind/distill
+
+検証結果: [docs/DISTILL_VERIFICATION.md](../../../docs/DISTILL_VERIFICATION.md)
+

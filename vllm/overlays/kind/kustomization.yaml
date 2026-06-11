@@ -10,6 +10,12 @@ labels:
     includeTemplates: false
 resources:
   - ../../base
+  - ../../components/teacher-stub
   - vllm-pvc.yaml
 patches:
   - path: model-patch.yaml
+  - path: teacher-stub-patch.yaml
+  - target:
+      kind: Deployment
+      name: vllm
+    path: remove-gpu-patch.json

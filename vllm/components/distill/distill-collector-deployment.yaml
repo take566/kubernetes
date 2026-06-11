@@ -22,15 +22,11 @@ spec:
     spec:
       containers:
         - name: collector
-          image: python:3.11-slim-bookworm
+          image: distill-collector:3.11-aiohttp
           imagePullPolicy: IfNotPresent
           command:
-            - /bin/bash
-            - -c
-            - |
-              set -euo pipefail
-              pip install --no-cache-dir aiohttp
-              exec python /scripts/distill_collector.py
+            - python
+            - /scripts/distill_collector.py
           ports:
             - name: health
               containerPort: 8080

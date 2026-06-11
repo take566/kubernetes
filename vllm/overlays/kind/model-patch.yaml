@@ -7,10 +7,8 @@ data:
   # Fast smoke model for kind / CI — see vllm/docs/MODEL_SELECTION.md
   VLLM_MODEL: "Qwen/Qwen2.5-0.5B-Instruct"
   VLLM_EXTRA_ARGS: >-
-    --gpu-memory-utilization 0.90
-    --max-num-seqs 64
-    --max-model-len 4096
-    --max-num-batched-tokens 2048
-    --enable-prefix-caching
-    --enable-chunked-prefill
+    --max-num-seqs 4
+    --max-model-len 2048
+    --max-num-batched-tokens 1024
+    --enforce-eager
     --disable-log-requests
