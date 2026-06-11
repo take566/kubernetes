@@ -43,6 +43,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          # vLLM待機(VLLM_HEALTH_TIMEOUT_S=600s)中のliveness killを防ぐ: 15s x 48 = 720s > 600s
+          startupProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 15
+            failureThreshold: 48
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /ready
