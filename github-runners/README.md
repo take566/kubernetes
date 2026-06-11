@@ -47,6 +47,35 @@ gh workflow run self-hosted-test.yaml
 
 K8s 内 vLLM が GPU を使えない場合、**ホスト Windows** に runner を直接登録し、Ollama で GPU ベンチを回します。
 
+### 自動 bootstrap（推奨）
+
+前提: `gh auth login` 済み、Ollama 常駐（`http://127.0.0.1:11434/api/tags` が応答）。
+
+```powershell
+# 登録 + ラベル self-hosted,Windows,ollama（既定）
+.\scripts\bootstrap-windows-ollama-runner.ps1
+
+# Windows サービスとして常駐
+.\scripts\bootstrap-windows-ollama-runner.ps1 -InstallService
+
+# 再登録
+.\scripts\bootstrap-windows-ollama-runner.ps1 -Force
+```
+
+| パラメータ | 既定 | 説明 |
+|------------|------|------|
+| `-RunnerDir` | `%USERPROFILE%\actions-runner` | runner 展開先 |
+| `-RepoUrl` | `https://github.com/take566/kubernetes` | 登録先 repo |
+| `-Labels` | `self-hosted,Windows,ollama` | `runs-on` 用ラベル |
+| `-InstallService` | — | `svc.cmd install` + `start` |
+| `-Force` | — | `.runner` がある場合も再設定 |
+
+スクリプト: [../scripts/bootstrap-windows-ollama-runner.ps1](../scripts/bootstrap-windows-ollama-runner.ps1)
+
+**K8s Secret のトークン種別:** `github-runners-secret` の `github_token` には **classic PAT (`ghp_*`)** を使います。`gh auth token` が返す OAuth トークン（`gho_*`）は ARC の runner 登録に使えません。bootstrap スクリプトは prefix のみ検査して警告します（トークン本体は出力しません）。
+
+### 手動インストール
+
 1. [actions/runner](https://github.com/actions/runner/releases) を Windows にインストール
 2. リポジトリ Settings → Actions → Runners → New self-hosted runner
 3. 登録時にラベルを追加: `ollama`（既存: `self-hosted`, `Windows`, `X64`）
@@ -58,6 +87,7 @@ gh workflow run vllm-ollama-benchmark.yaml -f compare_set=default -f run_benchma
 
 | スクリプト | 用途 |
 |------------|------|
+| [../scripts/bootstrap-windows-ollama-runner.ps1](../scripts/bootstrap-windows-ollama-runner.ps1) | Windows runner 自動登録（Ollama ベンチ用） |
 | [../scripts/setup-ollama-rx5700.ps1](../scripts/setup-ollama-rx5700.ps1) | モデル pull + :rx5700 Modelfile |
 | [../scripts/compare_models_ollama.ps1](../scripts/compare_models_ollama.ps1) | HF 候補一括比較 |
 | [../scripts/bench_ollama_openai.ps1](../scripts/bench_ollama_openai.ps1) | `bench_vllm.py` 互換 JSON |
