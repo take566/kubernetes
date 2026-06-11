@@ -167,6 +167,107 @@ wsl -d Ubuntu-24.04 -- docker info
 
 > kind クラスタは GPU を渡しません（マニフェスト検証用）。GPU ベンチには手順 6 を使用してください。
 
+### 5.1 WSL 前提パッケージ（任意）
+
+`validate.sh` の helm チェックや preflight の `lspci` 用。**sudo パスワード必須**（WSL 内で対話実行）:
+
+```powershell
+.\scripts\install-wsl-rocm.ps1 -PrerequisitesOnly
+# 表示ブロックを WSL に貼り付け → sudo ./scripts/install-wsl-prerequisites.sh
+```
+
+---
+
+## 付録 A: WSL2 + AMD ROCm（RX 5700 / gfx1010）
+
+> **sudo パスワード必須:** ROCm と WSL 前提パッケージ（`helm` / `pciutils` / `wget`）のインストールは **WSL 内で対話的に `sudo` を実行**する必要があります。PowerShell からはパスワードを渡せないため、下記の **インタラクティブ用スクリプト** または **Windows Terminal 起動ラッパー** を使ってください。
+
+**重要:** RX 5700（RDNA1 / **gfx1010**）は AMD ROCm の**公式サポート外**です。vLLM + ROCm は Linux 上でコミュニティ手順（`HSA_OVERRIDE_GFX_VERSION` 等）が必要です。
+
+| スクリプト | 用途 |
+|------------|------|
+| `scripts/install-wsl-rocm.ps1` | Windows から preflight → コマンド表示 → WT/WSL ターミナル起動 |
+| `scripts/install-wsl-rocm-interactive.sh` | WSL に貼り付ける exact コマンドを表示 |
+| `scripts/install-wsl-prerequisites.sh` | `helm`, `pciutils`, `wget`（**sudo 必須**） |
+| `scripts/install-wsl-rocm.sh` | ROCm 7.2 本体（**sudo 必須**、`--check` でドライラン） |
+
+### A.1 推奨フロー（Windows → WSL 対話インストール）
+
+```powershell
+# 1) preflight + 貼り付け用コマンド表示 + Windows Terminal で WSL を開く
+.\scripts\install-wsl-rocm.ps1
+
+# WSL ターミナルで sudo パスワードを入力してインストール完了後:
+
+# 2) WSL GPU スタックを再読み込み（推奨）
+wsl --shutdown
+
+# 3) 再 preflight
+.\scripts\install-wsl-rocm.ps1 -PreflightOnly
+```
+
+**ターミナルを自動で開かない**場合:
+
+```powershell
+.\scripts\install-wsl-rocm.ps1 -SkipTerminal
+```
+
+### A.2 WSL 内プリフライト（手動）
+
+```powershell
+wsl -d Ubuntu-24.04 -- bash -lc "cd /mnt/d/work/kubernetes && ./scripts/setup-wsl-gpu-preflight.sh"
+```
+
+### A.3 ROCm インストール（Ubuntu 24.04 on WSL）
+
+AMD 公式 **ROCm 7.2 WSL** 手順（[Install Radeon software for WSL with ROCm](https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.2/docs/install/installrad/wsl/install-radeon.html)）:
+
+**前提:** Windows 側に **AMD Software: Adrenalin Edition 26.1.1 for WSL2** 以降。WSL には **Ubuntu 24.04**。
+
+**コピペ用コマンド（sudo パスワードは WSL 側で入力）:**
+
+```powershell
+wsl -d Ubuntu-24.04 -- bash -lc "cd /mnt/d/work/kubernetes && ./scripts/install-wsl-rocm-interactive.sh"
+```
+
+**ドライラン（変更なし・sudo 不要）:**
+
+```powershell
+wsl -d Ubuntu-24.04 -- bash -lc "cd /mnt/d/work/kubernetes && ./scripts/install-wsl-rocm.sh --check"
+```
+
+**WSL 内インストール（要 sudo — PowerShell からは不可）:**
+
+```bash
+sudo ./scripts/install-wsl-prerequisites.sh   # optional: helm, lspci, wget
+sudo ./scripts/install-wsl-rocm.sh
+```
+
+**確認:**
+
+```bash
+rocm-smi || true
+rocminfo | head -40
+```
+
+**ROCm インストール後（Windows）:**
+
+```powershell
+wsl --shutdown
+.\scripts\install-wsl-rocm.ps1 -PreflightOnly
+```
+
+> **Note:** `--no-dkms` は WSL2 でカーネルモジュールをビルドしないために必須。
+
+RX 5700（gfx1010）向け環境変数:
+
+```bash
+export HSA_OVERRIDE_GFX_VERSION=10.3.0
+export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
+```
+
+K8s AMD overlay: `vllm/overlays/kubeadm/amd/`
+
 ---
 
 ## 手順 6: Kubernetes + vLLM ベンチ（本番同等）
@@ -221,8 +322,12 @@ Actions → **vLLM Model Benchmark** → `compare_set: extended`
 | Docker vLLM OOM | より小さいモデル（0.5B）、`--max-model-len 1024` に下げる |
 | `docker run --gpus all` 失敗 | Docker Desktop → Settings → Resources で GPU を有効化 |
 | Docker daemon not running | Docker Desktop を起動 |
+| WSL に `docker` なし | Docker Desktop → WSL integration を有効化 |
 | `kubectl` cluster 接続不可 | ローカル推論には不要。kind 作成 or リモート kubeconfig |
 | vLLM Pod Pending（K8s） | `nvidia.com/gpu` リソース不足 → Device Plugin 確認 |
+| ROCm `rocminfo` で GPU なし（AMD/WSL） | 付録 A の ROCm 未インストール、または gfx1010 非対応 |
+| `sudo` が PowerShell から失敗 | 正常 — WSL ターミナルで `install-wsl-rocm-interactive.sh` のブロックを実行 |
+| `lspci` / `helm` missing in WSL preflight | WSL 内で `sudo ./scripts/install-wsl-prerequisites.sh` |
 
 ---
 
