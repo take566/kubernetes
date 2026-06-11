@@ -10,6 +10,6 @@ labels:
     includeTemplates: false
 resources:
   - ../../../components/finetune
-  - ../finetune-pvc.yaml
+  - ../finetune-pvc
 patches:
   - path: model-patch.yaml

@@ -10,6 +10,6 @@ labels:
     includeTemplates: false
 resources:
   - ../../../components/serena-export
-  - ../finetune-pvc.yaml
+  - ../finetune-pvc
 patches:
   - path: export-patch.yaml

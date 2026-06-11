@@ -35,6 +35,8 @@ spec:
             - configMapRef:
                 name: distill-collector-config
           env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:

@@ -11,7 +11,7 @@ labels:
 resources:
   - ../../../components/distill
   - ../../../components/distill-export
-  - ../finetune-pvc.yaml
+  - ../finetune-pvc
 patches:
   - path: collector-patch.yaml
   - path: export-patch.yaml
