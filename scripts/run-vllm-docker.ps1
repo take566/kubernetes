@@ -57,15 +57,17 @@ docker run -d `
     -p "${Port}:8000" `
     $Image `
     --model $Model `
-    --gpu-memory-utilization 0.85 `
+    --gpu-memory-utilization 0.75 `
     --max-model-len 2048 `
-    --max-num-seqs 32 `
+    --max-num-seqs 8 `
+    --enforce-eager `
     --host 0.0.0.0 `
     --port 8000
 
 if ($LASTEXITCODE -ne 0) {
-    throw 'docker run failed. Ensure NVIDIA Container Toolkit is installed (Docker Desktop → Settings → Resources → GPU).'
+    throw 'docker run failed. Ensure NVIDIA Container Toolkit is installed (Docker Desktop -> Settings -> Resources -> GPU).'
 }
 
 Write-Host "vLLM started: http://127.0.0.1:${Port}/v1/models" -ForegroundColor Green
 Write-Host 'Logs: docker logs -f vllm-gtx1650'
+

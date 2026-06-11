@@ -142,7 +142,7 @@ GTX 1650 向けにメモリを抑えた設定で起動:
 |------|-----|
 | イメージ | `vllm/vllm-openai:latest` |
 | モデル | `Qwen/Qwen2.5-0.5B-Instruct` |
-| `--gpu-memory-utilization` | 0.85 |
+| `--gpu-memory-utilization` | 0.75（GTX 1650 + Docker/WDDM） |
 | `--max-model-len` | 2048 |
 | `--max-num-seqs` | 32 |
 | ポート | 8000 |

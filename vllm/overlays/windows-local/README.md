@@ -85,6 +85,13 @@ Runner 登録手順: [github-runners/README.md](../../../github-runners/README.m
 .\scripts\run-vllm-docker.ps1   # 任意
 ```
 
+| 項目 | 推奨値 |
+|------|--------|
+| モデル規模 | **≤ 3B**（0.5B が稳定） |
+| vLLM `--max-model-len` | **2048** |
+| vLLM `--max-num-seqs` | **8** |
+| vLLM `--gpu-memory-utilization` | **0.75**（Docker/WDDM で空き VRAM が約 3.2GiB のため） |
+
 ## kind を使うタイミング
 
 ローカル Windows で **GPU 付き推論に kind は不要**です。マニフェスト検証・Argo CD sync テスト時のみ [kind overlay](../kind/README.md) を使用してください。
