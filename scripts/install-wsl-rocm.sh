@@ -85,11 +85,36 @@ run_or_echo "amdgpu-install --list-usecase"
 log "Step 5: install WSL + ROCm stack (no DKMS)"
 run_or_echo "amdgpu-install -y --usecase=wsl,rocm --no-dkms"
 
-if ! $CHECK_ONLY && ! command -v amd-smi >/dev/null 2>&1; then
+if ! command -v amd-smi >/dev/null 2>&1; then
+  log "amd-smi not found after amdgpu-install; installing amd-smi-lib."
   run_or_echo "apt-get install -y amd-smi-lib"
 fi
 
-log "Post-install verification commands (manual or next preflight run):"
+verify_amd_smi() {
+  if $CHECK_ONLY; then
+    run_or_echo "amd-smi version || amd-smi --help || amd-smi static"
+    return 0
+  fi
+  if command -v amd-smi >/dev/null 2>&1; then
+    if amd-smi version >/tmp/amd-smi.out 2>&1; then
+      log "amd-smi looks healthy."
+      sed -n '1,20p' /tmp/amd-smi.out
+    elif amd-smi static >/tmp/amd-smi.out 2>&1; then
+      log "amd-smi static looks healthy."
+      sed -n '1,20p' /tmp/amd-smi.out
+    else
+      echo "WARN: amd-smi present but version/static failed; rocm-smi may still work." >&2
+      sed -n '1,20p' /tmp/amd-smi.out >&2 || true
+    fi
+  else
+    echo "WARN: amd-smi not found after amd-smi-lib install (rocm-smi fallback OK on older ROCm)." >&2
+  fi
+}
+
+log "Post-install verification:"
+verify_amd_smi
+
+log "Manual verification commands (or next preflight run):"
 echo "  amd-smi version || amd-smi static || true   # preferred on ROCm 7+"
 echo "  rocminfo | head -40 || true"
 echo "  rocm-smi || true   # legacy fallback if amd-smi missing"

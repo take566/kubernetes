@@ -50,7 +50,7 @@ sudo kubeadm/scripts/02-install-kubeadm.sh
 # ROCm インストール（変更なし確認）
 sudo kubeadm/scripts/05-install-rocm-worker.sh --check
 
-# ROCm 本実行
+# ROCm 本実行（amdgpu-install 後に amd-smi が無い場合は amd-smi-lib を自動導入）
 sudo kubeadm/scripts/05-install-rocm-worker.sh
 source /etc/profile.d/rocm-rx5700.sh
 rocminfo | head -40

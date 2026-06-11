@@ -60,6 +60,8 @@ wget -O /tmp/${AMDGPU_DEB} ${AMDGPU_DEB_URL}
 sudo apt install -y /tmp/${AMDGPU_DEB}
 sudo amdgpu-install --list-usecase
 sudo amdgpu-install -y --usecase=wsl,rocm --no-dkms
+# If amd-smi is missing after amdgpu-install:
+command -v amd-smi || sudo apt-get install -y amd-smi-lib
 
 After install, from Windows PowerShell:
 

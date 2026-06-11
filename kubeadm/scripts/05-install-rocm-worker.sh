@@ -111,7 +111,8 @@ else
   run_or_echo "apt-get install -y rocm"
 fi
 
-if ! $CHECK_ONLY && ! command -v amd-smi >/dev/null 2>&1; then
+if ! command -v amd-smi >/dev/null 2>&1; then
+  log "amd-smi not found after amdgpu-install; installing amd-smi-lib."
   run_or_echo "apt-get install -y amd-smi-lib"
 fi
 
