@@ -57,10 +57,14 @@ spec:
               memory: 50Mi
       hostNetwork: true
       hostPID: true
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       volumes:
       - name: node-exporter-persistent-storage-proc
-        persistentVolumeClaim:
-          claimName: node-exporter-pvc-proc
+        hostPath:
+          path: /proc
       - name: node-exporter-persistent-storage-sys
-        persistentVolumeClaim:
-          claimName: node-exporter-pvc-sys
+        hostPath:
+          path: /sys

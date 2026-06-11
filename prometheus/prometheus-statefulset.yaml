@@ -31,6 +31,19 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
+      # hostPath PV は fsGroup で chown されず root 所有のままになるため、init で 65534 に所有権を付与する
+      initContainers:
+        - name: init-chown-data
+          image: busybox:1.36
+          command: ["chown", "-R", "65534:65534", "/data"]
+          securityContext:
+            # Pod level の runAsNonRoot/runAsUser(65534) を上書きして root で chown を実行
+            runAsNonRoot: false
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts:
+            - name: prometheus-persistent-storage
+              mountPath: /data
       containers:
         - name: prometheus-server
           image: "prom/prometheus:v3.8.0"
@@ -44,8 +57,6 @@ spec:
           args:
             - --config.file=/etc/config/prometheus.yml
             - --storage.tsdb.path=/data
-            - --web.console.libraries=/etc/prometheus/console_libraries
-            - --web.console.templates=/etc/prometheus/consoles
             - --web.enable-lifecycle
           ports:
             - containerPort: 9090
