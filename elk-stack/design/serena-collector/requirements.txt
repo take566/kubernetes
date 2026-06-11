@@ -1,0 +1,2 @@
+# Optional: efficient file system watching (falls back to polling if absent)
+watchdog>=4.0.0

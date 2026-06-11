@@ -1,0 +1,9 @@
+# kind: export CronJob is manual-only (suspend schedule). Trigger with:
+#   kubectl create job -n vllm --from=cronjob/serena-export serena-export-manual
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: serena-export
+  namespace: vllm
+spec:
+  suspend: true

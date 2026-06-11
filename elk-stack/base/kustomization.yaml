@@ -8,6 +8,8 @@ resources:
   - ../elasticsearch-index-template.yaml
   - ../elasticsearch-vllm-distill-template.yaml
   - ../elasticsearch-vllm-distill-setup-job.yaml
+  - ../elasticsearch-serena-template.yaml
+  - ../elasticsearch-serena-setup-job.yaml
   - ../elasticsearch-pv.yaml
   - ../elasticsearch-service.yaml
   - ../kibana-configmap.yaml
@@ -20,6 +22,7 @@ resources:
   - ../logstash-distill-networkpolicy.yaml
   - ../logstash-service.yaml
   - ../elasticsearch-distill-export-networkpolicy.yaml
+  - ../elasticsearch-serena-export-networkpolicy.yaml
   - ../log-generator-cronjob.yaml
   - ../winlogbeat-config.yaml
 labels:

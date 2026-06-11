@@ -1,0 +1,35 @@
+# Allow vllm serena-export Job to query Elasticsearch.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: elasticsearch-allow-serena-export
+  namespace: elk-stack
+  labels:
+    app: elasticsearch
+    app.kubernetes.io/part-of: elk-stack
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  podSelector:
+    matchLabels:
+      app: elasticsearch
+  policyTypes:
+    - Ingress
+  ingress:
+    # ELK stack components (setup job, Logstash, Kibana) in the same namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: elk-stack
+      ports:
+        - protocol: TCP
+          port: 9200
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: vllm
+          podSelector:
+            matchLabels:
+              app: serena-export
+      ports:
+        - protocol: TCP
+          port: 9200

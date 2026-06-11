@@ -1,0 +1,19 @@
+# Serena Log Collector configuration
+# Copy to: %USERPROFILE%\.serena\collector-config.yml
+
+logstash:
+  host: localhost
+  port: 5000
+
+# Serena MCP home (MCP file logs: <serena_home>/logs/<date>/mcp_*.txt)
+serena_home: ~/.serena
+
+# Project roots — health-check logs under <project>/.serena/logs/health-checks/
+projects:
+  - d:\work\kubernetes
+  - d:\work\serena
+
+# Optional overrides
+poll_interval: 1.0
+reconnect_delay: 5.0
+# hostname: DESKTOP-EXAMPLE

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: serena-export-config
+  namespace: vllm
+  labels:
+    app: serena-export
+    app.kubernetes.io/name: serena-export
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+data:
+  ES_URL: "http://elasticsearch.elk-stack.svc.cluster.local:9200"
+  ES_INDEX: "logs-serena"
+  MIN_QUALITY: "0.6"
+  BATCH_SIZE: "100"
+  SCROLL_TTL: "2m"
+  OUTPUT_DIR: "/data/dataset"
+  CHAT_TEMPLATE: "<|im_start|>system\nSerena MCP session log\n\n<|im_start|>user\n{content}\n\n"
+  MARK_EXPORTED: "false"

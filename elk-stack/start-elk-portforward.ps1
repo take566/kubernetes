@@ -85,14 +85,20 @@ Start-Job -Name "elk-logstash-tcp-514" -ScriptBlock {
     kubectl port-forward svc/logstash 514:514 -n elk-stack --address=0.0.0.0
 } | Out-Null
 
+# Logstash JSON ingest (TCP) - ポート5000 (Serena Collector 等)
+Write-Host "3. Logstash JSON ingest TCP (ポート 5000)..." -ForegroundColor Cyan
+Start-Job -Name "elk-logstash-tcp-5000" -ScriptBlock {
+    kubectl port-forward svc/logstash 5000:5000 -n elk-stack --address=0.0.0.0
+} | Out-Null
+
 # Kibana
-Write-Host "3. Kibana (ポート 5601)..." -ForegroundColor Cyan
+Write-Host "4. Kibana (ポート 5601)..." -ForegroundColor Cyan
 Start-Job -Name "elk-kibana" -ScriptBlock {
     kubectl port-forward svc/kibana 5601:5601 -n elk-stack --address=0.0.0.0
 } | Out-Null
 
 # Elasticsearch (オプション)
-Write-Host "4. Elasticsearch (ポート 9200)..." -ForegroundColor Cyan
+Write-Host "5. Elasticsearch (ポート 9200)..." -ForegroundColor Cyan
 Start-Job -Name "elk-elasticsearch" -ScriptBlock {
     kubectl port-forward svc/elasticsearch 9200:9200 -n elk-stack --address=0.0.0.0
 } | Out-Null
@@ -106,7 +112,7 @@ Write-Host "ポートフォワーディングジョブの状態:" -ForegroundCol
 Get-Job | Where-Object { $_.Name -like "elk-*" } | Format-Table -AutoSize
 
 $runningJobs = Get-Job | Where-Object { $_.Name -like "elk-*" -and $_.State -eq "Running" }
-if ($runningJobs.Count -eq 4) {
+if ($runningJobs.Count -eq 5) {
     Write-Host "`n✓ すべてのポートフォワーディングが正常に起動しました！" -ForegroundColor Green
 } else {
     Write-Host "`n警告: 一部のポートフォワーディングが起動していません" -ForegroundColor Yellow
@@ -125,16 +131,33 @@ if ($firewallRules.Count -eq 0) {
         try {
             New-NetFirewallRule -DisplayName "Logstash syslog UDP" -Direction Inbound -Protocol UDP -LocalPort 514 -Action Allow | Out-Null
             New-NetFirewallRule -DisplayName "Logstash syslog TCP" -Direction Inbound -Protocol TCP -LocalPort 514 -Action Allow | Out-Null
+            New-NetFirewallRule -DisplayName "Logstash JSON ingest TCP" -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow | Out-Null
             Write-Host "✓ ファイアウォールルールを作成しました" -ForegroundColor Green
         } catch {
             Write-Host "エラー: ファイアウォールルールの作成に失敗しました (管理者権限が必要です)" -ForegroundColor Red
             Write-Host "手動で設定してください:" -ForegroundColor Yellow
             Write-Host "  New-NetFirewallRule -DisplayName 'Logstash syslog UDP' -Direction Inbound -Protocol UDP -LocalPort 514 -Action Allow" -ForegroundColor Gray
             Write-Host "  New-NetFirewallRule -DisplayName 'Logstash syslog TCP' -Direction Inbound -Protocol TCP -LocalPort 514 -Action Allow" -ForegroundColor Gray
+            Write-Host "  New-NetFirewallRule -DisplayName 'Logstash JSON ingest TCP' -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow" -ForegroundColor Gray
         }
     }
 } else {
     Write-Host "✓ ファイアウォールルールが設定されています" -ForegroundColor Green
+}
+
+$jsonIngestRule = Get-NetFirewallRule -DisplayName "Logstash JSON ingest TCP" -ErrorAction SilentlyContinue
+if (-not $jsonIngestRule) {
+    Write-Host "警告: Logstash JSON ingest (TCP 5000) のファイアウォールルールが見つかりません" -ForegroundColor Yellow
+    $response5000 = Read-Host "TCP 5000 用のファイアウォールルールを作成しますか？ (管理者権限が必要) (y/N)"
+    if ($response5000 -eq 'y' -or $response5000 -eq 'Y') {
+        try {
+            New-NetFirewallRule -DisplayName "Logstash JSON ingest TCP" -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow | Out-Null
+            Write-Host "✓ TCP 5000 ファイアウォールルールを作成しました" -ForegroundColor Green
+        } catch {
+            Write-Host "エラー: TCP 5000 ファイアウォールルールの作成に失敗しました (管理者権限が必要です)" -ForegroundColor Red
+            Write-Host "  New-NetFirewallRule -DisplayName 'Logstash JSON ingest TCP' -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow" -ForegroundColor Gray
+        }
+    }
 }
 
 # アクセス情報を表示
@@ -152,6 +175,11 @@ Write-Host ""
 Write-Host "Logstash (rsyslog):" -ForegroundColor Cyan
 Write-Host "  - syslog UDP: ${hostIP}:514" -ForegroundColor White
 Write-Host "  - syslog TCP: ${hostIP}:514" -ForegroundColor White
+Write-Host ""
+Write-Host "Serena Log Collector (Logstash JSON ingest):" -ForegroundColor Cyan
+Write-Host "  - TCP JSON: localhost:5000" -ForegroundColor White
+Write-Host "  - TCP JSON (外部): ${hostIP}:5000" -ForegroundColor White
+Write-Host "  - Collector: python elk-stack/design/serena-collector/collector.py --logstash localhost:5000" -ForegroundColor White
 Write-Host ""
 
 # Raspberry Pi設定手順

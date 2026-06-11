@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: elasticsearch-serena-setup
+  namespace: elk-stack
+spec:
+  template:
+    spec:
+      containers:
+        - name: setup
+          env:
+            - name: ES_URL
+              value: "http://elasticsearch:9200"
+            - name: ILM_POLICY
+              value: "serena-logs-kind"

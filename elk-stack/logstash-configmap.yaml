@@ -193,6 +193,44 @@ data:
           remove_field => [ "data_stream" ]
         }
       }
+
+      # Serena MCP logs (Collector -> tcp/5000 JSON)
+      if [event][kind] == "serena.log" or [serena][stream] {
+        mutate {
+          add_tag => [ "serena" ]
+        }
+
+        mutate {
+          gsub => [
+            "message", "[A-Za-z]:\\Users\\[^\\s]+", "[USER_HOME]",
+            "message", "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "[EMAIL]"
+          ]
+        }
+
+        ruby {
+          code => '
+            score = 1.0
+            flags = []
+            msg = event.get("message").to_s
+            if msg.length < 20
+              score -= 0.3
+              flags << "too_short"
+            end
+            if event.get("[log][level]") == "ERROR"
+              flags << "error_level"
+            end
+            if msg =~ /api[_-]?key|password|secret/i
+              score -= 0.8
+              flags << "sensitive_pattern"
+            end
+            require "digest"
+            event.set("[serena][message_hash]", Digest::SHA256.hexdigest(msg))
+            event.set("[serena][quality][score]", [score, 0.0].max)
+            event.set("[serena][quality][flags]", flags) unless flags.empty?
+            event.set("[serena][exported]", false)
+          '
+        }
+      }
     }
 
     output {
@@ -200,6 +238,12 @@ data:
         elasticsearch {
           hosts => ["elasticsearch:9200"]
           index => "logs-vllm-distill"
+          action => "create"
+        }
+      } else if "serena" in [tags] {
+        elasticsearch {
+          hosts => ["elasticsearch:9200"]
+          index => "logs-serena"
           action => "create"
         }
       } else {

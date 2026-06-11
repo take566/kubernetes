@@ -4,3 +4,4 @@ resources:
   - ../../base
 patches:
   - path: vllm-distill-setup-ilm-patch.yaml
+  - path: serena-setup-ilm-patch.yaml

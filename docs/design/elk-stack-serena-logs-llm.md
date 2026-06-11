@@ -1,7 +1,7 @@
 # ELK Stack × Serena MCP ログ収集 × LLM 学習連携 統合設計
 
 > 作成日: 2026-06-11  
-> ステータス: **P0 設計**（実装未着手）  
+> ステータス: **P1/P2 実装済み**（ES テンプレート + Logstash + Collector + Export + RAG CLI）  
 > 対象リポジトリ: `kubernetes/`（`elk-stack/`）+ ホスト側 Serena MCP（`serena/`、k8s 外）
 
 ---

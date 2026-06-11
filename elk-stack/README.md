@@ -167,6 +167,7 @@ Raspberry Piのrsyslogと連携してログを収集・閲覧できます。
 
 このスクリプトは以下を自動実行します：
 - Logstash syslog (UDP/TCP) のポートフォワーディング（514番ポート）
+- Logstash JSON ingest (TCP) のポートフォワーディング（5000番ポート、Serena Collector 用）
 - Kibanaのポートフォワーディング（5601番ポート）
 - Elasticsearchのポートフォワーディング（9200番ポート）
 - ファイアウォールルールの設定確認
@@ -298,3 +299,48 @@ kubectl create job -n vllm --from=cronjob/vllm-distill-export vllm-distill-expor
 ```
 
 詳細: [docs/design/elk-stack-vllm-distillation.md](../docs/design/elk-stack-vllm-distillation.md)
+
+## Serena MCP ログ連携
+
+Windows ホスト上の Serena MCP ログを Logstash TCP :5000 経由で Elasticsearch `logs-serena` に取り込みます。
+
+### 前提
+
+1. ELK スタックがデプロイ済みであること
+2. `start-elk-portforward.ps1` で **TCP 5000** が転送されていること（Serena Collector 用）
+
+### クイックスタート
+
+```powershell
+# 1. ポートフォワード（514/5000/5601/9200）
+.\start-elk-portforward.ps1
+
+# 2. Collector 起動（別ターミナル）
+cd elk-stack\design\serena-collector
+pip install -r requirements.txt
+python collector.py --logstash localhost:5000 --projects "d:\work\kubernetes"
+```
+
+設定ファイルを使う場合:
+
+```powershell
+copy collector-config.example.yml $env:USERPROFILE\.serena\collector-config.yml
+python collector.py --config $env:USERPROFILE\.serena\collector-config.yml
+```
+
+### 収集ストリーム（MVP）
+
+| ストリーム | パス | `serena.stream` |
+|-----------|------|-----------------|
+| MCP ファイルログ | `%USERPROFILE%\.serena\logs\<date>\mcp_*.txt` | `mcp.file` |
+| Health-check | `<project>\.serena\logs\health-checks\health_check_*.log` | `health_check` |
+
+### 関連ファイル
+
+- **Collector**: [design/serena-collector/](design/serena-collector/) — `collector.py`、Task Scheduler 手順
+- **Logstash フィルタ例**: [design/logstash-serena-filter.conf.example](design/logstash-serena-filter.conf.example)
+- **インデックステンプレート**: [design/serena-index-template.json](design/serena-index-template.json)
+
+### 設計ドキュメント
+
+統合設計（アーキテクチャ、ES スキーマ、エクスポート、RAG）: [docs/design/elk-stack-serena-logs-llm.md](../docs/design/elk-stack-serena-logs-llm.md)

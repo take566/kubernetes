@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: elasticsearch-serena-setup
+  namespace: elk-stack
+  labels:
+    app: elasticsearch
+    app.kubernetes.io/part-of: elk-stack
+    app.kubernetes.io/component: serena-setup
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: elasticsearch-serena-setup
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: setup
+          image: curlimages/curl:8.5.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ES_URL
+              value: "http://elasticsearch:9200"
+            - name: ILM_POLICY
+              value: "serena-logs-kubeadm"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              wait_for_es() {
+                i=0
+                while [ "$i" -lt 60 ]; do
+                  if curl -sf "${ES_URL}/_cluster/health" >/dev/null; then
+                    return 0
+                  fi
+                  i=$((i + 1))
+                  sleep 5
+                done
+                echo "Elasticsearch not ready at ${ES_URL}" >&2
+                return 1
+              }
+              wait_for_es
+              ILM_POLICY="${ILM_POLICY:-serena-logs-kubeadm}"
+              TEMPLATE_FILE="$(mktemp)"
+              sed "s/\"index.lifecycle.name\": \"serena-logs-kubeadm\"/\"index.lifecycle.name\": \"${ILM_POLICY}\"/" \
+                /config/serena-index-template.json > "${TEMPLATE_FILE}"
+              curl -sfS -X PUT "${ES_URL}/_index_template/serena-logs" \
+                -H "Content-Type: application/json" \
+                --data-binary @"${TEMPLATE_FILE}"
+              curl -sfS -X PUT "${ES_URL}/_ilm/policy/serena-logs-kind" \
+                -H "Content-Type: application/json" \
+                --data-binary @/config/serena-logs-ilm-kind.json
+              curl -sfS -X PUT "${ES_URL}/_ilm/policy/serena-logs-kubeadm" \
+                -H "Content-Type: application/json" \
+                --data-binary @/config/serena-logs-ilm-kubeadm.json
+              echo "Serena index template and ILM policies applied (default ILM: ${ILM_POLICY})"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          resources:
+            requests:
+              cpu: "50m"
+              memory: 64Mi
+            limits:
+              cpu: "200m"
+              memory: 128Mi
+      volumes:
+        - name: config
+          configMap:
+            name: elasticsearch-serena-template
