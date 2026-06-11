@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-benchmark-config
+  namespace: vllm
+data:
+  VLLM_BASE_URL: "http://ollama-external.vllm:11434/v1"
+  VLLM_MODEL: "qwen2.5:0.5b-rx5700"
+  BENCH_LATENCY_SAMPLES: "10"
+  BENCH_THROUGHPUT_REQUESTS: "20"
+  BENCH_CONCURRENCY: "2"

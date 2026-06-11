@@ -2,5 +2,5 @@
 # ollama create qwen2.5:0.5b-rx5700 -f ollama/modelfiles/qwen2.5-0.5b-rx5700.Modelfile
 FROM qwen2.5:0.5b
 
-PARAMETER num_ctx 4096
+PARAMETER num_ctx 2048
 PARAMETER temperature 0.5

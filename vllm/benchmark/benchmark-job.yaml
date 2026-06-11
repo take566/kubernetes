@@ -18,6 +18,15 @@ spec:
         app.kubernetes.io/name: vllm-benchmark
         app.kubernetes.io/part-of: vllm
     spec:
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
+        searches:
+          - vllm.svc.cluster.local
+          - svc.cluster.local
+          - cluster.local
       restartPolicy: Never
       containers:
         - name: benchmark
@@ -29,10 +38,8 @@ spec:
             - -c
             - |
               set -euo pipefail
-              apt-get update -qq
-              apt-get install -y -qq --no-install-recommends curl linux-perf procps
               pip install --no-cache-dir aiohttp
-              chmod +x /scripts/*.sh /scripts/*.py
+              # ConfigMap mounts are read-only; invoke via bash/python directly
               /scripts/run_benchmark.sh
           envFrom:
             - configMapRef:

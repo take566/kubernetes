@@ -15,6 +15,8 @@ configMapGenerator:
       - scripts/perf_stat_server.sh
       - scripts/compare_models.sh
       - scripts/validate_model_profiles.py
+    options:
+      disableNameSuffixHash: true
   - name: vllm-model-profiles
     files:
       - model-profiles.json

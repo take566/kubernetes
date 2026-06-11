@@ -8,7 +8,7 @@
 
 ## WSL2 単一ノード（開発・検証）
 
-前提: Ubuntu 24.04 on WSL2、`systemd=true`（`/etc/wsl.conf`）、**Docker Desktop の WSL Integration は無効化推奨**（`/Docker/host` マウントが kubelet を落とすことがあります）。
+前提: Ubuntu 24.04 on WSL2、`systemd=true`（`/etc/wsl.conf`）、**Docker Desktop の WSL Integration は無効化推奨**。kubelet が落ちた場合は `sudo kubeadm/scripts/recover-wsl-kubelet.sh`（swapoff + `/Docker/host` の umount）（`/Docker/host` マウントが kubelet を落とすことがあります）。
 
 ```bash
 # Windows から root で実行（sudo パスワード不要）
