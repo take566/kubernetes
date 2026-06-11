@@ -4,7 +4,7 @@
   Prepare kubectl access to a remote kubeadm cluster from Windows (merge kubeconfig, SSH tunnel, verify GPU).
 #>
 param(
-    [ValidateSet('status', 'merge', 'tunnel', 'verify')]
+    [ValidateSet('status', 'fetch', 'merge', 'tunnel', 'verify')]
     [string] $Action = 'status',
     [string] $KubeconfigPath = '',
     [string] $ContextName = 'kubeadm-prod',
@@ -30,6 +30,22 @@ function Invoke-Kubectl {
     & kubectl @Args
     if ($LASTEXITCODE -ne 0) { throw "kubectl failed: $($Args -join ' ')" }
 }
+
+function Get-ControlPlaneDns {
+    param([string]$ServerUrl, [string]$SshTarget)
+    if ($ServerUrl) {
+        if ($ServerUrl -match '^https?://([^:/]+)') { return $Matches[1] }
+    }
+    if ($SshTarget) {
+        $hostPart = ($SshTarget -split '@')[-1]
+        return ($hostPart -split ':')[0]
+    }
+    return ''
+}
+
+$repoRoot = Split-Path $PSScriptRoot -Parent
+$defaultKubeadmConfig = Join-Path $kubeDir 'config-kubeadm'
+$exportScript = Join-Path $repoRoot 'kubeadm\scripts\08-export-kubeconfig.sh'
 
 switch ($Action) {
     'status' {
@@ -57,6 +73,27 @@ switch ($Action) {
             }
         }
         $ErrorActionPreference = $prevEap
+    }
+    'fetch' {
+        if (-not $SshTarget) { throw 'Specify -SshTarget user@host' }
+        if (-not (Test-Path $exportScript)) { throw "Missing export script: $exportScript" }
+        $cpDns = Get-ControlPlaneDns -ServerUrl $ServerUrl -SshTarget $SshTarget
+        if (-not $cpDns) { throw 'Could not determine CONTROL_PLANE_DNS; pass -ServerUrl or -SshTarget' }
+        $dest = if ($KubeconfigPath) { $KubeconfigPath } else { $defaultKubeadmConfig }
+        if (-not (Test-Path $kubeDir)) { New-Item -ItemType Directory -Path $kubeDir | Out-Null }
+        $remoteTmp = "/tmp/kubeadm-export-$([System.Guid]::NewGuid().ToString('N')).conf"
+        & scp $exportScript "${SshTarget}:/tmp/08-export-kubeconfig.sh"
+        if ($LASTEXITCODE -ne 0) { throw 'scp export script failed' }
+        & ssh $SshTarget "chmod +x /tmp/08-export-kubeconfig.sh && sudo CONTROL_PLANE_DNS=$cpDns /tmp/08-export-kubeconfig.sh $remoteTmp && rm -f /tmp/08-export-kubeconfig.sh"
+        if ($LASTEXITCODE -ne 0) { throw 'remote export failed' }
+        $kubeContent = (& ssh $SshTarget "sudo cat $remoteTmp")
+        if ($LASTEXITCODE -ne 0) { throw 'fetch kubeconfig failed' }
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText("$dest.tmp", ($kubeContent -join "`n") + "`n", $utf8NoBom)
+        & ssh $SshTarget "sudo rm -f $remoteTmp"
+        Move-Item -Force "$dest.tmp" $dest
+        Write-Host "Fetched kubeconfig to $dest"
+        & $PSCommandPath -Action merge -KubeconfigPath $dest -ContextName $ContextName -ServerUrl $ServerUrl
     }
     'merge' {
         if (-not $KubeconfigPath) { throw 'Specify -KubeconfigPath to admin.conf copy' }
@@ -95,14 +132,19 @@ switch ($Action) {
         $useCtx = if ($Context) { $Context } else { $ContextName }
         Write-Section "nodes ($useCtx)"
         Invoke-Kubectl @('--context', $useCtx, 'get', 'nodes', '-o', 'wide')
-        Write-Section 'GPU allocatable (nvidia.com/gpu)'
-        kubectl --context=$useCtx get nodes -o custom-columns=NAME:.metadata.name,GPU:.status.allocatable.nvidia\.com/gpu
+        Write-Section 'GPU allocatable (nvidia.com/gpu, amd.com/gpu)'
+        kubectl --context=$useCtx get nodes -o custom-columns=NAME:.metadata.name,NVIDIA_GPU:.status.allocatable.nvidia\.com/gpu,AMD_GPU:.status.allocatable.amd\.com/gpu
         Write-Section 'nvidia device plugin pods'
         $prevEap = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         kubectl --context=$useCtx get pods -A -l app=nvidia-device-plugin-daemonset 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Host 'No nvidia-device-plugin pods found (label may differ or addon not applied).'
+        }
+        Write-Section 'amdgpu device plugin pods'
+        kubectl --context=$useCtx get pods -A -l name=amdgpu-dp-ds 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host 'No amdgpu-dp-ds pods found (label may differ or addon not applied).'
         }
         $ErrorActionPreference = $prevEap
     }

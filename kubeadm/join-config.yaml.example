@@ -1,10 +1,26 @@
-# Worker join configuration template (optional — kubeadm join flags also work)
-# 1. On control plane after init: kubeadm token create --print-join-command
-# 2. Copy certificate key from init output or: kubeadm init phase upload-certs --upload-certs
-# 3. Replace placeholders below, then: kubeadm join --config kubeadm/join-config.yaml
+# Join configuration template (optional — kubeadm join flags also work)
+#
+# === Worker join ===
+# 1. On control plane: kubeadm token create --print-join-command
+# 2. Omit the controlPlane: block below (or delete it)
+# 3. Replace discovery placeholders, then:
+#      kubeadm join --config kubeadm/join-config.yaml
+#    Or: kubeadm/scripts/04-join-worker.sh --config kubeadm/join-config.yaml
+#
+# === HA control-plane join (stacked etcd) ===
+# Requires controlPlane.certificateKey — get from first CP after init:
+#   kubeadm init phase upload-certs --upload-certs
+#   # [upload-certs] Using certificate key: <key>  (expires in 2h)
+# Also need token + caCertHashes (same as worker join command).
+# Then on the new CP node (after 01 + 02):
+#   kubeadm/scripts/03b-join-control-plane.sh --config kubeadm/join-config.yaml
+# Or: kubeadm/bootstrap.sh --role join-cp --join-command '...' --certificate-key '<key>'
+#
+# Flags equivalent: --control-plane --certificate-key <key>
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
+# HA CP only — remove this block for worker join
 controlPlane:
   certificateKey: "REPLACE_WITH_CERTIFICATE_KEY_FROM_CONTROL_PLANE"
 nodeRegistration:

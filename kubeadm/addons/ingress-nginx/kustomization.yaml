@@ -1,0 +1,24 @@
+# ingress-nginx controller v1.11.3 for kubeadm bare-metal clusters.
+# Default: DaemonSet + hostPort 80/443 (no external LB required).
+# Alternative: use Deployment + Service LoadBalancer when MetalLB is installed
+#   (--with-metallb); skip the daemonset-hostport patch and set Service type LoadBalancer.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ingress-nginx
+resources:
+  - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/baremetal/deploy.yaml
+patches:
+  - path: controller-daemonset-hostport.yaml
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: ingress-nginx-controller
+      namespace: ingress-nginx
+  - target:
+      kind: IngressClass
+      name: nginx
+    patch: |-
+      - op: add
+        path: /metadata/annotations/ingressclass.kubernetes.io~1is-default-class
+        value: "true"

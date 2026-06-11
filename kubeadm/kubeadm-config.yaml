@@ -1,6 +1,15 @@
 # kubeadm cluster configuration
-# Edit CONTROL_PLANE_ENDPOINT and advertiseAddress before init.
+# Edit controlPlaneEndpoint and advertiseAddress before init.
 # Apply: kubeadm init --config kubeadm/kubeadm-config.yaml
+#
+# Load balancer options (run kubeadm/scripts/00-configure-lb.sh first):
+#   Option A — External VIP/LB (recommended for HA API):
+#     keepalived + HAProxy TCP 6443 → kubeadm/docs/load-balancer-external.md
+#     Set controlPlaneEndpoint to LB DNS (e.g. cp.example.com:6443).
+#   Option B — MetalLB (post-init, for Service type=LoadBalancer):
+#     kubeadm/addons/apply-addons.sh --with-metallb
+#     Does not replace external API VIP during bootstrap.
+#   Or use 03-init-control-plane.sh with CONTROL_PLANE_DNS / CONTROL_PLANE_IP.
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration

@@ -1,0 +1,8 @@
+# Switch vLLM model cache PVC to Longhorn (requires kubeadm/addons/longhorn + --with-longhorn).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vllm-model-cache
+  namespace: vllm
+spec:
+  storageClassName: longhorn

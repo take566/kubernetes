@@ -35,13 +35,13 @@ else
 fi
 
 # Dry-run validation for each directory
-for dir in elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export; do
+for dir in elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export; do
   echo ""
   echo "--- Validating $dir/ ---"
   for file in "$dir"/*.yaml; do
     # Skip non-resource files
     case "$(basename "$file")" in
-      kustomization.yaml|values.yaml|Chart.yaml|Chart.lock|*.md) continue ;;
+      kustomization.yaml|values.yaml|Chart.yaml|Chart.lock|controller-daemonset-hostport.yaml|*.md) continue ;;
     esac
 
     if kubectl apply --dry-run=client --validate=false -f "$file" > /dev/null 2>&1; then
@@ -60,7 +60,7 @@ echo "--- Validating Kustomize builds ---"
 KUSTOMIZE_DIRS=(
   elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes
   vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark
-  kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin
+  kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies
   kind/addons
   vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export
   vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export

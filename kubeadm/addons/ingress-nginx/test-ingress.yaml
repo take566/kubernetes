@@ -1,0 +1,70 @@
+# Smoke test for ingress-nginx — apply after controller is Ready:
+#   kubectl apply -f kubeadm/addons/ingress-nginx/test-ingress.yaml
+#   curl -H 'Host: echo.local' http://<node-ip>/
+#   kubectl delete -f kubeadm/addons/ingress-nginx/test-ingress.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-test
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo
+  namespace: ingress-test
+  labels:
+    app: echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+        - name: echo
+          image: ealen/echo-server:0.9.2
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+  namespace: ingress-test
+spec:
+  selector:
+    app: echo
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo
+  namespace: ingress-test
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: echo.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: echo
+                port:
+                  number: 80

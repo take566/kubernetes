@@ -49,5 +49,27 @@ chown "${ADMIN_USER}:${ADMIN_USER}" "${ADMIN_HOME}/.kube/config"
 chmod 600 "${ADMIN_HOME}/.kube/config"
 
 log "Control plane ready."
+
+log "=== HA join: retrieve certificate key (required for additional control-plane nodes) ==="
+log "Run: kubeadm init phase upload-certs --upload-certs"
+if command_exists kubeadm; then
+  CERT_OUTPUT="$(kubeadm init phase upload-certs --upload-certs 2>&1)" || warn "upload-certs phase failed (cluster may already be initialized)"
+  if [[ -n "${CERT_OUTPUT}" ]]; then
+    echo "${CERT_OUTPUT}"
+    CERT_KEY="$(echo "${CERT_OUTPUT}" | awk '/Using certificate key:/{print $NF; exit}')"
+    if [[ -n "${CERT_KEY}" ]]; then
+      log "Certificate key (save for join-cp, expires in ~2h): ${CERT_KEY}"
+    fi
+  fi
+else
+  warn "kubeadm not in PATH; run upload-certs manually on this node."
+fi
+
+log "Worker join command:"
+if command_exists kubeadm; then
+  kubeadm token create --print-join-command 2>/dev/null || warn "Could not create join token (run manually: kubeadm token create --print-join-command)"
+fi
+
 log "Next: run 05-install-cni.sh, then apply addons from kubeadm/addons/"
+log "HA CP join: kubeadm/docs/ha-control-plane.md or ./kubeadm/scripts/03b-join-control-plane.sh --print-command"
 log "Worker join: sudo ./kubeadm/scripts/04-join-worker.sh --print-command"

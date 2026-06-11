@@ -27,17 +27,27 @@
 ```
 kubeadm/
 ├── README.md
-├── bootstrap.sh                 # 統一エントリポイント（init / join-worker）
+├── bootstrap.sh                 # 統一エントリポイント（init / join-worker / join-cp）
 ├── kubeadm-config.yaml          # ClusterConfiguration / InitConfiguration
-├── join-config.yaml.example     # ワーカー join テンプレート
+├── join-config.yaml.example     # ワーカー / HA CP join テンプレート
+├── docs/
+│   ├── ha-control-plane.md      # 3 ノード stacked etcd
+│   ├── load-balancer-external.md
+│   └── network-policies.md      # NetworkPolicy addon（issue-07 参照）
 ├── scripts/
 │   ├── common.sh
+│   ├── 00-configure-lb.sh       # controlPlaneEndpoint 検証（init 前）
 │   ├── 01-prerequisites.sh      # swap, sysctl, containerd
 │   ├── 02-install-kubeadm.sh    # kubeadm/kubelet/kubectl (v1.29+)
-│   ├── 03-init-control-plane.sh
+│   ├── 03-init-control-plane.sh # 最初の control-plane
+│   ├── 03b-join-control-plane.sh # HA 追加 control-plane
 │   ├── 04-join-worker.sh
 │   ├── 05-install-cni.sh        # Calico（既定）/ Cilium
-│   └── 06-gpu-node-setup.md
+│   ├── 05-install-rocm-worker.sh # AMD GPU worker: ROCm 導入
+│   ├── 06-gpu-node-setup.md     # GPU ノード概要
+│   ├── 07-register-gpu-worker.sh # GPU ラベル / device plugin 登録
+│   ├── 08-export-kubeconfig.sh  # CP から kubeconfig エクスポート（issue-06）
+│   └── 99-reset-cluster.sh      # ノード reset（CP / worker）
 └── addons/
     ├── kustomization.yaml
     ├── apply-addons.sh
@@ -47,25 +57,76 @@ kubeadm/
     └── amd-gpu-device-plugin/   # 参照ドキュメント
 ```
 
+### スクリプト一覧
+
+| スクリプト | 実行ノード | 概要 |
+|------------|------------|------|
+| `00-configure-lb.sh` | 任意 | `CONTROL_PLANE_IP` / DNS の検証 |
+| `01-prerequisites.sh` | 全ノード | swap 無効化、sysctl、containerd |
+| `02-install-kubeadm.sh` | 全ノード | kubeadm / kubelet / kubectl |
+| `03-init-control-plane.sh` | 最初の CP | `kubeadm init` |
+| `03b-join-control-plane.sh` | 追加 CP | HA control-plane join |
+| `04-join-worker.sh` | worker | `kubeadm join` |
+| `05-install-cni.sh` | CP | Calico / Cilium |
+| `05-install-rocm-worker.sh` | AMD GPU worker | ROCm / amdgpu 導入 |
+| `07-register-gpu-worker.sh` | 管理端末 | GPU ラベル・addon 登録 |
+| `08-export-kubeconfig.sh` | CP | kubeconfig エクスポート（issue-06） |
+| `99-reset-cluster.sh` | 全ノード | `kubeadm reset` + 後片付け |
+
 ## Quick start（`bootstrap.sh`）
 
 ```bash
 cd /path/to/kubernetes
 chmod +x kubeadm/bootstrap.sh kubeadm/scripts/*.sh kubeadm/addons/apply-addons.sh
 
-# 最初の control-plane（Calico + 基本 addons）
+# init 前: LB / DNS エンドポイント確認（任意）
 export CONTROL_PLANE_IP=192.168.1.10
+export CONTROL_PLANE_DNS=cp.example.com
+./kubeadm/scripts/00-configure-lb.sh --check-api
+
+# 最初の control-plane（Calico + 基本 addons）
 sudo kubeadm/bootstrap.sh --role init
 
-# Cilium + NVIDIA device plugin
-sudo kubeadm/bootstrap.sh --role init --with-cni cilium --with-nvidia
+# フルオプション例（Cilium + GPU + Ingress + MetalLB + Longhorn + NetworkPolicy）
+sudo kubeadm/bootstrap.sh --role init \
+  --with-cni cilium \
+  --with-nvidia \
+  --with-amd \
+  --with-ingress \
+  --with-metallb \
+  --with-longhorn \
+  --with-network-policies
 
 # worker 参加
-sudo kubeadm/bootstrap.sh --role join-worker --join-command 'kubeadm join cp.example.com:6443 --token ... --discovery-token-ca-cert-hash sha256:...'
+sudo kubeadm/bootstrap.sh --role join-worker \
+  --join-command 'kubeadm join cp.example.com:6443 --token ... --discovery-token-ca-cert-hash sha256:...'
 
-# 実行内容の確認のみ
+# HA: 追加 control-plane（upload-certs の certificate-key が必要）
+sudo kubeadm/bootstrap.sh --role join-cp \
+  --join-command 'kubeadm join cp.example.com:6443 --token ... --discovery-token-ca-cert-hash sha256:...' \
+  --certificate-key '<certificate-key>'
+
+# 前提スキップ / 実行内容の確認のみ
+sudo kubeadm/bootstrap.sh --role init --skip-prerequisites
 sudo kubeadm/bootstrap.sh --role init --dry-run
 ```
+
+`bootstrap.sh` オプション一覧:
+
+| オプション | 説明 |
+|------------|------|
+| `--role init \| join-worker \| join-cp` | ブートストラップ役割（必須） |
+| `--with-cni calico \| cilium` | CNI（init のみ、既定: calico） |
+| `--with-nvidia` | NVIDIA device plugin |
+| `--with-amd` | AMD GPU device plugin |
+| `--with-ingress` | ingress-nginx addon |
+| `--with-metallb` | MetalLB addon |
+| `--with-longhorn` | Longhorn addon |
+| `--with-network-policies` | NetworkPolicy addon |
+| `--join-command '<cmd>'` | join-worker / join-cp 用 |
+| `--certificate-key '<key>'` | join-cp 用（`upload-certs` のキー） |
+| `--skip-prerequisites` | `01-prerequisites.sh` をスキップ |
+| `--dry-run` | フェーズを表示のみ |
 
 詳細手順・個別スクリプト実行は以下を参照。
 
@@ -117,7 +178,24 @@ sudo kubeadm/scripts/04-join-worker.sh --join 'kubeadm join cp.example.com:6443 
 
 ### 4. GPU ノード（vLLM 用）
 
-[kubeadm/scripts/06-gpu-node-setup.md](scripts/06-gpu-node-setup.md) を参照。
+AMD GPU worker の推奨フロー:
+
+```bash
+# 1) worker ノードで ROCm を導入（join 前でも可）
+sudo kubeadm/scripts/05-install-rocm-worker.sh
+sudo kubeadm/scripts/05-install-rocm-worker.sh --check   # dry-run 相当
+
+# 2) クラスタへ join（bootstrap または 04-join-worker）
+sudo kubeadm/bootstrap.sh --role join-worker --join-command 'kubeadm join ...'
+
+# 3) 管理端末から GPU 登録（ラベル + device plugin 確認、任意で vLLM 適用）
+./kubeadm/scripts/07-register-gpu-worker.sh --node gpu-worker-01 --vendor amd
+./kubeadm/scripts/07-register-gpu-worker.sh --node gpu-worker-01 --vendor amd --apply-vllm
+```
+
+NVIDIA の場合は init 時に `--with-nvidia`、join 後に `07-register-gpu-worker.sh --vendor nvidia` を使用。
+
+詳細: [kubeadm/scripts/06-gpu-node-setup.md](scripts/06-gpu-node-setup.md)、[docs/GPU_WORKER_JOIN_AMD.md](../docs/GPU_WORKER_JOIN_AMD.md)
 
 ### 5. Ingress
 
@@ -194,14 +272,41 @@ kubectl kustomize vllm/overlays/kubeadm/
 ./scripts/validate.sh   # kubeadm パス含む（更新後）
 ```
 
+## クラスタ / ノードのリセット
+
+ノードを再構築する場合（control-plane / worker 共通）:
+
+```bash
+# 計画確認
+sudo kubeadm/scripts/99-reset-cluster.sh --dry-run
+
+# 確認プロンプト付き reset
+sudo kubeadm/scripts/99-reset-cluster.sh
+
+# 確認スキップ + etcd / CNI 残骸削除
+sudo kubeadm/scripts/99-reset-cluster.sh --yes --purge-data
+```
+
+HA control-plane では、可能なら先に `kubectl drain` / `kubectl delete node` を実行してください。手順: [docs/ha-control-plane.md](docs/ha-control-plane.md)
+
 ## トラブルシューティング
 
 - **Node NotReady**: CNI 未導入 → `05-install-cni.sh`
 - **PVC Pending**: local-path addon 未適用 → `kubeadm/addons/apply-addons.sh`
-- **GPU Pending**: Device Plugin / ラベル / taint → `06-gpu-node-setup.md`
+- **GPU Pending**: Device Plugin / ラベル / taint → `06-gpu-node-setup.md`、`07-register-gpu-worker.sh`
 - **metrics 未取得**: metrics-server addon と `--kubelet-insecure-tls`（自己署名 kubelet 証明書環境）
+- **再 join 失敗**: 古い kubelet / CNI 状態 → `99-reset-cluster.sh --yes --purge-data`
 
 ## 関連ドキュメント
+
+### kubeadm ランブック
+
+- [docs/ha-control-plane.md](docs/ha-control-plane.md) — 3 ノード HA control-plane
+- [docs/load-balancer-external.md](docs/load-balancer-external.md) — 外部 LB（keepalived / haproxy）
+- [docs/network-policies.md](docs/network-policies.md) — NetworkPolicy addon（`--with-network-policies`）
+- [docs/GPU_WORKER_JOIN_AMD.md](../docs/GPU_WORKER_JOIN_AMD.md) — AMD GPU worker 参加手順
+
+### リポジトリ全体
 
 - [kind/README.md](../kind/README.md) — ローカル dev / CI（推奨）
 - [vllm/README.md](../vllm/README.md) — vLLM デプロイ

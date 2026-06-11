@@ -30,6 +30,27 @@ kubectl apply -k vllm/overlays/kubeadm/finetune/  # AMD 学習 Job
 
 `vllm-app`（root `vllm/`）は削除済み。詳細: [argocd/apps/DEPRECATED.md](../../argocd/apps/DEPRECATED.md)
 
-## Longhorn 利用時
+## ストレージ選択（local-path vs Longhorn）
 
-本番でノードを跨ぐ RWO が必要な場合は [Longhorn](https://longhorn.io/) を導入し、各 PVC の `storageClassName` を `longhorn` に変更してください。
+| 項目 | local-path（既定） | Longhorn |
+|------|-------------------|----------|
+| 導入 | `apply-addons.sh` 同梱 | `apply-addons.sh --with-longhorn` |
+| ノード要件 | 単一ノード検証可 | **3+ worker 推奨**（レプリカ） |
+| アクセス | RWO、ノード拘束 | RWO / RWX、レプリカ付き |
+| default SC | はい | `--with-longhorn` で昇格 |
+| vLLM overlay | そのまま | `longhorn-storage-patch.yaml` を有効化 |
+
+### Longhorn 有効化手順
+
+```bash
+# 1. Longhorn 導入（default SC を longhorn に昇格）
+sudo kubeadm/addons/apply-addons.sh --with-longhorn
+
+# 2. vLLM overlay でストレージパッチを有効化
+#    vllm/overlays/kubeadm/kustomization.yaml の longhorn-storage-patch.yaml のコメントを外す
+kubectl apply -k vllm/overlays/kubeadm/
+
+# AMD / finetune も Longhorn を使う場合は各 overlay の PVC を同様に longhorn へ変更
+```
+
+Longhorn はマニフェスト上 default SC にならないようパッチ済みです。`--with-longhorn` 実行時に `longhorn` を default に昇格し、`local-path` の default 注釈を外します。

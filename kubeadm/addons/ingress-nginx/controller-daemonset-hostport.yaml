@@ -1,0 +1,21 @@
+- op: replace
+  path: /kind
+  value: DaemonSet
+- op: remove
+  path: /spec/strategy
+- op: remove
+  path: /spec/minReadySeconds
+- op: remove
+  path: /spec/revisionHistoryLimit
+- op: add
+  path: /spec/updateStrategy
+  value:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+- op: add
+  path: /spec/template/spec/containers/0/ports/0/hostPort
+  value: 80
+- op: add
+  path: /spec/template/spec/containers/0/ports/1/hostPort
+  value: 443

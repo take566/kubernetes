@@ -6,8 +6,9 @@
 #
 # Usage:
 #   sudo ./kubeadm/bootstrap.sh --role init
-#   sudo ./kubeadm/bootstrap.sh --role init --with-cni cilium --with-nvidia
+#   sudo ./kubeadm/bootstrap.sh --role init --with-cni cilium --with-nvidia --with-ingress
 #   sudo ./kubeadm/bootstrap.sh --role join-worker --join-command 'kubeadm join ...'
+#   sudo ./kubeadm/bootstrap.sh --role join-cp --join-command 'kubeadm join ...' --certificate-key '<key>'
 #   sudo ./kubeadm/bootstrap.sh --role init --dry-run
 #   sudo ./kubeadm/bootstrap.sh --role init --skip-prerequisites
 
@@ -20,6 +21,7 @@ source "${SCRIPTS_DIR}/common.sh"
 
 ROLE=""
 JOIN_COMMAND=""
+CERTIFICATE_KEY="${CERTIFICATE_KEY:-}"
 DRY_RUN=false
 SKIP_PREREQUISITES=false
 WITH_NVIDIA=false
@@ -33,18 +35,23 @@ Unified kubeadm bootstrap
 Usage:
   sudo ./kubeadm/bootstrap.sh --role init [options]
   sudo ./kubeadm/bootstrap.sh --role join-worker --join-command '<cmd>' [options]
-  sudo ./kubeadm/bootstrap.sh --role join-cp [options]
+  sudo ./kubeadm/bootstrap.sh --role join-cp --join-command '<cmd>' --certificate-key '<key>' [options]
 
 Roles:
   init         First control-plane: 01 → 02 → 03 → 05 (CNI) → addons
   join-worker  Worker node: 01 → 02 → 04 (requires --join-command)
-  join-cp      Stub — HA control-plane join (see 03b script, future)
+  join-cp      Additional control-plane: 01 → 02 → 03b (requires --join-command + --certificate-key)
 
 Options:
   --with-cni calico|cilium   CNI plugin (default: calico, init only)
   --with-nvidia              Apply NVIDIA device plugin addon (init only)
   --with-amd                 Apply AMD GPU device plugin addon (init only)
-  --join-command '<cmd>'     kubeadm join command (join-worker only)
+  --with-ingress             Apply ingress-nginx addon (init only)
+  --with-metallb             Apply MetalLB addon when available (init only)
+  --with-longhorn            Apply Longhorn addon when available (init only)
+  --with-network-policies    Apply network policy addon when available (init only)
+  --join-command '<cmd>'     kubeadm join command (join-worker / join-cp)
+  --certificate-key '<key>'  Certificate key from upload-certs (join-cp; or CERTIFICATE_KEY env)
   --skip-prerequisites       Skip 01-prerequisites.sh
   --dry-run                  Print phases without executing
   -h, --help                 Show this help
@@ -64,6 +71,10 @@ while [[ $# -gt 0 ]]; do
       JOIN_COMMAND="${2:-}"
       shift 2
       ;;
+    --certificate-key)
+      CERTIFICATE_KEY="${2:-}"
+      shift 2
+      ;;
     --with-cni)
       export CNI="${2:-}"
       shift 2
@@ -76,6 +87,22 @@ while [[ $# -gt 0 ]]; do
     --with-amd)
       WITH_AMD=true
       ADDON_ARGS+=(--with-amd)
+      shift
+      ;;
+    --with-ingress)
+      ADDON_ARGS+=(--with-ingress)
+      shift
+      ;;
+    --with-metallb)
+      ADDON_ARGS+=(--with-metallb)
+      shift
+      ;;
+    --with-longhorn)
+      ADDON_ARGS+=(--with-longhorn)
+      shift
+      ;;
+    --with-network-policies)
+      ADDON_ARGS+=(--with-network-policies)
       shift
       ;;
     --skip-prerequisites)
@@ -157,11 +184,16 @@ role_join_worker() {
 }
 
 role_join_cp() {
-  log "=== join-cp (stub) ==="
-  echo "[INFO] HA control-plane join is not implemented in this MVP." >&2
-  echo "[INFO] Planned script: kubeadm/scripts/03b-join-control-plane.sh" >&2
-  echo "[INFO] Until then, use kubeadm join with --control-plane and --certificate-key from the first CP node." >&2
-  exit 2
+  [[ -n "${JOIN_COMMAND}" ]] || die "join-cp requires --join-command '<kubeadm join ...>'"
+  [[ -n "${CERTIFICATE_KEY}" ]] || die "join-cp requires --certificate-key '<key>' (or export CERTIFICATE_KEY)"
+  run_prerequisites
+  run_install_kubeadm
+  run_phase "03b-join-control-plane" \
+    "${SCRIPTS_DIR}/03b-join-control-plane.sh" \
+    --join "${JOIN_COMMAND}" \
+    --certificate-key "${CERTIFICATE_KEY}"
+  log "=== Bootstrap complete (join-cp) ==="
+  log "Next: copy admin.conf from an existing CP; see kubeadm/docs/ha-control-plane.md"
 }
 
 case "${ROLE}" in

@@ -13,3 +13,5 @@ resources:
   - vllm-pvc.yaml
 patches:
   - path: model-patch.yaml
+  # Longhorn: uncomment after `apply-addons.sh --with-longhorn` (3+ workers recommended)
+  # - path: longhorn-storage-patch.yaml

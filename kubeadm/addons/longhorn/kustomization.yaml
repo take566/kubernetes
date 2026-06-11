@@ -1,0 +1,35 @@
+# Longhorn v1.7.2 — pinned to official release manifest.
+# Does NOT set default StorageClass; use apply-addons.sh --with-longhorn to promote longhorn.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: longhorn-system
+resources:
+  - https://raw.githubusercontent.com/longhorn/longhorn/v1.7.2/deploy/longhorn.yaml
+patches:
+  # StorageClass is embedded in longhorn-storageclass ConfigMap (not a standalone resource).
+  - target:
+      kind: ConfigMap
+      name: longhorn-storageclass
+    patch: |-
+      - op: replace
+        path: /data/storageclass.yaml
+        value: |
+          kind: StorageClass
+          apiVersion: storage.k8s.io/v1
+          metadata:
+            name: longhorn
+            annotations:
+              storageclass.kubernetes.io/is-default-class: "false"
+          provisioner: driver.longhorn.io
+          allowVolumeExpansion: true
+          reclaimPolicy: "Delete"
+          volumeBindingMode: Immediate
+          parameters:
+            numberOfReplicas: "3"
+            staleReplicaTimeout: "30"
+            fromBackup: ""
+            fsType: "ext4"
+            dataLocality: "disabled"
+            unmapMarkSnapChainRemoved: "ignored"
+            disableRevisionCounter: "true"
+            dataEngine: "v1"

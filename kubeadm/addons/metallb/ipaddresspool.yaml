@@ -1,0 +1,23 @@
+# MetalLB address pool (L2 mode).
+# Override before apply:
+#   export METALLB_IP_POOL="192.168.2.100-192.168.2.110"
+#   sed "s|192.168.1.240-192.168.1.250|${METALLB_IP_POOL}|" ipaddresspool.yaml | kubectl apply -f -
+# Or edit addresses below to match your LAN segment (must not overlap node IPs / DHCP).
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.1.240-192.168.1.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - default
