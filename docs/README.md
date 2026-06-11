@@ -4,6 +4,7 @@
 
 | ドキュメント | 内容 |
 |-------------|------|
+| [kubeadm-cluster-design.md](kubeadm-cluster-design.md) | kubeadm クラスタ目標アーキテクチャ・Bootstrap・GitOps 設計書 |
 | [kubeadm-connect.md](kubeadm-connect.md) | Windows/WSL から kubeadm クラスタへ kubectl 接続 |
 | [LOCAL_GPU_SETUP_WINDOWS.md](LOCAL_GPU_SETUP_WINDOWS.md) | Windows ローカル GPU（RX 5700 等）ML スタック構築 |
 | [ARGOCD_SETUP.md](ARGOCD_SETUP.md) | Argo CD セットアップ完了後の運用メモ |

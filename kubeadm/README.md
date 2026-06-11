@@ -27,6 +27,7 @@
 ```
 kubeadm/
 ├── README.md
+├── bootstrap.sh                 # 統一エントリポイント（init / join-worker）
 ├── kubeadm-config.yaml          # ClusterConfiguration / InitConfiguration
 ├── join-config.yaml.example     # ワーカー join テンプレート
 ├── scripts/
@@ -45,6 +46,28 @@ kubeadm/
     ├── nvidia-device-plugin/
     └── amd-gpu-device-plugin/   # 参照ドキュメント
 ```
+
+## Quick start（`bootstrap.sh`）
+
+```bash
+cd /path/to/kubernetes
+chmod +x kubeadm/bootstrap.sh kubeadm/scripts/*.sh kubeadm/addons/apply-addons.sh
+
+# 最初の control-plane（Calico + 基本 addons）
+export CONTROL_PLANE_IP=192.168.1.10
+sudo kubeadm/bootstrap.sh --role init
+
+# Cilium + NVIDIA device plugin
+sudo kubeadm/bootstrap.sh --role init --with-cni cilium --with-nvidia
+
+# worker 参加
+sudo kubeadm/bootstrap.sh --role join-worker --join-command 'kubeadm join cp.example.com:6443 --token ... --discovery-token-ca-cert-hash sha256:...'
+
+# 実行内容の確認のみ
+sudo kubeadm/bootstrap.sh --role init --dry-run
+```
+
+詳細手順・個別スクリプト実行は以下を参照。
 
 ## Bootstrap 手順
 
