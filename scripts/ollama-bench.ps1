@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Benchmark Ollama models via HTTP /api/generate (no TTY).
@@ -23,7 +23,7 @@ param(
 
     [string]$BaseUrl = 'http://127.0.0.1:11434',
     [int]$NumPredict = 256,
-    [string]$OutputDir = (Join-Path $PSScriptRoot '..\vllm\benchmark\results')
+    [string]$OutputDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -82,10 +82,12 @@ Write-Host "  Base URL: $BaseUrl"
 Write-Host "  Models:   $($Models -join ', ')"
 
 if (-not (Test-OllamaReachable -Url $BaseUrl)) {
-    throw "Ollama not reachable at $BaseUrl — start Ollama and ensure port 11434 is open."
+    throw "Ollama not reachable at $BaseUrl 窶・start Ollama and ensure port 11434 is open."
 }
 
-$resolvedOut = Resolve-Path -Path (Join-Path $PSScriptRoot '..') | Select-Object -ExpandProperty Path
+
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+$resolvedOut = Resolve-Path -Path (Join-Path $scriptDir '..') | Select-Object -ExpandProperty Path
 $resultsDir = Join-Path $resolvedOut 'vllm\benchmark\results'
 if ($OutputDir) {
     $resultsDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDir)
