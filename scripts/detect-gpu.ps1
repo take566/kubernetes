@@ -12,6 +12,23 @@ function Test-Command($name) {
     [PSCustomObject]@{ Tool = $name; Present = [bool]$cmd; Path = if ($cmd) { $cmd.Source } else { $null } }
 }
 
+function Normalize-WslText([string]$text) {
+    if (-not $text) { return '' }
+    return ($text -replace "`0", '').Trim()
+}
+
+function Get-WslDefaultDistro {
+    $line = Normalize-WslText ((cmd /c "wsl -l -q" 2>$null | Select-Object -First 1))
+    if ($line) { return $line }
+    return 'Ubuntu-24.04'
+}
+
+function Test-WslDxg([string]$distro) {
+    wsl -d $distro -e test -e /dev/dxg 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { return 'dxg-ok' }
+    return 'dxg-missing'
+}
+
 Write-Host "=== Local GPU Preflight (Windows) ===" -ForegroundColor Cyan
 
 $gpus = Get-CimInstance Win32_VideoController | Where-Object { $_.Name -notmatch 'Microsoft|Remote' }
@@ -24,6 +41,9 @@ if (-not $gpus) {
         Write-Host ("  DriverVersion: {0}" -f $g.DriverVersion)
         Write-Host ("  Status: {0}" -f $g.Status)
         Write-Host ("  AdapterRAM (reported): {0} GiB" -f $vramGiB)
+        if ($g.Name -match '5700 XT|5700' -and $vramGiB -lt 6) {
+            Write-Host "  Note: WMI often under-reports VRAM; RX 5700 is typically 8 GiB" -ForegroundColor DarkGray
+        }
         if ($g.Name -match 'AMD|Radeon') {
             Write-Host "  Vendor: AMD — Windows display driver OK; ROCm is Linux/WSL only" -ForegroundColor DarkYellow
             if ($g.Name -match '5700|5600|5500|Navi 10|RDNA') {
@@ -55,11 +75,37 @@ try {
 
 Write-Host "`n--- WSL ---" -ForegroundColor Cyan
 try {
-    wsl --status 2>&1 | ForEach-Object { Write-Host "  $_" }
-    $wslGpu = wsl -d Ubuntu-24.04 -- bash -lc "test -e /dev/dxg && echo dxg-ok || echo dxg-missing" 2>$null
-    Write-Host ("  WSL GPU device (/dev/dxg): {0}" -f ($wslGpu.Trim()))
+    # Avoid wsl --status (localized output garbles in some terminals).
+    $defaultDistro = Get-WslDefaultDistro
+    Write-Host ("  Default distro: {0}" -f $defaultDistro)
+    $wslVerbose = Normalize-WslText ((cmd /c "wsl -l -v" 2>$null | Out-String))
+    if ($wslVerbose -match 'Ubuntu-24.04') {
+        Write-Host "  Ubuntu-24.04: installed" -ForegroundColor Green
+    }
+    $running = ([regex]::Matches($wslVerbose, 'Running')).Count
+    Write-Host ("  Running distros: {0}" -f $running)
+    $dxg = Test-WslDxg $defaultDistro
+    $dxgColor = if ($dxg -eq 'dxg-ok') { 'Green' } else { 'Yellow' }
+    Write-Host ("  WSL GPU device (/dev/dxg): {0}" -f $dxg) -ForegroundColor $dxgColor
 } catch {
     Write-Host "  WSL check failed" -ForegroundColor Yellow
+}
+
+Write-Host "`n--- WSL Docker integration ---" -ForegroundColor Cyan
+$wslDistro = 'Ubuntu-24.04'
+try {
+    $defaultDistro = Get-WslDefaultDistro
+    if ($defaultDistro) { $wslDistro = $defaultDistro }
+    wsl -d $wslDistro -- docker info 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host ("  wsl -d {0} -- docker info: OK" -f $wslDistro) -ForegroundColor Green
+    } else {
+        Write-Host ("  wsl -d {0} -- docker info: MISSING" -f $wslDistro) -ForegroundColor Red
+        Write-Host "  Hint: run .\scripts\enable-docker-wsl-integration.ps1" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host ("  wsl -d {0} -- docker info: MISSING" -f $wslDistro) -ForegroundColor Red
+    Write-Host "  Hint: run .\scripts\enable-docker-wsl-integration.ps1" -ForegroundColor Yellow
 }
 
 Write-Host "`n--- Recommendations ---" -ForegroundColor Cyan

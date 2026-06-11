@@ -1,0 +1,37 @@
+[
+  {
+    "model": "sam860/LFM2:1.2b",
+    "status": "OK",
+    "total_time_s": 4.21,
+    "tokens_per_s": 37.38,
+    "notes": "eval_count=143"
+  },
+  {
+    "model": "qwen2.5:1.5b",
+    "status": "OK",
+    "total_time_s": 11.23,
+    "tokens_per_s": 28.43,
+    "notes": "eval_count=256"
+  },
+  {
+    "model": "qwen2.5:3b",
+    "status": "OK",
+    "total_time_s": 14.09,
+    "tokens_per_s": 16.27,
+    "notes": "eval_count=114"
+  },
+  {
+    "model": "gemma4:rx5700",
+    "status": "OK",
+    "total_time_s": 54.51,
+    "tokens_per_s": 9.45,
+    "notes": "eval_count=256"
+  },
+  {
+    "model": "qwen3.6:rx5700",
+    "status": "OK",
+    "total_time_s": 97.25,
+    "tokens_per_s": 10.02,
+    "notes": "eval_count=256"
+  }
+]

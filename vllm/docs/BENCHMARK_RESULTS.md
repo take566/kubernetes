@@ -42,7 +42,23 @@ Qwen2.5 公式コンテキスト（1.5B: 最大 32k）と単一 GPU 8–16 GiB P
 | Qwen2.5-1.5B-Instruct | T4 16GB | 120–350 | 50–120 | kubeadm デフォルト |
 | Qwen2.5-1.5B-Instruct | A10 24GB | 80–250 | 100–200 | 本番想定 |
 
-## 実測ログ
+## Ollama ローカル実測（Windows + RX 5700 8GB）
+
+**日付:** 2026-06-11  
+**環境:** Ollama (Windows), AMD Radeon RX 5700 8GB, HTTP `/api/generate` via `scripts/ollama-bench.ps1`  
+**備考:** gemma4 / qwen3.6 は遅いが OOM なし。vLLM/K8s ベンチ前のスモーク比較用。
+
+| モデル | status | total_time_s | tokens_per_s | notes |
+|--------|--------|--------------|--------------|-------|
+| sam860/LFM2:1.2b | OK | 4.21 | 37.38 | eval_count=143 |
+| qwen2.5:1.5b | OK | 11.23 | 28.43 | eval_count=256 |
+| qwen2.5:3b | OK | 14.09 | 16.27 | eval_count=114 |
+| gemma4:rx5700 | OK | 54.51 | 9.45 | eval_count=256; slow, no OOM |
+| qwen3.6:rx5700 | OK | 97.25 | 10.02 | eval_count=256; slow, no OOM |
+
+JSON: [../benchmark/results/ollama-rx5700-2026-06-11.json](../benchmark/results/ollama-rx5700-2026-06-11.json)
+
+## 実測ログ（Kubernetes / vLLM）
 
 | 日付 | 環境 | モデル | p50_ms | p99_ms | tok/s | 実行者 | JSON |
 |------|------|--------|--------|--------|-------|--------|------|

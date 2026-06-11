@@ -80,10 +80,42 @@ wsl -d Ubuntu-24.04 -- bash -lc "cd /mnt/d/work/kubernetes && ./scripts/setup-ws
 
 ### 4.2 ROCm インストール（Ubuntu 24.04 on WSL）
 
-AMD 公式手順に従い ROCm をインストールします。
+AMD 公式 **ROCm 7.2 WSL** 手順（[Install Radeon software for WSL with ROCm](https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.2/docs/install/installrad/wsl/install-radeon.html)）:
 
-- [ROCm install Ubuntu](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html)
-- RX 5700 は非公式のため以下を常に設定:
+**前提:** Windows 側に **AMD Software: Adrenalin Edition 26.1.1 for WSL2** 以降をインストール。WSL には **Ubuntu 24.04** を使用。
+
+**ドライラン（変更なし）:**
+
+```powershell
+wsl -d Ubuntu-24.04 -- bash -lc "cd /mnt/d/work/kubernetes && ./scripts/install-wsl-rocm.sh --check"
+```
+
+**WSL 内インストール（要 sudo）:**
+
+```bash
+sudo apt update
+wget https://repo.radeon.com/amdgpu-install/7.2/ubuntu/noble/amdgpu-install_7.2.70200-1_all.deb
+sudo apt install ./amdgpu-install_7.2.70200-1_all.deb
+sudo amdgpu-install --list-usecase
+sudo amdgpu-install -y --usecase=wsl,rocm --no-dkms
+```
+
+またはリポジトリのラッパー:
+
+```bash
+sudo ./scripts/install-wsl-rocm.sh
+```
+
+**確認:**
+
+```bash
+rocm-smi || true
+rocminfo | head -40
+```
+
+> **Note:** `--no-dkms` は WSL2 でカーネルモジュールをビルドしないために必須。`-y` で非対話インストール。
+
+RX 5700（gfx1010）は WSL 互換表の公式 GPU リスト外です。以下を常に設定:
 
 ```bash
 export HSA_OVERRIDE_GFX_VERSION=10.3.0
