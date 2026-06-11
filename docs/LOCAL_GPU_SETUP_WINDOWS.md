@@ -1,8 +1,19 @@
-# ローカル GPU セットアップ（Windows + NVIDIA GTX 1650）
+# ローカル GPU セットアップ（Windows）
 
 Issue: GitHub `#11`（ローカル GPU ドライバー / ML スタック不足）
 
-## 現状診断（このリポジトリの想定環境）
+## プロファイル早見表
+
+| GPU | VRAM | 主経路（案 A） | セットアップ |
+|-----|------|----------------|-------------|
+| **AMD RX 5700** | 8 GiB | **Ollama (Windows)** | `.\scripts\setup-ollama-rx5700.ps1` |
+| NVIDIA GTX 1650 | 4 GiB | Ollama + 任意 Docker vLLM | `.\scripts\setup-vllm-windows.ps1` |
+
+RX 5700 では **WSL ROCm は公式非対応**のため、GPU 推論は Ollama を主経路としてください。詳細: [vllm/overlays/windows-local/README.md](../vllm/overlays/windows-local/README.md)
+
+---
+
+## 現状診断（NVIDIA GTX 1650 例）
 
 | 項目 | 状態 | 説明 |
 |------|------|------|

@@ -1,4 +1,28 @@
-# Ollama Modelfiles（GTX 1650 4GB）
+# Ollama Modelfiles（Windows ローカル GPU）
+
+カスタムタグで `num_ctx` / `temperature` を固定し、VRAM 向けにチューニングします。
+
+## RX 5700 8GB（AMD — 主経路）
+
+```powershell
+.\scripts\setup-ollama-rx5700.ps1
+```
+
+| Modelfile | タグ | ベース |
+|-----------|------|--------|
+| `qwen2.5-0.5b-rx5700.Modelfile` | `qwen2.5:0.5b-rx5700` | `qwen2.5:0.5b` |
+| `qwen2.5-1.5b-rx5700.Modelfile` | `qwen2.5:1.5b-rx5700` | `qwen2.5:1.5b` |
+| `lfm2-1.2b-rx5700.Modelfile` | `sam860/LFM2:1.2b-rx5700` | `sam860/LFM2:1.2b` |
+
+手動作成:
+
+```powershell
+ollama create qwen2.5:1.5b-rx5700 -f ollama/modelfiles/qwen2.5-1.5b-rx5700.Modelfile
+```
+
+---
+
+## GTX 1650 4GB（NVIDIA）
 
 Windows ローカル（NVIDIA GTX 1650 4GB）向けに、ベースモデルへコンテキスト長・温度などを上書きしたカスタムタグ `:gtx1650` を作るためのテンプレートです。
 

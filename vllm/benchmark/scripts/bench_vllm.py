@@ -78,6 +78,13 @@ def _disable_thinking_payload(model: str) -> dict[str, Any]:
     return {"extra_body": {"chat_template_kwargs": kwargs}}
 
 
+def _chat_completions_url(base_url: str) -> str:
+    root = base_url.rstrip("/")
+    if root.endswith("/v1"):
+        return f"{root}/chat/completions"
+    return f"{root}/v1/chat/completions"
+
+
 async def chat_completion(
     session: aiohttp.ClientSession,
     base_url: str,
@@ -87,7 +94,7 @@ async def chat_completion(
     timeout_s: float,
 ) -> tuple[float, int]:
     """Return (latency_ms, output_tokens)."""
-    url = f"{base_url.rstrip('/')}/v1/chat/completions"
+    url = _chat_completions_url(base_url)
     payload: dict[str, Any] = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -113,17 +120,25 @@ async def chat_completion(
 
 async def wait_for_health(base_url: str, timeout_s: float = 300.0) -> None:
     deadline = time.monotonic() + timeout_s
-    url = f"{base_url.rstrip('/')}/health"
+    root = base_url.rstrip("/")
+    # Ollama OpenAI shim: /v1 → /api/tags; vLLM: /health
+    if root.endswith("/v1"):
+        probe_urls = [f"{root[:-3]}/api/tags"]
+    else:
+        probe_urls = [f"{root}/health", f"{root}/api/tags"]
     async with aiohttp.ClientSession() as session:
         while time.monotonic() < deadline:
-            try:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                    if resp.status == 200:
-                        return
-            except (aiohttp.ClientError, asyncio.TimeoutError):
-                pass
+            for url in probe_urls:
+                try:
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                        if resp.status == 200:
+                            return
+                except (aiohttp.ClientError, asyncio.TimeoutError):
+                    pass
             await asyncio.sleep(5)
-    raise TimeoutError(f"vLLM health check failed at {url} within {timeout_s}s")
+    raise TimeoutError(
+        f"API readiness check failed for {base_url} (tried {probe_urls}) within {timeout_s}s"
+    )
 
 
 async def run_warmup(
@@ -276,9 +291,16 @@ def main() -> None:
         type=float,
         default=env_float("BENCH_HEALTH_TIMEOUT_S", 300.0),
     )
+    parser.add_argument(
+        "--skip-health",
+        action="store_true",
+        default=os.environ.get("BENCH_SKIP_HEALTH", "").lower() in ("1", "true", "yes"),
+        help="Skip readiness probe (Ollama local smoke)",
+    )
     args = parser.parse_args()
 
-    asyncio.run(wait_for_health(args.base_url, args.health_timeout))
+    if not args.skip_health:
+        asyncio.run(wait_for_health(args.base_url, args.health_timeout))
     asyncio.run(
         run_warmup(
             args.base_url,

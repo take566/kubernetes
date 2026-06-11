@@ -68,6 +68,17 @@ JSON: [../benchmark/results/ollama-rx5700-2026-06-11.json](../benchmark/results/
 **CI:** [.github/workflows/vllm-ollama-benchmark.yaml](../../.github/workflows/vllm-ollama-benchmark.yaml)（マップ検証は ubuntu-latest、実測は self-hosted Windows + Ollama）  
 **JSON:** [../benchmark/results/ollama-compare-2026-06-11T092251.json](../benchmark/results/ollama-compare-2026-06-11T092251.json)
 
+### OpenAI API ベンチ（`bench_vllm.py` 互換 · RX 5700）
+
+**パイプライン:** `scripts/bench_ollama_openai.ps1` → `vllm/benchmark/results/bench-ollama-openai-*.json`  
+**エンドポイント:** `http://127.0.0.1:11434/v1/chat/completions`（Ollama OpenAI 互換）
+
+```powershell
+.\scripts\bench_ollama_openai.ps1 -HfId Qwen/Qwen2.5-1.5B-Instruct
+```
+
+K8s vLLM 実測行は self-hosted Linux GPU または kubeadm 完了後に追記します。
+
 | HuggingFace ID | Ollama tag | status | total_time_s | tokens_per_s | 備考 |
 |----------------|------------|--------|--------------|--------------|------|
 | LiquidAI/LFM2.5-350M | sam860/LFM2:350m | OK | 3.15 | 68.95 | extended |

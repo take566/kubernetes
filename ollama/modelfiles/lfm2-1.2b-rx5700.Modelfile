@@ -1,0 +1,6 @@
+# RX 5700 8GB — LFM2.5-1.2B candidate (fastest local benchmark on RX5700)
+# ollama create sam860/LFM2:1.2b-rx5700 -f ollama/modelfiles/lfm2-1.2b-rx5700.Modelfile
+FROM sam860/LFM2:1.2b
+
+PARAMETER num_ctx 4096
+PARAMETER temperature 0.4

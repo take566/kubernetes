@@ -42,6 +42,25 @@ gh workflow run self-hosted-test.yaml
 | [../scripts/bootstrap-self-hosted-runner.sh](../scripts/bootstrap-self-hosted-runner.sh) | ARC controller + runner scale set（idempotent） |
 | [../scripts/trigger-vllm-benchmark.sh](../scripts/trigger-vllm-benchmark.sh) | `vllm-model-benchmark.yaml` を `workflow_dispatch` |
 
+## Windows + Ollama runner（RX 5700 / GPU ローカルベンチ）
+
+K8s 内 vLLM が GPU を使えない場合、**ホスト Windows** に runner を直接登録し、Ollama で GPU ベンチを回します。
+
+1. [actions/runner](https://github.com/actions/runner/releases) を Windows にインストール
+2. リポジトリ Settings → Actions → Runners → New self-hosted runner
+3. 登録時にラベルを追加: `ollama`（既存: `self-hosted`, `Windows`, `X64`）
+4. Ollama を常駐、`.\scripts\setup-ollama-rx5700.ps1` でモデル準備
+
+```powershell
+gh workflow run vllm-ollama-benchmark.yaml -f compare_set=default -f run_benchmark=true
+```
+
+| スクリプト | 用途 |
+|------------|------|
+| [../scripts/setup-ollama-rx5700.ps1](../scripts/setup-ollama-rx5700.ps1) | モデル pull + :rx5700 Modelfile |
+| [../scripts/compare_models_ollama.ps1](../scripts/compare_models_ollama.ps1) | HF 候補一括比較 |
+| [../scripts/bench_ollama_openai.ps1](../scripts/bench_ollama_openai.ps1) | `bench_vllm.py` 互換 JSON |
+
 ## デプロイ手順（Argo CD）
 
 ### 1. コントローラ（初回のみ）

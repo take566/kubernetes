@@ -1,0 +1,6 @@
+# RX 5700 8GB — kubeadm production candidate (Ollama local mirror)
+# ollama create qwen2.5:1.5b-rx5700 -f ollama/modelfiles/qwen2.5-1.5b-rx5700.Modelfile
+FROM qwen2.5:1.5b
+
+PARAMETER num_ctx 4096
+PARAMETER temperature 0.5

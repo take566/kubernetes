@@ -131,10 +131,11 @@ if ($isGtx1650) {
     Write-Host "  3. Full setup: .\scripts\setup-vllm-windows.ps1"
     Write-Host "  4. K8s benchmark: kubeadm NVIDIA overlay or GitHub Actions self-hosted runner"
 } elseif ($isAmd) {
-    Write-Host "  1. Start Docker Desktop + enable WSL integration (Ubuntu-24.04)"
-    Write-Host "  2. AMD GPU vLLM: Linux + ROCm path — see docs/LOCAL_GPU_SETUP_WINDOWS.md (AMD section in git history)"
-    Write-Host "  3. Quick local model smoke: Ollama (Windows)"
-    Write-Host "  4. Cluster benchmark: GitHub Actions vLLM Model Benchmark (self-hosted runner)"
+    Write-Host "  1. GPU inference (primary): .\scripts\setup-ollama-rx5700.ps1"
+    Write-Host "  2. Model compare: .\scripts\compare_models_ollama.ps1"
+    Write-Host "  3. OpenAI bench: .\scripts\bench_ollama_openai.ps1 -HfId Qwen/Qwen2.5-1.5B-Instruct"
+    Write-Host "  4. WSL ROCm on RX 5700: not supported — see docs/LOCAL_GPU_SETUP_WINDOWS.md"
+    Write-Host "  5. K8s manifest CI: kind (no GPU) or Actions vLLM Ollama Benchmark"
 } else {
     Write-Host "  1. Start Docker Desktop if using containers or kind"
     Write-Host "  2. Quick local model smoke: Ollama (Windows)"
