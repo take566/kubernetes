@@ -78,31 +78,55 @@ def _disable_thinking_payload(model: str) -> dict[str, Any]:
     return {"extra_body": {"chat_template_kwargs": kwargs}}
 
 
-def _chat_completions_url(base_url: str) -> str:
+def _api_url(base_url: str, path: str) -> str:
     root = base_url.rstrip("/")
     if root.endswith("/v1"):
-        return f"{root}/chat/completions"
-    return f"{root}/v1/chat/completions"
+        return f"{root}/{path}"
+    return f"{root}/v1/{path}"
 
 
-async def chat_completion(
+def _resolve_api_mode(model: str, explicit: str | None) -> str:
+    if explicit in ("chat", "completions"):
+        return explicit
+    # Base / legacy models without instruct chat templates
+    lower = model.lower()
+    if any(
+        token in lower
+        for token in ("opt-", "gpt2", "pythia", "tinyllama", "llama-2-7b")
+    ) and "instruct" not in lower:
+        return "completions"
+    return "chat"
+
+
+async def inference_request(
     session: aiohttp.ClientSession,
     base_url: str,
     model: str,
     prompt: str,
     max_tokens: int,
     timeout_s: float,
+    api_mode: str,
 ) -> tuple[float, int]:
     """Return (latency_ms, output_tokens)."""
-    url = _chat_completions_url(base_url)
-    payload: dict[str, Any] = {
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": max_tokens,
-        "temperature": 0.0,
-        "stream": False,
-    }
-    payload.update(_disable_thinking_payload(model))
+    if api_mode == "completions":
+        url = _api_url(base_url, "completions")
+        payload: dict[str, Any] = {
+            "model": model,
+            "prompt": prompt,
+            "max_tokens": max_tokens,
+            "temperature": 0.0,
+            "stream": False,
+        }
+    else:
+        url = _api_url(base_url, "chat/completions")
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "temperature": 0.0,
+            "stream": False,
+        }
+        payload.update(_disable_thinking_payload(model))
     start = time.perf_counter()
     async with session.post(
         url,
@@ -148,10 +172,13 @@ async def run_warmup(
     max_tokens: int,
     count: int,
     timeout_s: float,
+    api_mode: str,
 ) -> None:
     async with aiohttp.ClientSession() as session:
         for _ in range(count):
-            await chat_completion(session, base_url, model, prompt, max_tokens, timeout_s)
+            await inference_request(
+                session, base_url, model, prompt, max_tokens, timeout_s, api_mode
+            )
 
 
 async def run_latency_benchmark(
@@ -161,12 +188,13 @@ async def run_latency_benchmark(
     max_tokens: int,
     samples: int,
     timeout_s: float,
+    api_mode: str,
 ) -> LatencyResult:
     latencies: list[float] = []
     async with aiohttp.ClientSession() as session:
         for _ in range(samples):
-            ms, _ = await chat_completion(
-                session, base_url, model, prompt, max_tokens, timeout_s
+            ms, _ = await inference_request(
+                session, base_url, model, prompt, max_tokens, timeout_s, api_mode
             )
             latencies.append(ms)
     return LatencyResult(
@@ -186,6 +214,7 @@ async def run_throughput_benchmark(
     concurrency: int,
     total_requests: int,
     timeout_s: float,
+    api_mode: str,
 ) -> ThroughputResult:
     sem = asyncio.Semaphore(concurrency)
     results: list[tuple[bool, int]] = []
@@ -195,8 +224,8 @@ async def run_throughput_benchmark(
         async def one_request() -> None:
             async with sem:
                 try:
-                    _, out_tokens = await chat_completion(
-                        session, base_url, model, prompt, max_tokens, timeout_s
+                    _, out_tokens = await inference_request(
+                        session, base_url, model, prompt, max_tokens, timeout_s, api_mode
                     )
                     results.append((True, out_tokens))
                 except Exception:
@@ -297,7 +326,14 @@ def main() -> None:
         default=os.environ.get("BENCH_SKIP_HEALTH", "").lower() in ("1", "true", "yes"),
         help="Skip readiness probe (Ollama local smoke)",
     )
+    parser.add_argument(
+        "--api",
+        choices=("chat", "completions", "auto"),
+        default=os.environ.get("BENCH_API", "auto"),
+        help="OpenAI API endpoint: chat/completions or completions (base models)",
+    )
     args = parser.parse_args()
+    api_mode = _resolve_api_mode(args.model, None if args.api == "auto" else args.api)
 
     if not args.skip_health:
         asyncio.run(wait_for_health(args.base_url, args.health_timeout))
@@ -309,6 +345,7 @@ def main() -> None:
             args.max_tokens,
             args.warmup,
             args.timeout,
+            api_mode,
         )
     )
 
@@ -324,6 +361,7 @@ def main() -> None:
                 args.max_tokens,
                 args.latency_samples,
                 args.timeout,
+                api_mode,
             )
         )
 
@@ -337,6 +375,7 @@ def main() -> None:
                 args.concurrency,
                 args.throughput_requests,
                 args.timeout,
+                api_mode,
             )
         )
 
@@ -361,7 +400,7 @@ def main() -> None:
         "model": report.model,
         "timestamp": report.timestamp,
         "warmup_requests": report.warmup_requests,
-        "config": report.config,
+        "config": {**report.config, "api_mode": api_mode},
     }
     if report.latency:
         out["latency"] = {

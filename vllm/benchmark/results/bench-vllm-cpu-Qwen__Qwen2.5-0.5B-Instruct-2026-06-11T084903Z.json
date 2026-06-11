@@ -1,0 +1,31 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "timestamp": "2026-06-11T08:49:42Z",
+  "warmup_requests": 3,
+  "config": {
+    "max_tokens": 64,
+    "latency_samples": 10,
+    "throughput_requests": 20,
+    "concurrency": 2,
+    "api_mode": "chat"
+  },
+  "latency": {
+    "p50_ms": 1562.69,
+    "p99_ms": 1621.26,
+    "mean_ms": 1564.17,
+    "count": 10
+  },
+  "throughput": {
+    "duration_s": 17.9983,
+    "total_requests": 20,
+    "successful_requests": 20,
+    "total_output_tokens": 1280,
+    "requests_per_second": 1.1112,
+    "output_tokens_per_second": 71.1179,
+    "concurrency": 2
+  },
+  "backend": "vllm-cpu-docker",
+  "image": "openeuler/vllm-cpu:0.20.1-oe2403sp3",
+  "platform": "macos-arm64"
+}
