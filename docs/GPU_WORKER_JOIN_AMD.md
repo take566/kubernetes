@@ -110,3 +110,28 @@ cd D:\work\kubernetes
 | `amd.com/gpu` が 0 のまま | `kubectl get node <n> -o jsonpath='{.status.allocatable.amd\.com/gpu}'` | device plugin Pod とホスト側 ROCm を確認 |
 | AMD plugin Pod がいない | `kubectl get pods -A -l name=amdgpu-dp-ds` | `kubeadm/addons/apply-addons.sh --with-amd` または `07-register-gpu-worker.sh` 再実行 |
 | vLLM Pod が Pending | `kubectl -n vllm get pods` | ノードラベル `workload=vllm-amd` と allocatable GPU を確認 |
+
+### WSL2: `/dev/kfd` / `/dev/dri` が無い
+
+WSL では **amdgpu カーネルモジュールではなく** `/dev/dxg` 経由の WDDM パスで ROCm が動きます。`/dev/kfd` と `/dev/dri` は Windows 側が WSL に compute アダプタを公開したときだけ出現します（udev では作れません）。
+
+```bash
+# WSL 内
+./scripts/diagnose-wsl-gpu.sh
+./scripts/setup-wsl-gpu-preflight.sh
+```
+
+```powershell
+# Windows
+.\scripts\fix-wsl-gpu-passthrough.ps1
+.\scripts\detect-gpu.ps1
+```
+
+| 診断結果 | 意味 | 対処 |
+|---|---|---|
+| `GPU_UNSUPPORTED_WSL` | RX 5700 等 gfx1010 | **WSL ROCm 非対応（正常）**。`.\scripts\setup-ollama-rx5700.ps1` → Ollama ブリッジ |
+| `WDDM_NOT_EXPOSED` | `/dev/dxg` はあるが dxgk ioctl 失敗 | [Adrenalin 26.1.1 for WSL2](https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.2/docs/install/installrad/wsl/install-radeon.html) 導入後 `wsl --shutdown` |
+| `KFD_MISSING` | ドライバ未反映 or rocr4wsl 未導入 | `sudo ./scripts/install-wsl-rocm.sh` → `wsl --shutdown` |
+| `DXG_MISSING` | WSL GPU パススルー自体が無効 | `wsl --update`、GPU ドライバ再インストール、Windows 再起動 |
+
+**RX 5700 + WSL kubeadm:** ROCm ワーカーは諦め、Windows Ollama を外部エンドポイント登録する（`kubeadm/README.md` WSL2 + AMD GPU 節参照）。

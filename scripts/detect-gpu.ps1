@@ -29,6 +29,12 @@ function Test-WslDxg([string]$distro) {
     return 'dxg-missing'
 }
 
+function Test-WslDevice([string]$distro, [string]$path) {
+    wsl -d $distro -e test -e $path 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { return 'ok' }
+    return 'missing'
+}
+
 Write-Host "=== Local GPU Preflight (Windows) ===" -ForegroundColor Cyan
 
 $gpus = Get-CimInstance Win32_VideoController | Where-Object { $_.Name -notmatch 'Microsoft|Remote' }
@@ -142,6 +148,16 @@ try {
     $dxg = Test-WslDxg $defaultDistro
     $dxgColor = if ($dxg -eq 'dxg-ok') { 'Green' } else { 'Yellow' }
     Write-Host ("  WSL GPU device (/dev/dxg): {0}" -f $dxg) -ForegroundColor $dxgColor
+    $kfd = Test-WslDevice $defaultDistro '/dev/kfd'
+    $kfdColor = if ($kfd -eq 'ok') { 'Green' } else { 'Yellow' }
+    Write-Host ("  WSL ROCm device (/dev/kfd): {0}" -f $kfd) -ForegroundColor $kfdColor
+    wsl -d $defaultDistro -e test -d /dev/dri 2>$null | Out-Null
+    $dri = if ($LASTEXITCODE -eq 0) { 'ok' } else { 'missing' }
+    $driColor = if ($dri -eq 'ok') { 'Green' } else { 'Yellow' }
+    Write-Host ("  WSL DRM device (/dev/dri): {0}" -f $dri) -ForegroundColor $driColor
+    if ($dxg -eq 'dxg-ok' -and $kfd -ne 'ok') {
+        Write-Host '  Hint: .\scripts\fix-wsl-gpu-passthrough.ps1 or ./scripts/diagnose-wsl-gpu.sh' -ForegroundColor DarkYellow
+    }
 } catch {
     Write-Host "  WSL check failed" -ForegroundColor Yellow
 }

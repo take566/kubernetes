@@ -111,8 +111,35 @@ verify_amd_smi() {
   fi
 }
 
+verify_device_nodes() {
+  local missing=0
+  if [[ ! -e /dev/dxg ]]; then
+    echo "WARN: /dev/dxg missing — Windows WSL GPU driver not active" >&2
+    missing=1
+  fi
+  if [[ ! -e /dev/kfd ]]; then
+    echo "WARN: /dev/kfd missing — WDDM adapter not exposed to WSL" >&2
+    missing=1
+  fi
+  if ! ls /dev/dri/renderD* /dev/dri/card* >/dev/null 2>&1; then
+    echo "WARN: /dev/dri missing" >&2
+    missing=1
+  fi
+  if [[ $missing -ne 0 ]] && ! $CHECK_ONLY; then
+    echo "" >&2
+    echo "Recovery (manual — do not skip):" >&2
+    echo "  1. Windows: Install AMD Software: Adrenalin Edition 26.1.1 for WSL2" >&2
+    echo "  2. Windows: wsl --shutdown  (closes all WSL — run when safe)" >&2
+    echo "  3. WSL:     ./scripts/diagnose-wsl-gpu.sh" >&2
+    echo "  Windows:    .\\scripts\\fix-wsl-gpu-passthrough.ps1" >&2
+    echo "  RX 5700:    WSL ROCm unsupported — use .\\scripts\\setup-ollama-rx5700.ps1" >&2
+  fi
+  return 0
+}
+
 log "Post-install verification:"
 verify_amd_smi
+verify_device_nodes
 
 log "Manual verification commands (or next preflight run):"
 echo "  amd-smi version || amd-smi static || true   # preferred on ROCm 7+"

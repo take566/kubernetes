@@ -23,9 +23,18 @@ run_or_echo() {
 }
 
 CRITICAL_FAIL=false
+IN_WSL=false
+WSL_GFX1010_UNSUPPORTED=false
+
+if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+  IN_WSL=true
+fi
 
 echo "=== AMD GPU / amd-smi verification ==="
 echo "uname: $(uname -a)"
+if $IN_WSL; then
+  echo "environment: WSL2 (uses /dev/dxg + rocr4wsl, not amdgpu kernel module)"
+fi
 
 if [[ -e /dev/kfd ]]; then
   echo "OK: /dev/kfd present"
@@ -47,6 +56,9 @@ fi
 
 if [[ -e /dev/dxg ]]; then
   echo "OK: /dev/dxg present (WSL GPU paravirtualization)"
+  if ! [[ -e /dev/kfd ]]; then
+    warn "WSL: /dev/dxg without /dev/kfd — run ./scripts/diagnose-wsl-gpu.sh"
+  fi
 fi
 
 echo "--- package versions ---"
@@ -100,7 +112,11 @@ fi
 if $GFX1010; then
   echo ""
   echo "gfx1010 (RX 5700 / RDNA1) detected"
-  if [[ -n "${HSA_OVERRIDE_GFX_VERSION:-}" ]]; then
+  if $IN_WSL; then
+    WSL_GFX1010_UNSUPPORTED=true
+    warn "RX 5700 on WSL: AMD WSL ROCm 7.2 does not support gfx1010 — /dev/kfd will not appear."
+    warn "Use Windows Ollama: .\\scripts\\setup-ollama-rx5700.ps1 (see docs/LOCAL_GPU_SETUP_WINDOWS.md)"
+  elif [[ -n "${HSA_OVERRIDE_GFX_VERSION:-}" ]]; then
     echo "OK: HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION}"
   elif grep -q '^HSA_OVERRIDE_GFX_VERSION=10.3.0' /etc/environment 2>/dev/null \
     || [[ -f /etc/profile.d/rocm-rx5700.sh ]]; then
@@ -111,7 +127,16 @@ if $GFX1010; then
 fi
 
 echo ""
+if $WSL_GFX1010_UNSUPPORTED; then
+  die "WSL + RX 5700: ROCm GPU path unavailable by design. Use Windows Ollama bridge instead."
+fi
+
 if $CRITICAL_FAIL; then
+  if $IN_WSL && [[ -x "$(dirname "${BASH_SOURCE[0]}")/diagnose-wsl-gpu.sh" ]]; then
+  echo ""
+  echo "--- WSL diagnose ---"
+  "$(dirname "${BASH_SOURCE[0]}")/diagnose-wsl-gpu.sh" || true
+  fi
   die "Critical GPU device check failed (/dev/kfd or /dev/dri)."
 fi
 
