@@ -1,0 +1,51 @@
+﻿{
+    "recorded_at":  "2026-06-11T01:22:09.4251032Z",
+    "compare_set":  "extended",
+    "gpu_profile":  "rx5700-8gb",
+    "base_url":  "http://127.0.0.1:11434",
+    "prompt":  "Explain Kubernetes GPU scheduling in two short sentences.",
+    "num_predict":  256,
+    "map_file":  "vllm/benchmark/ollama-model-map.json",
+    "results":  [
+                    {
+                        "hf_id":  "LiquidAI/LFM2.5-350M",
+                        "ollama_tag":  "sam860/LFM2:350m",
+                        "status":  "OK",
+                        "total_time_s":  4.43,
+                        "tokens_per_s":  83.54,
+                        "notes":  "eval_count=81; api_total_s=4.43"
+                    },
+                    {
+                        "hf_id":  "LiquidAI/LFM2.5-1.2B-Instruct",
+                        "ollama_tag":  "sam860/LFM2:1.2b",
+                        "status":  "OK",
+                        "total_time_s":  4.34,
+                        "tokens_per_s":  40.05,
+                        "notes":  "eval_count=65; api_total_s=4.34"
+                    },
+                    {
+                        "hf_id":  "Qwen/Qwen3.6-35B-A3B",
+                        "ollama_tag":  "qwen3.6:rx5700",
+                        "status":  "OK",
+                        "total_time_s":  85.75,
+                        "tokens_per_s":  12.02,
+                        "notes":  "eval_count=256; api_total_s=85.75"
+                    },
+                    {
+                        "hf_id":  "google/gemma-4-E2B-it",
+                        "ollama_tag":  "gemma4:rx5700",
+                        "status":  "OK",
+                        "total_time_s":  57.83,
+                        "tokens_per_s":  10.39,
+                        "notes":  "eval_count=231; api_total_s=57.83"
+                    },
+                    {
+                        "hf_id":  "google/gemma-4-E4B-it",
+                        "ollama_tag":  "gemma4:rx5700",
+                        "status":  "OK",
+                        "total_time_s":  57.83,
+                        "tokens_per_s":  10.39,
+                        "notes":  "eval_count=231; api_total_s=57.83"
+                    }
+                ]
+}

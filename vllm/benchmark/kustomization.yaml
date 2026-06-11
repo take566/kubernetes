@@ -20,8 +20,6 @@ configMapGenerator:
       - model-profiles.json
     options:
       disableNameSuffixHash: true
-    options:
-      disableNameSuffixHash: true
 resources:
   - benchmark-configmap.yaml
   - model-candidates.yaml

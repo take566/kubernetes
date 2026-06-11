@@ -1,0 +1,33 @@
+﻿{
+    "recorded_at":  "2026-06-11T01:19:21.3196910Z",
+    "compare_set":  "default",
+    "gpu_profile":  "rx5700-8gb",
+    "base_url":  "http://127.0.0.1:11434",
+    "prompt":  "Explain Kubernetes GPU scheduling in two short sentences.",
+    "num_predict":  256,
+    "map_file":  "vllm/benchmark/ollama-model-map.json",
+    "results":  [
+                    {
+                        "hf_id":  "facebook/opt-125m",
+                        "ollama_tag":  null,
+                        "status":  "SKIP",
+                        "notes":  "No entry in ollama-model-map.json"
+                    },
+                    {
+                        "hf_id":  "Qwen/Qwen2.5-0.5B-Instruct",
+                        "ollama_tag":  "qwen2.5:0.5b",
+                        "status":  "OK",
+                        "total_time_s":  1.66,
+                        "tokens_per_s":  65.71,
+                        "notes":  "eval_count=22; api_total_s=1.65"
+                    },
+                    {
+                        "hf_id":  "Qwen/Qwen2.5-1.5B-Instruct",
+                        "ollama_tag":  "qwen2.5:1.5b",
+                        "status":  "OK",
+                        "total_time_s":  3.39,
+                        "tokens_per_s":  32.26,
+                        "notes":  "eval_count=49; api_total_s=3.39"
+                    }
+                ]
+}

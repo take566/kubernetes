@@ -13,6 +13,7 @@ Kubernetes 上で [Actions Runner Controller v2](https://github.com/actions/acti
 ## 前提条件
 
 - Kubernetes クラスタ（kind / kubeadm — 本リポジトリの bootstrap 手順）
+- **kind / 開発環境**: runner の作業ボリューム（`kubernetesModeWorkVolumeClaim`）には **local-path** StorageClass が必要です。kind では `kind/addons/apply-addons.sh` で local-path を適用済みであること。`values.yaml` の `storageClassName` は既定で `local-path`（本番で別 SC を使う場合は上書き）。
 - Helm v3
 - GitHub PAT または GitHub App（runner 登録用）
 - Argo CD（GitOps 経由の場合のみ — [docs/ARGOCD_SETUP.md](../docs/ARGOCD_SETUP.md)）
@@ -148,6 +149,7 @@ kubectl logs -n github-runners -l actions.github.com/scale-set-name=k8s-self-hos
 |------|------|
 | Runner が GitHub に表示されない | Secret / `githubConfigUrl` / PAT 権限を確認 |
 | Job がキューに残る | `runs-on` が `runnerScaleSetName` と一致しているか確認 |
+| Pod が Pending（PVC Unbound） | `storageClassName` がクラスタの SC と一致しているか確認（kind/dev は `local-path`） |
 | DinD でビルド失敗 | `containerMode.type: dind` + privileged / storageClass を確認 |
 
 ## 削除
