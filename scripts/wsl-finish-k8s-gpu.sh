@@ -2,8 +2,7 @@
 set -euo pipefail
 export PATH="/usr/lib/wsl/lib:${PATH}"
 export KUBECONFIG=/etc/kubernetes/admin.conf
-REPO=/root/kubernetes-wsl
-cp -a /mnt/c/work/kubernetes "$REPO"
+REPO=/mnt/c/work/kubernetes
 find "$REPO" -name '*.sh' -exec sed -i 's/\r$//' {} \;
 
 mkdir -p /etc/systemd/system/kubelet.service.d
@@ -32,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manife
 kubectl apply --validate=false -f /tmp/calico.yaml
 
 kubectl apply -k "${REPO}/kubeadm/addons/"
-kubectl apply -k "${REPO}/kubeadm/addons/nvidia-device-plugin/"
+bash "${REPO}/scripts/wsl-gpu-postinit.sh" "${REPO}"
 
 NODE=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')
 kubectl taint nodes "${NODE}" node-role.kubernetes.io/control-plane- 2>/dev/null || true
