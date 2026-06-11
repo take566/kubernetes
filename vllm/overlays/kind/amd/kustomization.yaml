@@ -13,3 +13,4 @@ resources:
   - vllm-pvc.yaml
 patches:
   - path: model-patch.yaml
+  - path: radeon-rx5700-patch.yaml

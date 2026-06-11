@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  namespace: vllm
+spec:
+  template:
+    spec:
+      nodeSelector:
+        amd.com/gpu.present: "true"
+      tolerations:
+        - key: amd.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: vllm
+          env:
+            - name: HSA_OVERRIDE_GFX_VERSION
+              value: "10.3.0"
+            - name: PYTORCH_HIP_ALLOC_CONF
+              value: "expandable_segments:True,max_split_size_mb:128"
+          resources:
+            requests:
+              memory: 6Gi
+            limits:
+              memory: 12Gi

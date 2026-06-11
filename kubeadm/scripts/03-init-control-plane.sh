@@ -27,10 +27,11 @@ CONFIG_SRC="${KUBEADM_DIR}/kubeadm-config.yaml"
 CONFIG_TMP="$(mktemp)"
 trap 'rm -f "${CONFIG_TMP}"' EXIT
 
-sed \
+# Strip comment preamble (lines before first ---); kubeadm rejects docs without apiVersion/kind.
+sed -n '/^---/,$p' "${CONFIG_SRC}" | sed \
   -e "s/cp.example.com:6443/${CONTROL_PLANE_DNS}:6443/g" \
   -e "s/advertiseAddress: \"192.168.1.10\"/advertiseAddress: \"${CONTROL_PLANE_IP}\"/g" \
-  "${CONFIG_SRC}" >"${CONFIG_TMP}"
+  >"${CONFIG_TMP}"
 
 log "=== kubeadm init (endpoint: ${CONTROL_PLANE_DNS}:6443, advertise: ${CONTROL_PLANE_IP}) ==="
 

@@ -19,8 +19,10 @@ kubectl apply -k kubeadm/addons/network-policies/
 | ファイル | 内容 |
 |----------|------|
 | `default-deny.yaml` | `argocd`, `ingress-nginx`, `longhorn-system`, `kube-system` で ingress 全拒否 |
-| `allow-dns.yaml` | 上記 namespace から kube-dns への egress 53/udp,tcp + kube-system 内 DNS ingress 許可 |
-| `allow-ingress-controller.yaml` | `ingress-nginx` コントローラへ 80/443/8443 ingress 許可 |
+| `allow-dns.yaml` | `argocd` / `longhorn-system` / `kube-system` から kube-dns への egress（`ingress-nginx` は別ファイル） |
+| `allow-ingress-controller.yaml` | `ingress-nginx` コントローラへ 80/443/8443/10254 ingress 許可 |
+| `allow-controller-egress.yaml` | ingress コントローラの egress 全許可（API / backend 到達のため） |
+| `allow-kube-system-metrics.yaml` | metrics-server の probe / scrape 用 ingress・egress |
 
 ## 前提
 

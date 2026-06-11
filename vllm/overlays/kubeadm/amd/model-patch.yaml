@@ -6,7 +6,7 @@ metadata:
 data:
   VLLM_MODEL: "Qwen/Qwen2.5-1.5B-Instruct"
   VLLM_EXTRA_ARGS: >-
-    --gpu-memory-utilization 0.88
+    --gpu-memory-utilization 0.85
     --max-num-seqs 128
     --max-model-len 8192
     --max-num-batched-tokens 4096

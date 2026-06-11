@@ -98,6 +98,20 @@ Runner 登録手順: [github-runners/README.md](../../../github-runners/README.m
 
 本番同等 vLLM ベンチは [kubeadm overlay](../kubeadm/README.md) または Linux GPU ノード + Actions **vLLM Model Benchmark** です。
 
+## WSL kubeadm へつなぐ（ROCm 不要）
+
+Windows Ollama をクラスタ内 `ollama-external.vllm` として登録:
+
+```powershell
+.\scripts\configure-ollama-wsl-bridge.ps1 -ConfigureFirewall
+```
+
+```bash
+./kubeadm/scripts/register-windows-ollama-external.sh --verify
+```
+
+CPU フォールバック: `kubectl apply -k vllm/overlays/kubeadm/cpu/`
+
 ## 関連ドキュメント
 
 - [docs/LOCAL_GPU_SETUP_WINDOWS.md](../../../docs/LOCAL_GPU_SETUP_WINDOWS.md)

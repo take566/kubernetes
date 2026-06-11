@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  namespace: vllm
+spec:
+  template:
+    spec:
+      containers:
+        - name: vllm
+          env:
+            - name: VLLM_DEVICE
+              value: cpu
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              exec python3 -m vllm.entrypoints.openai.api_server \
+                --model "${VLLM_MODEL}" \
+                --host "${VLLM_HOST}" \
+                --port "${VLLM_PORT}" \
+                ${VLLM_EXTRA_ARGS}
+          resources:
+            requests:
+              cpu: "4"
+              memory: 6Gi
+            limits:
+              cpu: "8"
+              memory: 12Gi

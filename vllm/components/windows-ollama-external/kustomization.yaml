@@ -5,12 +5,9 @@ labels:
   - pairs:
       app.kubernetes.io/part-of: vllm
       app.kubernetes.io/managed-by: kustomize
-      app.kubernetes.io/cluster: kubeadm
+      app.kubernetes.io/component: windows-ollama-bridge
     includeSelectors: false
     includeTemplates: false
 resources:
-  - ../../../components/amd
-  - vllm-pvc.yaml
-patches:
-  - path: model-patch.yaml
-  - path: radeon-rx5700-patch.yaml
+  - namespace.yaml
+  - ollama-external-service.yaml

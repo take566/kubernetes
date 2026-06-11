@@ -1,0 +1,22 @@
+# metrics-server: kubelet/API probes and scraping (kube-system has blanket allow-dns-egress).
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-metrics-server
+  namespace: kube-system
+spec:
+  podSelector:
+    matchLabels:
+      k8s-app: metrics-server
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 10250
+        - protocol: TCP
+          port: 443
+  egress:
+    - {}

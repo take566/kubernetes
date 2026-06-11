@@ -69,6 +69,10 @@ fi
 
 if [[ "${WITH_NETWORK_POLICIES}" == true ]]; then
   if [[ -d "${REPO_ROOT}/kubeadm/addons/network-policies" ]]; then
+    echo "=== Ensuring namespaces for network policies ==="
+    for ns in argocd ingress-nginx longhorn-system; do
+      kubectl create namespace "${ns}" --dry-run=client -o yaml | kubectl apply -f -
+    done
     echo "=== Applying network policies ==="
     kubectl apply -k "${REPO_ROOT}/kubeadm/addons/network-policies/"
   else

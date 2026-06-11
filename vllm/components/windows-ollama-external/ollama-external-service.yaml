@@ -1,0 +1,20 @@
+# Headless external Service — Endpoints are applied by register-windows-ollama-external.sh
+# with the Windows host IP (WSL default gateway, e.g. 172.19.32.1).
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-external
+  namespace: vllm
+  labels:
+    app: ollama-external
+    app.kubernetes.io/name: ollama-external
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/component: windows-ollama-bridge
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 11434
+      targetPort: 11434
+      protocol: TCP
+  # No selector — backed by manually maintained Endpoints

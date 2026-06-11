@@ -1,0 +1,10 @@
+[
+  {
+    "op": "remove",
+    "path": "/spec/template/spec/containers/0/resources/requests/nvidia.com~1gpu"
+  },
+  {
+    "op": "remove",
+    "path": "/spec/template/spec/containers/0/resources/limits/nvidia.com~1gpu"
+  }
+]

@@ -1,5 +1,7 @@
-# ingress-nginx controller must reach backend Services across namespaces.
-# Without this, allow-dns-egress (podSelector: {}) blocks all non-DNS egress in ingress-nginx.
+# ingress-nginx controller egress.
+# Calico on kubeadm may route kubernetes.default (10.96.0.1:443) via node/pod IPs after
+# kube-proxy DNAT — port-only or Service-CIDR rules are insufficient. Allow all egress for
+# the controller; ingress is still restricted by default-deny + allow-ingress-controller.
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -14,24 +16,4 @@ spec:
   policyTypes:
     - Egress
   egress:
-    - ports:
-        - protocol: TCP
-          port: 80
-        - protocol: TCP
-          port: 443
-        - protocol: TCP
-          port: 8080
-        - protocol: TCP
-          port: 8443
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-          podSelector:
-            matchLabels:
-              k8s-app: kube-dns
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
+    - {}

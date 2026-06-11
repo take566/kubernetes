@@ -8,3 +8,4 @@ resources:
   - allow-dns.yaml
   - allow-ingress-controller.yaml
   - allow-controller-egress.yaml
+  - allow-kube-system-metrics.yaml

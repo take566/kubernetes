@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vllm
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: vllm
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/cluster: kind
+      app.kubernetes.io/backend: cpu
+    includeSelectors: false
+    includeTemplates: false
+resources:
+  - ../../../base
+  - ../../../components/teacher-stub
+  - ../vllm-pvc.yaml
+patches:
+  - path: ../model-patch.yaml
+  - path: ../teacher-stub-patch.yaml
+  - path: ../cpu-deployment-patch.yaml
+  - target:
+      kind: Deployment
+      name: vllm
+    path: ../remove-gpu-patch.json

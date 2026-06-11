@@ -3,7 +3,76 @@
 本ディレクトリは **Linux ノード上で kubeadm による本番向け Kubernetes クラスタ** を構築するためのスクリプトとアドオンです。
 
 > **注意（Windows 開発環境）**  
-> スクリプトは **Ubuntu/Debian の Linux ターゲットノード** 向けです。Windows 上では編集・レビューのみ行い、実行は control-plane / worker の Linux VM または物理サーバーで行ってください。
+> スクリプトは **Ubuntu/Debian の Linux ターゲットノード** 向けです。本番は Linux VM / 物理サーバーで実行してください。  
+> **WSL2（Ubuntu + systemd）** でも単一ノード検証クラスタを構築できます（下記「WSL2 単一ノード」参照）。
+
+## WSL2 単一ノード（開発・検証）
+
+前提: Ubuntu 24.04 on WSL2、`systemd=true`（`/etc/wsl.conf`）、**Docker Desktop の WSL Integration は無効化推奨**（`/Docker/host` マウントが kubelet を落とすことがあります）。
+
+```bash
+# Windows から root で実行（sudo パスワード不要）
+wsl -u root
+cd /mnt/d/work/kubernetes   # リポジトリパスに合わせて変更
+chmod +x kubeadm/scripts/wsl-bootstrap.sh kubeadm/scripts/*.sh
+./kubeadm/scripts/wsl-bootstrap.sh
+```
+
+手動で既にクラスタがある場合の kubeconfig:
+
+```bash
+export KUBECONFIG=~/.kube/config-kubeadm-wsl
+kubectl config use-context kubeadm-wsl
+kubectl get nodes
+./kubeadm/scripts/verify-ingress.sh
+```
+
+WSL 固有設定: `kubeadm/kubeadm-config-wsl.yaml`（`cgroupDriver: cgroupfs`）、ingress は **hostPort 80/443** の DaemonSet。`verify-ingress.sh` は `http_proxy` を回避して `http://127.0.0.1/` を検証します。
+
+### WSL2 + AMD GPU（単一ノード）
+
+**前提:** Windows に [AMD Software Adrenalin for WSL2](https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.2/docs/install/installrad/wsl/install-radeon.html)（26.1.1 以降）を入れ、`wsl --shutdown` 後に WSL を再起動。`/dev/dxg` だけでは不十分 — `rocminfo` で GPU が見えること。
+
+```bash
+# ホスト ROCm（WSL）
+cd /mnt/d/work/kubernetes
+./scripts/setup-wsl-gpu-preflight.sh
+sudo ./scripts/install-wsl-rocm.sh
+
+# クラスタへ device plugin + ラベル
+export KUBECONFIG=~/.kube/config-kubeadm-wsl
+./kubeadm/scripts/07-register-gpu-worker.sh --node "$(hostname)" --vendor amd
+
+# 確認
+kubectl describe node "$(hostname)" | grep -E 'amd.com/gpu|Allocatable|Capacity'
+```
+
+**RX 5700（gfx1010）— ROCm 非推奨:** `/dev/kfd` なし・`rocminfo` 失敗が正常。GPU 推論は **Windows ネイティブ Ollama** をクラスタ外エンドポイントとして登録する（ROCm / `amd.com/gpu` 不要）。
+
+```powershell
+# Windows（管理者推奨: ファイアウォール）
+.\scripts\configure-ollama-wsl-bridge.ps1 -ConfigureFirewall
+# Ollama をトレイから再起動 → netstat で 0.0.0.0:11434 を確認
+```
+
+```bash
+# WSL kubeadm
+export KUBECONFIG=~/.kube/config-kubeadm-wsl
+./kubeadm/scripts/register-windows-ollama-external.sh --verify
+# Pod から: http://ollama-external.vllm:11434/v1/chat/completions
+```
+
+**CPU のみ（クラスタ内 vLLM）:** `vllm/overlays/kubeadm/cpu/` — 遅いが ROCm 不要（`--load-restrictor LoadRestrictionsNone` 要）。詳細: [docs/LOCAL_GPU_SETUP_WINDOWS.md](../docs/LOCAL_GPU_SETUP_WINDOWS.md)
+
+Linux ベアメタル GPU ワーカー: [docs/GPU_WORKER_JOIN_AMD.md](../docs/GPU_WORKER_JOIN_AMD.md)
+
+`wsl -u root` で bootstrap した場合、kubeconfig は `~/.kube/config-kubeadm-wsl`（ログインユーザー）へコピーされます。手動復旧:
+
+```bash
+sudo cp /etc/kubernetes/admin.conf ~/.kube/config-kubeadm-wsl
+sudo chown "$USER:$USER" ~/.kube/config-kubeadm-wsl
+kubectl --kubeconfig ~/.kube/config-kubeadm-wsl config rename-context kubernetes-admin@kubernetes kubeadm-wsl
+```
 
 ## ハードウェア / ネットワーク前提
 
