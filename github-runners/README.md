@@ -13,11 +13,35 @@ Kubernetes 上で [Actions Runner Controller v2](https://github.com/actions/acti
 ## 前提条件
 
 - Kubernetes クラスタ（kind / kubeadm — 本リポジトリの bootstrap 手順）
-- Argo CD インストール済み（[docs/ARGOCD_SETUP.md](../docs/ARGOCD_SETUP.md)）
-- Helm v3（ローカル検証用）
+- Helm v3
 - GitHub PAT または GitHub App（runner 登録用）
+- Argo CD（GitOps 経由の場合のみ — [docs/ARGOCD_SETUP.md](../docs/ARGOCD_SETUP.md)）
 
-## デプロイ手順
+## クイック bootstrap（Helm / kubectl）
+
+Argo CD なしで ARC コントローラ + runner scale set を入れる場合:
+
+```bash
+# 事前チェック（クラスタ変更なし）
+./scripts/bootstrap-self-hosted-runner.sh --check
+
+# インストール（GITHUB_TOKEN または ~/.github-runner-token があれば Secret + runner も適用）
+export GITHUB_TOKEN=ghp_YOUR_TOKEN
+./scripts/bootstrap-self-hosted-runner.sh
+
+# 動作確認
+gh workflow run self-hosted-test.yaml
+
+# vLLM ベンチマーク（compare_set: default | extended | all）
+./scripts/trigger-vllm-benchmark.sh default
+```
+
+| スクリプト | 内容 |
+|------------|------|
+| [../scripts/bootstrap-self-hosted-runner.sh](../scripts/bootstrap-self-hosted-runner.sh) | ARC controller + runner scale set（idempotent） |
+| [../scripts/trigger-vllm-benchmark.sh](../scripts/trigger-vllm-benchmark.sh) | `vllm-model-benchmark.yaml` を `workflow_dispatch` |
+
+## デプロイ手順（Argo CD）
 
 ### 1. コントローラ（初回のみ）
 

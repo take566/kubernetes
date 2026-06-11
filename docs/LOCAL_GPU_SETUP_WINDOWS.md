@@ -115,7 +115,7 @@ $env:COMPARE_SET = 'default'
 
 **出力:** `vllm/benchmark/results/ollama-compare-<timestamp>.json`
 
-**CI:** GitHub Actions → **vLLM Ollama Benchmark**（`run_benchmark: false` でマップ検証のみ）
+**CI:** GitHub Actions → **vLLM Ollama Benchmark**（`run_benchmark: false` でマップ検証のみ）。GPU 実測は self-hosted Windows runner（ラベル `ollama`）で `run_benchmark: true`。
 
 ---
 

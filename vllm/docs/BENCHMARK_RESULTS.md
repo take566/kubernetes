@@ -44,7 +44,10 @@ Qwen2.5 公式コンテキスト（1.5B: 最大 32k）と単一 GPU 8–16 GiB P
 
 ## Ollama ローカル実測（Windows + RX 5700 8GB）
 
-**日付:** 2026-06-11  
+K8s vLLM が未接続のときは `scripts/compare_models_ollama.ps1` で HuggingFace 候補を Ollama タグにマップして計測します（`vllm/benchmark/ollama-model-map.json`）。
+
+### スモーク（手動・2026-06-11）
+
 **環境:** Ollama (Windows), AMD Radeon RX 5700 8GB, HTTP `/api/generate` via `scripts/ollama-bench.ps1`  
 **備考:** gemma4 / qwen3.6 は遅いが OOM なし。vLLM/K8s ベンチ前のスモーク比較用。
 
@@ -57,6 +60,22 @@ Qwen2.5 公式コンテキスト（1.5B: 最大 32k）と単一 GPU 8–16 GiB P
 | qwen3.6:rx5700 | OK | 97.25 | 10.02 | eval_count=256; slow, no OOM |
 
 JSON: [../benchmark/results/ollama-rx5700-2026-06-11.json](../benchmark/results/ollama-rx5700-2026-06-11.json)
+
+### Extended compare set（`COMPARE_SET=extended` · 2026-06-11）
+
+**パイプライン:** `scripts/compare_models_ollama.ps1` → `vllm/benchmark/results/ollama-compare-<timestamp>.json`  
+**CI:** [.github/workflows/vllm-ollama-benchmark.yaml](../../.github/workflows/vllm-ollama-benchmark.yaml)（マップ検証は ubuntu-latest、実測は self-hosted Windows + Ollama）  
+**JSON:** [../benchmark/results/ollama-compare-2026-06-11T092251.json](../benchmark/results/ollama-compare-2026-06-11T092251.json)
+
+| HuggingFace ID | Ollama tag | status | total_time_s | tokens_per_s | 備考 |
+|----------------|------------|--------|--------------|--------------|------|
+| LiquidAI/LFM2.5-350M | sam860/LFM2:350m | OK | 3.15 | 68.95 | extended |
+| LiquidAI/LFM2.5-1.2B-Instruct | sam860/LFM2:1.2b | OK | 4.49 | 31.34 | extended |
+| Qwen/Qwen3.6-35B-A3B | qwen3.6:rx5700 | OK | 86.65 | 10.43 | slow, no OOM |
+| google/gemma-4-E2B-it | gemma4:rx5700 | OK | 60.15 | 8.41 | approximate tag |
+| google/gemma-4-E4B-it | gemma4:rx5700 | OK | 60.15 | 8.41 | same tag as E2B; single bench run |
+
+> **Note:** k8s vLLM 実測（p50/p99/tok/s）は引き続き _pending_ — [vLLM Model Benchmark](../../.github/workflows/vllm-model-benchmark.yaml) + GPU クラスタが必要。
 
 ## 実測ログ（Kubernetes / vLLM）
 

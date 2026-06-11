@@ -1,0 +1,101 @@
+name: vLLM Ollama Benchmark (local fallback)
+
+# Validates ollama-model-map.json + model-candidates alignment on every run.
+# Full GPU benchmarks require a self-hosted Windows runner with Ollama + RX5700 (or similar).
+#
+# Manual local run (recommended when k8s vLLM is unavailable):
+#   $env:COMPARE_SET = 'extended'
+#   .\scripts\compare_models_ollama.ps1
+# Results: vllm/benchmark/results/ollama-compare-<timestamp>.json
+#
+# Self-hosted Windows (optional):
+#   1. Register runner with labels: self-hosted, Windows, ollama
+#   2. Install Ollama + pull mapped tags from vllm/benchmark/ollama-model-map.json
+#   3. Re-run workflow with run_benchmark=true
+on:
+  workflow_dispatch:
+    inputs:
+      compare_set:
+        description: "Candidate set: default | extended | all"
+        required: false
+        default: "extended"
+      run_benchmark:
+        description: "Run Ollama HTTP benchmark (requires self-hosted runner with Ollama)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validate-map:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate ollama-model-map.json
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          from pathlib import Path
+
+          map_path = Path("vllm/benchmark/ollama-model-map.json")
+          data = json.loads(map_path.read_text(encoding="utf-8"))
+          mappings = data.get("mappings") or {}
+          assert mappings, "mappings must be non-empty"
+          for hf_id, tag in mappings.items():
+              assert "/" in hf_id, f"invalid HF id: {hf_id}"
+              assert tag and ":" in tag or tag.count(":") >= 0, f"invalid ollama tag: {tag}"
+          print(f"OK: {len(mappings)} mappings in ollama-model-map.json")
+          PY
+
+      - name: Validate map covers extended compare set
+        run: |
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          yaml_text = Path("vllm/benchmark/model-candidates.yaml").read_text(encoding="utf-8")
+          m = re.search(r'EXTENDED_COMPARE_SET:\s*"([^"]+)"', yaml_text)
+          assert m, "EXTENDED_COMPARE_SET not found"
+          extended = m.group(1).split()
+
+          mappings = json.loads(Path("vllm/benchmark/ollama-model-map.json").read_text(encoding="utf-8"))["mappings"]
+          missing = [mid for mid in extended if mid not in mappings]
+          if missing:
+              print("WARN: extended IDs without Ollama map (will SKIP in compare script):")
+              for mid in missing:
+                  print(f"  - {mid}")
+          else:
+              print("OK: all extended compare IDs have Ollama mappings")
+          PY
+
+      - name: Validate compare_models_ollama.ps1 exists
+        run: test -f scripts/compare_models_ollama.ps1
+
+  ollama-benchmark:
+    needs: validate-map
+    if: inputs.run_benchmark == true
+    runs-on: [self-hosted, Windows, ollama]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight Ollama
+        shell: pwsh
+        run: |
+          ollama --version
+          Invoke-RestMethod -Uri http://127.0.0.1:11434/api/tags -Method Get | ConvertTo-Json -Depth 3
+
+      - name: Run compare_models_ollama.ps1
+        shell: pwsh
+        env:
+          COMPARE_SET: ${{ inputs.compare_set }}
+        run: |
+          $out = & .\scripts\compare_models_ollama.ps1
+          "OUTPUT_FILE=$out" >> $env:GITHUB_ENV
+
+      - name: Upload Ollama benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ollama-compare-${{ github.run_id }}
+          path: vllm/benchmark/results/ollama-compare-*.json
+          if-no-files-found: warn
