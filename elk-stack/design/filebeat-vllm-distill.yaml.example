@@ -1,0 +1,36 @@
+# Design sketch — Filebeat for vLLM distillation JSON logs (optional path).
+# Not wired into elk-stack/kustomization.yaml yet.
+#
+# Prerequisites:
+# - Teacher overlay enables structured JSON logging to stdout (distill-only)
+# - DaemonSet scheduled on GPU nodes or all nodes with container log access
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-vllm-distill
+  namespace: elk-stack
+  labels:
+    app.kubernetes.io/part-of: elk-stack
+    app.kubernetes.io/component: filebeat-vllm-distill
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+      - type: container
+        paths:
+          - /var/log/containers/*vllm*distill*.log
+        processors:
+          - decode_json_fields:
+              fields: ["message"]
+              target: "distill"
+              overwrite_keys: true
+          - drop_event:
+              when:
+                not:
+                  equals:
+                    distill.event.kind: "distill.sample"
+    output.logstash:
+      hosts: ["logstash.elk-stack.svc.cluster.local:5044"]
+    logging.level: warning
+---
+# DaemonSet spec omitted — add hostPath /var/log/containers + RBAC in implementation phase.

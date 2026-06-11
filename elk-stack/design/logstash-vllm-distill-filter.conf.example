@@ -1,0 +1,62 @@
+# Design sketch — append inside logstash-configmap.yaml filter { } block.
+# Matches JSON events from Distillation Collector (tcp/udp port 5000).
+
+filter {
+  if [event][kind] == "distill.sample" or [distill][request_id] {
+    mutate {
+      add_tag => [ "vllm", "distill" ]
+    }
+
+    # PII redaction (extend patterns per corpus)
+    if [distill][messages] {
+      ruby {
+        code => '
+          require "digest"
+          msgs = event.get("[distill][messages]")
+          if msgs.is_a?(Array)
+            msgs.each do |m|
+              next unless m.is_a?(Hash) && m["content"]
+              c = m["content"].to_s
+              c = c.gsub(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i, "[EMAIL]")
+              c = c.gsub(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/, "[PHONE]")
+              m["content"] = c
+            end
+            event.set("[distill][messages]", msgs)
+          end
+        '
+      }
+    }
+
+    # Rule-based quality score (MVP)
+    ruby {
+      code => '
+        score = 1.0
+        flags = []
+        comp = event.get("[distill][completion]").to_s
+        if comp.length < 32
+          score -= 0.4
+          flags << "too_short"
+        end
+        if comp.match?(/I cannot|I can\'t help|申し訳/)
+          score -= 0.5
+          flags << "refusal"
+        end
+        event.set("[distill][quality][score]", [score, 0.0].max)
+        event.set("[distill][quality][flags]", flags) unless flags.empty?
+        event.set("[distill][exported]", false)
+      '
+    }
+  }
+}
+
+output {
+  if "distill" in [tags] {
+    elasticsearch {
+      hosts => ["elasticsearch:9200"]
+      data_stream => "true"
+      data_stream_type => "logs"
+      data_stream_dataset => "vllm"
+      data_stream_namespace => "distill"
+    }
+  }
+}

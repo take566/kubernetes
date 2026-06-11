@@ -1,0 +1,67 @@
+{
+  "index_patterns": ["vllm-distill-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.refresh_interval": "5s",
+      "index.codec": "best_compression"
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "event": {
+          "properties": {
+            "kind": { "type": "keyword" }
+          }
+        },
+        "distill": {
+          "properties": {
+            "request_id": { "type": "keyword" },
+            "teacher_model": { "type": "keyword" },
+            "student_target": { "type": "keyword" },
+            "prompt_hash": { "type": "keyword" },
+            "messages": {
+              "type": "nested",
+              "properties": {
+                "role": { "type": "keyword" },
+                "content": { "type": "text", "index": false }
+              }
+            },
+            "completion": { "type": "text" },
+            "finish_reason": { "type": "keyword" },
+            "usage": {
+              "properties": {
+                "prompt_tokens": { "type": "integer" },
+                "completion_tokens": { "type": "integer" },
+                "total_tokens": { "type": "integer" }
+              }
+            },
+            "latency_ms": { "type": "float" },
+            "quality": {
+              "properties": {
+                "score": { "type": "float" },
+                "flags": { "type": "keyword" }
+              }
+            },
+            "cluster": { "type": "keyword" },
+            "exported": { "type": "boolean" },
+            "logits_uri": { "type": "keyword" }
+          }
+        },
+        "kubernetes": {
+          "properties": {
+            "namespace": { "type": "keyword" },
+            "pod": { "type": "keyword" }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "Design sketch for vLLM distillation events. Apply via ES _index_template API or future ConfigMap Job.",
+    "managed_by": "elk-stack/design"
+  }
+}

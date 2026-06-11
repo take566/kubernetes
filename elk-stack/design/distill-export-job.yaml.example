@@ -1,0 +1,47 @@
+# Design sketch — CronJob exports filtered distillation docs to JSONL on finetune PVC.
+# Implementation: add ES credentials Secret, cross-namespace PVC or object store upload.
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vllm-distill-export
+  namespace: vllm
+  labels:
+    app: vllm-distill-export
+    app.kubernetes.io/part-of: vllm
+spec:
+  schedule: "0 3 * * *"
+  suspend: true
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: export
+              image: curlimages/curl:8.5.0
+              env:
+                - name: ES_URL
+                  value: "http://elasticsearch.elk-stack.svc.cluster.local:9200"
+                - name: ES_INDEX
+                  value: "vllm-distill-*"
+                - name: MIN_QUALITY
+                  value: "0.7"
+                - name: OUTPUT_PATH
+                  value: "/data/dataset/distill-export.jsonl"
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  echo "DESIGN ONLY: replace with Python exporter using ES PIT+scroll"
+                  echo "Query: quality.score >= ${MIN_QUALITY} AND NOT quality.flags: refusal"
+                  echo "Output format: {\"text\": \"<chat template>\"} per train_lora.py"
+                  exit 0
+              volumeMounts:
+                - name: dataset
+                  mountPath: /data/dataset
+          volumes:
+            - name: dataset
+              persistentVolumeClaim:
+                claimName: vllm-finetune-dataset
