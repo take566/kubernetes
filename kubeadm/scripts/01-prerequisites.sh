@@ -12,6 +12,18 @@ require_root
 
 log "=== kubeadm prerequisites ==="
 
+# --- WSL: Docker Desktop mount preflight ---
+if [[ -f /proc/version ]] && grep -qi microsoft /proc/version 2>/dev/null; then
+  if mount | grep -q '/Docker/host'; then
+    warn "/Docker/host is mounted — kubelet may fail. Run: sudo ${SCRIPT_DIR}/recover-wsl-kubelet.sh"
+    warn "Permanent fix (Windows): .\\scripts\\disable-docker-wsl-integration.ps1"
+  fi
+  if bash "${SCRIPT_DIR}/check-wsl-mounts.sh" 2>/dev/null | grep -q .; then
+    warn "Non-standard /proc/mounts lines detected (Docker Desktop WSL integration)."
+    warn "Disable WSL Integration for this distro in Docker Desktop → Settings → Resources → WSL Integration"
+  fi
+fi
+
 # --- swap off (idempotent) ---
 if swapon --show | grep -q .; then
   log "Disabling swap..."

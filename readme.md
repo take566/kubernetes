@@ -215,6 +215,8 @@ skaffold dev -p full
 | [policies/](policies/) | ResourceQuota 等 |
 | [scripts/](scripts/) | `bootstrap.sh`（Argo CD）、`validate.sh`（マニフェスト検証） |
 | [docs/](docs/) | 補足ドキュメント索引 |
+| [docs/backlog/](docs/backlog/) | kubeadm バックログ（issue-01〜08） |
+| [ollama/modelfiles/](ollama/modelfiles/) | Ollama Modelfile（GPU 別チューニング） |
 
 ## 関連ドキュメント
 

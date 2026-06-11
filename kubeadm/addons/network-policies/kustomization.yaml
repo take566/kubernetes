@@ -9,3 +9,4 @@ resources:
   - allow-ingress-controller.yaml
   - allow-controller-egress.yaml
   - allow-kube-system-metrics.yaml
+  - allow-kube-system-addon-egress.yaml

@@ -8,7 +8,7 @@
 
 ## WSL2 単一ノード（開発・検証）
 
-前提: Ubuntu 24.04 on WSL2、`systemd=true`（`/etc/wsl.conf`）、**Docker Desktop の WSL Integration は無効化推奨**（`/Docker/host` マウントが kubelet を落とすことがあります）。
+前提: Ubuntu 24.04 on WSL2、`systemd=true`（`/etc/wsl.conf`）、**Docker Desktop の WSL Integration は無効化推奨**（`.\scripts\disable-docker-wsl-integration.ps1`）。kubelet が落ちた場合は `sudo kubeadm/scripts/recover-wsl-kubelet.sh`（swapoff + `/Docker/host` の umount）（`/Docker/host` マウントが kubelet を落とすことがあります）。CoreDNS/Calico 不安定時は [docs/cluster-dns-troubleshooting.md](docs/cluster-dns-troubleshooting.md) と `./kubeadm/scripts/diagnose-cluster-dns.sh`。
 
 ```bash
 # Windows から root で実行（sudo パスワード不要）
@@ -50,6 +50,8 @@ kubectl describe node "$(hostname)" | grep -E 'amd.com/gpu|Allocatable|Capacity'
 **RX 5700（gfx1010）— ROCm 非推奨:** `/dev/kfd` なし・`rocminfo` 失敗が正常。GPU 推論は **Windows ネイティブ Ollama** をクラスタ外エンドポイントとして登録する（ROCm / `amd.com/gpu` 不要）。
 
 ```powershell
+# Windows: Adrenalin ドライバ確認（Ollama GPU 復帰）
+.\scripts\update-adrenalin-gpu.ps1
 # Windows（管理者推奨: ファイアウォール）
 .\scripts\configure-ollama-wsl-bridge.ps1 -ConfigureFirewall
 # Ollama をトレイから再起動 → netstat で 0.0.0.0:11434 を確認
