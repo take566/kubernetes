@@ -198,6 +198,7 @@ data:
       if [event][kind] == "serena.log" or [serena][stream] {
         mutate {
           add_tag => [ "serena" ]
+          remove_field => [ "@version" ]
         }
 
         mutate {

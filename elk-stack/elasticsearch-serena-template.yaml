@@ -24,6 +24,7 @@ data:
           "dynamic": "strict",
           "properties": {
             "@timestamp": { "type": "date" },
+            "tags": { "type": "keyword" },
             "event": {
               "properties": {
                 "kind": { "type": "keyword" }

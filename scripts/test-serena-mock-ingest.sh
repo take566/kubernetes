@@ -38,10 +38,12 @@ payload = {
         'project': 'kubernetes',
         'host': 'mock-host',
         'version': '0.1.0-mock',
+        'logger': 'serena.agent',
+        'function': 'start_mcp_server',
+        'line': 42,
     },
     'log': {
         'level': 'INFO',
-        'logger': 'serena.agent',
     },
     'message': 'INFO  2026-06-11 09:22:51 [MainThread] serena.agent:start_mcp_server:42 - Active tools (25): find_symbol, replace_symbol',
 }
