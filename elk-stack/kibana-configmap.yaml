@@ -8,13 +8,6 @@ data:
     server.name: kibana
     server.host: "0.0.0.0"
     elasticsearch.hosts: [ "http://elasticsearch:9200" ]
-    xpack.security.enabled: false
-
-    # Default index patterns
-    kibana.defaultAppId: "discover"
-
-    # Index patterns configuration
-    kibana.index: ".kibana"
 
     # Performance settings
     elasticsearch.requestTimeout: 300000

@@ -34,22 +34,45 @@ spec:
         ports:
         - containerPort: 5601
           name: http
+        # NOTE: Kibana 9.x で削除された設定キー (xpack.security.enabled 等) を
+        # env や kibana.yml に入れると起動時 FATAL になるため設定しないこと
         env:
         - name: ELASTICSEARCH_HOSTS
           value: "http://elasticsearch:9200"
-        - name: XPACK_SECURITY_ENABLED
-          value: "false"
+        # Node 20+ は cgroup memory limit の約半分を heap 上限にするため明示指定 (1Gi の ~80%)
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=800"
         volumeMounts:
         - name: kibana-config
           mountPath: /usr/share/kibana/config/kibana.yml
           subPath: kibana.yml
+        startupProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          periodSeconds: 15
+          failureThreshold: 20
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          periodSeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "50m"
-          limits:
             memory: "512Mi"
-            cpu: "200m"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
       volumes:
       - name: kibana-config
         configMap:
