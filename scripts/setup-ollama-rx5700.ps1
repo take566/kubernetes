@@ -50,6 +50,15 @@ Write-Host '=== Ollama RX 5700 Setup (Windows GPU primary path) ===' -Foreground
 Write-Step 'GPU preflight'
 & (Join-Path $PSScriptRoot 'detect-gpu.ps1')
 
+Write-Step 'AMD Adrenalin driver check'
+$adrenalinScript = Join-Path $PSScriptRoot 'update-adrenalin-gpu.ps1'
+if (Test-Path $adrenalinScript) {
+    & $adrenalinScript
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host '  Driver update recommended before GPU benchmarks — continuing setup.' -ForegroundColor Yellow
+    }
+}
+
 Write-Step 'Ollama connectivity'
 if (-not (Test-OllamaReachable -Url $OllamaBaseUrl)) {
     throw "Ollama not reachable at $OllamaBaseUrl — install from https://ollama.com"

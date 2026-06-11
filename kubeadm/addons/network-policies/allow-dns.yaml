@@ -47,29 +47,8 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-dns-egress
-  namespace: kube-system
-spec:
-  podSelector: {}
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-          podSelector:
-            matchLabels:
-              k8s-app: kube-dns
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
+# kube-system: do NOT add blanket allow-dns-egress here — it blocks API egress for
+# CoreDNS and Calico. See allow-kube-system-addon-egress.yaml instead.
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
