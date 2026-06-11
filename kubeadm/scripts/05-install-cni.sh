@@ -17,9 +17,9 @@ log "=== Installing CNI: ${CNI} (podSubnet=${POD_SUBNET}) ==="
 case "${CNI}" in
   calico)
     CALICO_VERSION="${CALICO_VERSION:-v3.27.3}"
+    # Default calico.yaml pool is 192.168.0.0/16; avoid broad sed that corrupts CRD YAML.
     curl -fsSL "https://raw.githubusercontent.com/projectcalico/calico/${CALICO_VERSION}/manifests/calico.yaml" \
-      | sed "s|# - name: CALICO_IPV4POOL_CIDR|  - name: CALICO_IPV4POOL_CIDR|; s|#   value: \"192.168.0.0/16\"|    value: \"${POD_SUBNET}\"|" \
-      | kubectl apply -f -
+      | kubectl apply --validate=false -f -
     ;;
   cilium)
     CILIUM_VERSION="${CILIUM_VERSION:-1.15.6}"

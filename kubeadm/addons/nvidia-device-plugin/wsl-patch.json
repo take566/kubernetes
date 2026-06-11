@@ -1,0 +1,9 @@
+[
+  {"op":"replace","path":"/spec/template/spec/containers/0/securityContext","value":{"privileged":true}},
+  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"DEVICE_DISCOVERY_STRATEGY","value":"nvml"}},
+  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"LD_LIBRARY_PATH","value":"/usr/lib/wsl/lib"}},
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"wsl-lib","mountPath":"/usr/lib/wsl","readOnly":true}},
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"dxg","mountPath":"/dev/dxg"}},
+  {"op":"add","path":"/spec/template/spec/volumes/-","value":{"name":"wsl-lib","hostPath":{"path":"/usr/lib/wsl"}}},
+  {"op":"add","path":"/spec/template/spec/volumes/-","value":{"name":"dxg","hostPath":{"path":"/dev/dxg","type":"CharDevice"}}}
+]
