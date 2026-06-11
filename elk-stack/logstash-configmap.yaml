@@ -5,7 +5,7 @@ metadata:
   namespace: elk-stack
 data:
   logstash.yml: |
-    http.host: "0.0.0.0"
+    api.http.host: "0.0.0.0"
     xpack.monitoring.elasticsearch.hosts: [ "http://elasticsearch:9200" ]
   pipelines.yml: |
     - pipeline.id: main
@@ -188,6 +188,10 @@ data:
             event.set("[distill][exported]", false)
           '
         }
+
+        mutate {
+          remove_field => [ "data_stream" ]
+        }
       }
     }
 
@@ -195,10 +199,8 @@ data:
       if "distill" in [tags] {
         elasticsearch {
           hosts => ["elasticsearch:9200"]
-          data_stream => "true"
-          data_stream_type => "logs"
-          data_stream_dataset => "vllm"
-          data_stream_namespace => "distill"
+          index => "logs-vllm-distill"
+          action => "create"
         }
       } else {
         elasticsearch {

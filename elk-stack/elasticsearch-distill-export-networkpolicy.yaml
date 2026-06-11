@@ -15,6 +15,14 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # ELK stack components (setup job, Logstash, Kibana) in the same namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: elk-stack
+      ports:
+        - protocol: TCP
+          port: 9200
     - from:
         - namespaceSelector:
             matchLabels:

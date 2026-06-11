@@ -7,13 +7,15 @@ set -euo pipefail
 
 LOGSTASH_HOST="${1:-logstash.elk-stack.svc.cluster.local}"
 LOGSTASH_PORT="${2:-5000}"
-NAMESPACE="${NAMESPACE:-elk-stack}"
+# NetworkPolicy allows ingest only from vllm namespace pods labeled app=distill-collector
+NAMESPACE="${NAMESPACE:-vllm}"
 JOB_NAME="distill-mock-$(date +%s)"
 
-echo "Sending mock distill sample to ${LOGSTASH_HOST}:${LOGSTASH_PORT}..."
+echo "Sending mock distill sample to ${LOGSTASH_HOST}:${LOGSTASH_PORT} (ns=${NAMESPACE})..."
 
 kubectl run -n "${NAMESPACE}" "${JOB_NAME}" \
   --rm -i --restart=Never \
+  --labels=app=distill-collector \
   --image=python:3.11-slim-bookworm \
   --command -- python -c "
 import json, socket, uuid
