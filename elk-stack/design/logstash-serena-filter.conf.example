@@ -1,0 +1,53 @@
+# Design sketch — Logstash filter/output for Serena MCP logs.
+# Merge into elk-stack/logstash-configmap.yaml (alongside vllm distill block).
+#
+# Trigger: Collector sends JSON with event.kind = "serena.log"
+
+filter {
+  if [event][kind] == "serena.log" {
+    mutate {
+      add_tag => [ "serena" ]
+    }
+
+    mutate {
+      gsub => [
+        "message", "[A-Za-z]:\\Users\\[^\\s]+", "[USER_HOME]",
+        "message", "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "[EMAIL]"
+      ]
+    }
+
+    ruby {
+      code => '
+        score = 1.0
+        flags = []
+        msg = event.get("message").to_s
+        if msg.length < 20
+          score -= 0.3
+          flags << "too_short"
+        end
+        if event.get("[log][level]") == "ERROR"
+          flags << "error_level"
+        end
+        if msg =~ /api[_-]?key|password|secret/i
+          score -= 0.8
+          flags << "sensitive_pattern"
+        end
+        require "digest"
+        event.set("[serena][message_hash]", Digest::SHA256.hexdigest(msg))
+        event.set("[serena][quality][score]", [score, 0.0].max)
+        event.set("[serena][quality][flags]", flags) unless flags.empty?
+        event.set("[serena][exported]", false)
+      '
+    }
+  }
+}
+
+output {
+  if "serena" in [tags] {
+    elasticsearch {
+      hosts => ["elasticsearch:9200"]
+      index => "logs-serena"
+      action => "create"
+    }
+  }
+}

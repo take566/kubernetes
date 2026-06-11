@@ -1,0 +1,68 @@
+{
+  "index_patterns": ["logs-serena", ".ds-logs-serena-*"],
+  "data_stream": {},
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.codec": "best_compression",
+      "index.lifecycle.name": "serena-logs-kubeadm"
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "event": {
+          "properties": {
+            "kind": { "type": "keyword" }
+          }
+        },
+        "log": {
+          "properties": {
+            "level": { "type": "keyword" },
+            "thread": { "type": "keyword" }
+          }
+        },
+        "serena": {
+          "properties": {
+            "stream": { "type": "keyword" },
+            "session_id": { "type": "keyword" },
+            "project": { "type": "keyword" },
+            "host": { "type": "keyword" },
+            "version": { "type": "keyword" },
+            "logger": { "type": "keyword" },
+            "function": { "type": "keyword" },
+            "line": { "type": "integer" },
+            "message_hash": { "type": "keyword" },
+            "quality": {
+              "properties": {
+                "score": { "type": "float" },
+                "flags": { "type": "keyword" }
+              }
+            },
+            "exported": { "type": "boolean" },
+            "tool": {
+              "properties": {
+                "name": { "type": "keyword" },
+                "num_times_called": { "type": "integer" },
+                "input_tokens": { "type": "integer" },
+                "output_tokens": { "type": "integer" }
+              }
+            }
+          }
+        },
+        "message": { "type": "text" },
+        "host": {
+          "properties": {
+            "os": {
+              "properties": {
+                "type": { "type": "keyword" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

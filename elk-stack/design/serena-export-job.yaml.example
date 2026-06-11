@@ -1,0 +1,48 @@
+# Design sketch — CronJob to export Serena logs from ES to finetune JSONL.
+# Pattern: vllm/components/distill-export/distill-export-cronjob.yaml
+# Not wired into kustomization.yaml yet.
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: serena-export
+  namespace: vllm
+  labels:
+    app: serena-export
+    app.kubernetes.io/part-of: elk-stack
+spec:
+  schedule: "0 3 * * *"
+  suspend: true
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: serena-export
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: export
+              image: python:3.11-slim
+              command: ["python", "/scripts/serena_export.py"]
+              env:
+                - name: ES_URL
+                  value: "http://elasticsearch.elk-stack.svc.cluster.local:9200"
+                - name: ES_INDEX
+                  value: "logs-serena"
+                - name: MIN_QUALITY
+                  value: "0.6"
+                - name: OUTPUT_DIR
+                  value: "/data/dataset"
+              volumeMounts:
+                - name: dataset
+                  mountPath: /data/dataset
+                - name: scripts
+                  mountPath: /scripts
+          volumes:
+            - name: dataset
+              persistentVolumeClaim:
+                claimName: vllm-finetune-dataset
+            - name: scripts
+              configMap:
+                name: serena-export-scripts
