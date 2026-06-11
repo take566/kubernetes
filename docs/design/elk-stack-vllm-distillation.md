@@ -1,7 +1,7 @@
 # ELK Stack × vLLM 蒸留（Distillation）統合設計
 
 > 作成日: 2026-06-11  
-> ステータス: **設計のみ**（実装は別タスク）  
+> ステータス: **P1 実装済み**（Collector + Logstash パイプライン + ES テンプレート/ILM）  
 > 対象リポジトリ: `kubernetes/`（`elk-stack/` + `vllm/`）
 
 ---
@@ -302,7 +302,7 @@ vllm/
 | Phase | 内容 | 触るパス |
 |-------|------|----------|
 | P0 設計 | 本ドキュメント + design スケッチ | `docs/design/`, `elk-stack/design/` |
-| P1 MVP | index template、Logstash filter 追加、Collector Job | `elk-stack/`, `vllm/components/distill/` |
+| P1 MVP | index template、Logstash filter 追加、Collector Deployment | `elk-stack/`, `vllm/components/distill/` ✅ |
 | P2 エクスポート | export Job、finetune 連携手順 | `vllm/overlays/*/distill/` |
 | P3 本番 hardened | ES リソース、ILM、NetworkPolicy | `elk-stack/overlays/kubeadm/`（新設検討） |
 
@@ -316,4 +316,46 @@ vllm/
 - `vllm/components/finetune/` — `train.jsonl` 形式
 - `vllm/benchmark/scripts/bench_vllm.py` — レイテンシ/スループット（蒸留メタと突合可能）
 - `argocd/apps/elk-stack-app.yaml` — manual sync
+- `argocd/apps/vllm-distill-app.yaml` — kind / kubeadm distill overlays
 - `docs/REDESIGN.md` — ELK 維持 + 段階的強化方針
+
+---
+
+## デプロイ手順（P1 実装）
+
+### 1. ELK（Logstash パイプライン + ES テンプレート/ILM）
+
+```bash
+kubectl apply -k elk-stack/
+kubectl wait --for=condition=complete job/elasticsearch-vllm-distill-setup -n elk-stack --timeout=300s
+kubectl rollout restart deployment/logstash -n elk-stack
+```
+
+kind クラスタで ILM を 7 日保持に切替える場合:
+
+```bash
+kubectl exec -n elk-stack deploy/elasticsearch -- curl -sS -X PUT \
+  localhost:9200/_index_template/vllm-distill \
+  -H 'Content-Type: application/json' \
+  -d '{"index_patterns":["logs-vllm-distill",".ds-logs-vllm-distill-*"],"data_stream":{},"priority":200,"template":{"settings":{"index.lifecycle.name":"vllm-distill-kind"}}}'
+```
+
+### 2. Distillation Collector
+
+```bash
+# kind（10% サンプル、QPS 0.5）
+kubectl apply -k vllm/overlays/kind/distill/
+
+# kubeadm（フル収集、QPS 2）
+kubectl apply -k vllm/overlays/kubeadm/distill/
+```
+
+前提: `vllm` namespace に Teacher Deployment が稼働、`elk-stack` Logstash が TCP 5000 を待受。
+
+### 3. 確認
+
+```bash
+kubectl logs -f deploy/distill-collector -n vllm
+kubectl port-forward svc/elasticsearch 9200:9200 -n elk-stack
+curl -s 'http://localhost:9200/logs-vllm-distill/_search?size=1&pretty'
+```

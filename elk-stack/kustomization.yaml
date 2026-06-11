@@ -6,6 +6,8 @@ resources:
   - elasticsearch-configmap.yaml
   - elasticsearch-deployment.yaml
   - elasticsearch-index-template.yaml
+  - elasticsearch-vllm-distill-template.yaml
+  - elasticsearch-vllm-distill-setup-job.yaml
   - elasticsearch-pv.yaml
   - elasticsearch-service.yaml
   - kibana-configmap.yaml

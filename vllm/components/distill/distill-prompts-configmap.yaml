@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: distill-prompts
+  namespace: vllm
+  labels:
+    app: distill-collector
+    app.kubernetes.io/name: distill-collector
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+data:
+  prompts.json: |
+    [
+      {"role": "user", "content": "Explain Kubernetes Pod scheduling in two sentences."},
+      {"role": "user", "content": "What is knowledge distillation for language models?"},
+      {"role": "user", "content": "Write a haiku about GPU inference."},
+      {"role": "user", "content": "List three benefits of LoRA fine-tuning."},
+      {"role": "user", "content": "Describe how vLLM batching improves throughput."}
+    ]

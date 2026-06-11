@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: distill-collector-config
+  namespace: vllm
+  labels:
+    app: distill-collector
+    app.kubernetes.io/name: distill-collector
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+data:
+  VLLM_BASE_URL: "http://vllm.vllm.svc.cluster.local:8000"
+  VLLM_MODEL: "Qwen/Qwen2.5-1.5B-Instruct"
+  STUDENT_TARGET: "student-lora"
+  LOGSTASH_HOST: "logstash.elk-stack.svc.cluster.local"
+  LOGSTASH_PORT: "5000"
+  QPS_LIMIT: "2"
+  SAMPLE_RATE: "1.0"
+  COLLECTOR_INTERVAL_S: "30"
+  MAX_TOKENS: "256"
+  REQUEST_TIMEOUT_S: "120"
+  VLLM_HEALTH_TIMEOUT_S: "600"
+  PROMPTS_PATH: "/config/prompts.json"
+  CLUSTER: "kubeadm"
+  HEALTH_PORT: "8080"

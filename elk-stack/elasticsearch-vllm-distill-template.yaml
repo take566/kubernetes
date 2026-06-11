@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-vllm-distill-template
+  namespace: elk-stack
+  labels:
+    app: elasticsearch
+    app.kubernetes.io/part-of: elk-stack
+data:
+  vllm-distill-index-template.json: |
+    {
+      "index_patterns": ["logs-vllm-distill", ".ds-logs-vllm-distill-*"],
+      "data_stream": {},
+      "priority": 200,
+      "template": {
+        "settings": {
+          "number_of_shards": 1,
+          "number_of_replicas": 0,
+          "index.refresh_interval": "5s",
+          "index.codec": "best_compression",
+          "index.lifecycle.name": "vllm-distill-kubeadm"
+        },
+        "mappings": {
+          "dynamic": "strict",
+          "properties": {
+            "@timestamp": { "type": "date" },
+            "tags": { "type": "keyword" },
+            "event": {
+              "properties": {
+                "kind": { "type": "keyword" }
+              }
+            },
+            "distill": {
+              "properties": {
+                "request_id": { "type": "keyword" },
+                "teacher_model": { "type": "keyword" },
+                "student_target": { "type": "keyword" },
+                "prompt_hash": { "type": "keyword" },
+                "messages": {
+                  "type": "nested",
+                  "properties": {
+                    "role": { "type": "keyword" },
+                    "content": { "type": "text", "index": false }
+                  }
+                },
+                "completion": { "type": "text" },
+                "finish_reason": { "type": "keyword" },
+                "usage": {
+                  "properties": {
+                    "prompt_tokens": { "type": "integer" },
+                    "completion_tokens": { "type": "integer" },
+                    "total_tokens": { "type": "integer" }
+                  }
+                },
+                "latency_ms": { "type": "float" },
+                "quality": {
+                  "properties": {
+                    "score": { "type": "float" },
+                    "flags": { "type": "keyword" }
+                  }
+                },
+                "cluster": { "type": "keyword" },
+                "exported": { "type": "boolean" },
+                "logits_uri": { "type": "keyword" }
+              }
+            },
+            "kubernetes": {
+              "properties": {
+                "namespace": { "type": "keyword" },
+                "pod": { "type": "keyword" }
+              }
+            }
+          }
+        }
+      },
+      "_meta": {
+        "description": "vLLM distillation data stream template",
+        "managed_by": "elk-stack"
+      }
+    }
+  vllm-distill-ilm-kind.json: |
+    {
+      "policy": {
+        "phases": {
+          "hot": {
+            "min_age": "0ms",
+            "actions": {
+              "rollover": {
+                "max_age": "3d",
+                "max_primary_shard_size": "10gb"
+              }
+            }
+          },
+          "delete": {
+            "min_age": "7d",
+            "actions": {
+              "delete": {}
+            }
+          }
+        }
+      }
+    }
+  vllm-distill-ilm-kubeadm.json: |
+    {
+      "policy": {
+        "phases": {
+          "hot": {
+            "min_age": "0ms",
+            "actions": {
+              "rollover": {
+                "max_age": "7d",
+                "max_primary_shard_size": "25gb"
+              }
+            }
+          },
+          "delete": {
+            "min_age": "30d",
+            "actions": {
+              "delete": {}
+            }
+          }
+        }
+      }
+    }

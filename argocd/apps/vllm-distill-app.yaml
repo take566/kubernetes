@@ -1,0 +1,48 @@
+# Manual sync — distillation collector depends on vLLM Teacher + ELK Logstash.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vllm-distill-kubeadm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: vllm
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/take566/kubernetes.git
+    targetRevision: master
+    path: vllm/overlays/kubeadm/distill
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vllm
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vllm-distill-kind
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: vllm
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/take566/kubernetes.git
+    targetRevision: master
+    path: vllm/overlays/kind/distill
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vllm
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true

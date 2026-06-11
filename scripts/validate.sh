@@ -35,7 +35,7 @@ else
 fi
 
 # Dry-run validation for each directory
-for dir in elk-stack prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune; do
+for dir in elk-stack prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune vllm/overlays/kind/distill; do
   echo ""
   echo "--- Validating $dir/ ---"
   for file in "$dir"/*.yaml; do
@@ -59,11 +59,11 @@ echo ""
 echo "--- Validating Kustomize builds ---"
 KUSTOMIZE_DIRS=(
   elk-stack prometheus nexus nginx cert-manager agents/hermes
-  vllm/base vllm/components/amd vllm/components/finetune vllm/benchmark
+  vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/benchmark
   kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/nvidia-device-plugin
   kind/addons
-  vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune
-  vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune
+  vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill
+  vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/finetune vllm/overlays/kind/distill
 )
 KUSTOMIZE_LOAD_FLAGS=(--load-restrictor LoadRestrictionsNone)
 for dir in "${KUSTOMIZE_DIRS[@]}"; do
