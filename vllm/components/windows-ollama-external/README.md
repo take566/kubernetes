@@ -1,19 +1,31 @@
 # Windows Ollama → Kubernetes 外部エンドポイント
 
-WSL kubeadm クラスタから **ROCm なし**で AMD GPU 推論（Windows ネイティブ Ollama）を使うための headless Service。
+WSL kubeadm / kind クラスタから **ROCm なし**で AMD GPU 推論（Windows ネイティブ Ollama）を使うための headless Service。
 
 ## デプロイ
 
 ```powershell
-# Windows
+# Windows（共通）
 .\scripts\configure-ollama-wsl-bridge.ps1 -ConfigureFirewall
 .\scripts\restart-ollama-wsl-bridge.ps1
 ```
+
+### kubeadm
 
 ```bash
 export KUBECONFIG=~/.kube/config-kubeadm-wsl
 ./kubeadm/scripts/register-windows-ollama-external.sh
 ```
+
+### kind
+
+Git Bash / WSL どちらからでも可:
+
+```bash
+./kubeadm/scripts/register-windows-ollama-external.sh --cluster kind --verify
+```
+
+overlay は `vllm/overlays/kind/windows-ollama-external/`。
 
 ## クラスタ内 URL
 
@@ -27,3 +39,6 @@ export KUBECONFIG=~/.kube/config-kubeadm-wsl
 - Endpoints の IP は WSL の default gateway（Windows ホスト）。再起動後に変わる場合はスクリプトを再実行。
 - Ollama は既定で `127.0.0.1` のみ — `OLLAMA_HOST=0.0.0.0:11434` 必須。
 - GPU は Windows ドライバ / Ollama バックエンドに依存（ROCm・`/dev/kfd` 不要）。
+- kind ノード（Docker Desktop VM）からも WSL gateway IP で到達可能（`host.docker.internal` は IPv6 にしか解決されないため使用不可）。
+- kind ノードには `http_proxy` が注入されており、proxy 経由だと **403**。クライアント Pod に `HTTP_PROXY` を設定する場合は `NO_PROXY=ollama-external.vllm,.svc,.svc.cluster.local` が必要。
+- GPU 化は AMD Adrenalin ドライバ **build 31000+**（HIP7, `amdhip64_7.dll`）が条件。古いと "AMD driver is too old" で CPU フォールバック。検査・更新誘導: `scripts/update-adrenalin-gpu.ps1`（`-OpenDownloadPage` / `-VerifyAfterUpdate`）。ドライバ更新後はクラスタ側変更ゼロで GPU 化される。

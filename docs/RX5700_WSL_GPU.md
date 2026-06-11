@@ -28,6 +28,8 @@ AMD ROCm 7.2.1 WSL の [GPU support matrix](https://rocm.docs.amd.com/projects/r
 
 ROCm 7.2.1 以降、WSL ではレガシー `roc4wsl` パッケージの代わりに **ROCDXG (librocdxg)** が本番経路だが、**対象ハードは同じマトリクスに拘束される**（[WSL How-to](https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/install/installrad/wsl/howto_wsl.html)）。
 
+> 注: ROCm の WSL サポート対象は将来拡大しうるため、ROCm メジャーリリース時に本制約を再評価すること。
+
 ---
 
 ## 実機で試したことと結果
@@ -123,6 +125,13 @@ misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
 | `scripts/diagnose-wsl-gpu.sh` | 一般 WSL AMD GPU 診断（RX 5700 専用ガイダンス付き） |
 | `scripts/fix-wsl-gpu-passthrough.ps1` | Windows 側チェック（`wsl --shutdown` は自動実行しない） |
 | `scripts/setup-ollama-rx5700.ps1` | **推奨** Windows GPU 推論 |
+| `scripts/update-adrenalin-gpu.ps1` | Adrenalin ドライバ build（HIP7 / 31000+）検査・更新誘導 |
+
+---
+
+## kind クラスタからの利用
+
+kind-dev からは Windows ネイティブ Ollama を `ollama-external.vllm:11434` で利用します。手順・制約（proxy 403 / GPU 化条件など）は [vllm/components/windows-ollama-external/README.md](../vllm/components/windows-ollama-external/README.md) を参照。`vllm/overlays/kind/amd` は適用禁止（永久 Pending — [vllm/README.md](../vllm/README.md) の警告参照）。
 
 ---
 
