@@ -21,9 +21,9 @@
 - **使用**: `ollama list` でモデル確認後、`qwen2.5:1.5b` に Architect / Critic 視点で「Windows ローカル MCP ログを k8s ELK に送る」案を照会。
 - **所見**: 汎用案（Filebeat、Fluent Bit）は得られたが、`stdio` MCP の stdout 禁止制約や Serena の `SERENA_LOG_FORMAT` 固有パースには未言及。**最終設計は `serena/src/serena/cli.py` のロギング実装を優先**し、Ollama 出力は反証チェックリストの補助に留める。
 
-### Byterover MCP
+### Byterover CLI
 
-- **retrieve-knowledge**: MCP サーバー接続は環境依存。本設計は `serena/` ソースと `elk-stack/` マニフェストの直接調査に基づく。
+- **retrieve (`brv query`)**: 環境依存。本設計は `serena/` ソースと `elk-stack/` マニフェストの直接調査に基づく。
 
 ---
 

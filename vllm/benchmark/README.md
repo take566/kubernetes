@@ -84,13 +84,17 @@ MODELS="LiquidAI/LFM2.5-1.2B-Instruct google/gemma-4-E4B-it" \
 
 結果は `./vllm-bench-results/compare-<timestamp>/` に JSON 保存されます。選定ドキュメント: [../docs/MODEL_SELECTION.md](../docs/MODEL_SELECTION.md)
 
+### ローカル Ollama / Windows ベンチ
+
+`bench_ollama_openai.ps1` や `compare_models_ollama.ps1` の生出力は `vllm/benchmark/results/*.json` に保存しますが、**git にはコミットしません**（`.gitignore` 対象）。代表メトリクスは [../docs/BENCHMARK_RESULTS.md](../docs/BENCHMARK_RESULTS.md) の表に追記してください。
+
 ### CI（セルフホスト runner）
 
 GPU 付きクラスタに ARC runner がある場合:
 
 1. GitHub → Actions → **vLLM Model Benchmark** → Run workflow
-2. 成果物 `vllm-benchmark-<run_id>` から JSON を取得
-3. [../docs/BENCHMARK_RESULTS.md](../docs/BENCHMARK_RESULTS.md) の実測ログ表を更新
+2. 成果物 `vllm-benchmark-<run_id>` から JSON を取得（ローカル保存可、`results/` は gitignore）
+3. [../docs/BENCHMARK_RESULTS.md](../docs/BENCHMARK_RESULTS.md) の実測ログ表にインラインで追記（JSON リンクは不要）
 
 ### 4. 並列度スイープ（バッチサイズ相当）
 

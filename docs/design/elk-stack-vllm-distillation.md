@@ -21,9 +21,9 @@
 - **使用**: `ollama list` でモデル確認後、`qwen2.5:1.5b` に Architect / Critic 視点のプロンプトを投入。
 - **所見**: 汎用的な ELK 統合案は得られたが、本リポジトリ固有の `--disable-log-requests` や finetune JSONL 形式には未言及。**最終設計はコードベース分析を優先**し、Ollama 出力は反証チェックリストの補助に留めた。
 
-### Byterover MCP
+### Byterover CLI
 
-- **retrieve-knowledge**: MCP サーバーエラー（Cursor Settings で要確認）。本設計はリポジトリ直接調査に基づく。
+- **retrieve (`brv query`)**: 環境依存。本設計はリポジトリ直接調査に基づく。
 
 ---
 
