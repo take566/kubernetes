@@ -30,7 +30,7 @@ kubectl apply -k "${REPO_ROOT}/kubeadm/addons/"
 if [[ "${WITH_INGRESS}" == true ]]; then
   echo "=== Applying ingress-nginx (DaemonSet + hostPort 80/443) ==="
   kubectl apply -k "${REPO_ROOT}/kubeadm/addons/ingress-nginx/"
-  echo "  Validate: kubectl apply -f ${REPO_ROOT}/kubeadm/addons/ingress-nginx/test-ingress.yaml"
+  echo "  Validate: ${REPO_ROOT}/kubeadm/scripts/verify-ingress.sh"
 fi
 
 if [[ "${WITH_NVIDIA}" == true ]]; then
@@ -58,7 +58,13 @@ fi
 if [[ "${WITH_METALLB}" == true ]]; then
   echo "=== Applying MetalLB ==="
   kubectl apply -k "${REPO_ROOT}/kubeadm/addons/metallb/"
-  echo "  Edit kubeadm/addons/metallb/ipaddresspool.yaml or METALLB_IP_POOL before production use"
+  echo "=== Waiting for MetalLB controller (CRDs) ==="
+  kubectl -n metallb-system rollout status deployment/controller --timeout=180s 2>/dev/null || true
+  if ! kubectl get ipaddresspool -n metallb-system default &>/dev/null; then
+    echo "=== Re-applying MetalLB IPAddressPool ==="
+    kubectl apply -f "${REPO_ROOT}/kubeadm/addons/metallb/ipaddresspool.yaml" || true
+  fi
+  echo "  Edit kubeadm/addons/metallb/ipaddresspool.yaml or METALLB_IP_POOL env before production use"
 fi
 
 if [[ "${WITH_NETWORK_POLICIES}" == true ]]; then
@@ -66,7 +72,7 @@ if [[ "${WITH_NETWORK_POLICIES}" == true ]]; then
     echo "=== Applying network policies ==="
     kubectl apply -k "${REPO_ROOT}/kubeadm/addons/network-policies/"
   else
-    echo "[WARN] Network policies addon not found (kubeadm/addons/network-policies/) — see issues/issue-07-networkpolicy.md"
+    echo "[WARN] Network policies addon not found (kubeadm/addons/network-policies/)"
   fi
 fi
 

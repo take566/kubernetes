@@ -111,6 +111,20 @@ sudo kubeadm/bootstrap.sh --role init --skip-prerequisites
 sudo kubeadm/bootstrap.sh --role init --dry-run
 ```
 
+## 動作確認（bootstrap 後 / kind-dev）
+
+Linux control-plane 上、または WSL の `kind-dev` コンテキストで統合テストを実行できます。
+
+```bash
+# 全 addon 検証（cluster / metrics / ingress / MetalLB / NetworkPolicy / PVC）
+./kubeadm/scripts/run-integration-tests.sh
+
+# Ingress のみ
+./kubeadm/scripts/verify-ingress.sh
+```
+
+`run-integration-tests.sh` は 10 項目（cluster-info、metrics-server、ingress echo、MetalLB CRD、NetworkPolicy、bootstrap dry-run、local-path PVC）を検証します。
+
 `bootstrap.sh` オプション一覧:
 
 | オプション | 説明 |

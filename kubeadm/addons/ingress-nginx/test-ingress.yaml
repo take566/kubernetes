@@ -68,3 +68,24 @@ spec:
                 name: echo
                 port:
                   number: 80
+---
+# Allow ingress-nginx controller to reach echo (required when namespace has default-deny elsewhere).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-ingress-nginx
+  namespace: ingress-test
+spec:
+  podSelector:
+    matchLabels:
+      app: echo
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80

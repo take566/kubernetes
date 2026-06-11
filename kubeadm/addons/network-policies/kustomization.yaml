@@ -7,3 +7,4 @@ resources:
   - default-deny.yaml
   - allow-dns.yaml
   - allow-ingress-controller.yaml
+  - allow-controller-egress.yaml
