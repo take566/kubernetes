@@ -1,6 +1,15 @@
 # ARC v2 controller — values for gha-runner-scale-set-controller subchart
 gha-runner-scale-set-controller:
   replicaCount: 1
+  metrics:
+    controllerManagerAddr: ":8080"
+    listenerAddr: ":8080"
+    listenerEndpoint: "/metrics"
+
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
+    prometheus.io/port: "8080"
 
   flags:
     logLevel: info

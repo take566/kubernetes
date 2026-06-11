@@ -48,3 +48,13 @@ gha-runner-scale-set:
             limits:
               cpu: 2000m
               memory: 2Gi
+
+  listenerTemplate:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: listener
