@@ -16,7 +16,10 @@
 [CmdletBinding()]
 param(
     [int]$Port = 8000,
-    [switch]$StopExisting
+    [switch]$StopExisting,
+    [double]$GpuMemoryUtilization = 0.75,
+    [int]$MaxModelLen = 2048,
+    [int]$MaxNumSeqs = 8
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,9 +60,9 @@ docker run -d `
     -p "${Port}:8000" `
     $Image `
     --model $Model `
-    --gpu-memory-utilization 0.75 `
-    --max-model-len 2048 `
-    --max-num-seqs 8 `
+    --gpu-memory-utilization $GpuMemoryUtilization `
+    --max-model-len $MaxModelLen `
+    --max-num-seqs $MaxNumSeqs `
     --enforce-eager `
     --host 0.0.0.0 `
     --port 8000

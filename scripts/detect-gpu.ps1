@@ -71,6 +71,22 @@ Write-Host "`n--- Tooling ---" -ForegroundColor Cyan
     Write-Host ("  {0,-12} {1}" -f $t.Tool, $status) -ForegroundColor $color
 }
 
+Write-Host "`n--- CUDA / cuDNN ---" -ForegroundColor Cyan
+$nvcc = Get-Command nvcc -ErrorAction SilentlyContinue
+if ($nvcc) {
+    $ver = (& nvcc --version 2>$null | Select-String 'release' | Select-Object -First 1)
+    Write-Host ("  nvcc: OK ({0})" -f $ver) -ForegroundColor Green
+    if ($env:CUDA_PATH) { Write-Host ("  CUDA_PATH: {0}" -f $env:CUDA_PATH) }
+} else {
+    Write-Host '  nvcc: MISSING (CUDA Toolkit or .\scripts\install-nvidia-toolkit-windows.ps1)' -ForegroundColor Yellow
+}
+$cudnnFound = $false
+if ($env:CUDA_PATH -and (Test-Path $env:CUDA_PATH)) {
+    $dll = Get-ChildItem -Path (Join-Path $env:CUDA_PATH 'bin') -Filter 'cudnn*.dll' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($dll) { $cudnnFound = $true; Write-Host ("  cuDNN: OK ({0})" -f $dll.Name) -ForegroundColor Green }
+}
+if (-not $cudnnFound) { Write-Host '  cuDNN: not detected (optional for Docker/Ollama)' -ForegroundColor DarkGray }
+
 Write-Host "`n--- Docker daemon ---" -ForegroundColor Cyan
 try {
     docker info 2>&1 | Out-Null
@@ -121,6 +137,7 @@ $isGtx1650 = $gpus | Where-Object { $_.Name -match '1650' }
 $isAmd = $gpus | Where-Object { $_.Name -match 'AMD|Radeon' }
 
 if ($isGtx1650) {
+    Write-Host "  0. CUDA/Docker audit: .\scripts\install-nvidia-toolkit-windows.ps1"
     Write-Host "  1. Run .\scripts\setup-vllm-windows.ps1 (Ollama + optional Docker vLLM)"
     Write-Host "  2. Models: qwen2.5:0.5b, phi4-mini:gtx1650 — see ollama/modelfiles/README.md"
     Write-Host "  3. Docker vLLM: .\scripts\run-vllm-docker.ps1 (Qwen2.5-0.5B, max-model-len 2048)"

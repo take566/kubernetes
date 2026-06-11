@@ -48,6 +48,45 @@ Windows ローカル開発の全体像は [vllm/overlays/windows-local/README.md
 
 ---
 
+
+---
+
+## CUDA Toolkit / cuDNN / Docker GPU（NVIDIA）
+
+ローカルで **ネイティブビルド** や **nvcc** が必要なとき、または環境の棚卸しには次を実行します。
+
+```powershell
+.\scripts\install-nvidia-toolkit-windows.ps1
+```
+
+| コンポーネント | 役割 | この PC での目安 |
+|----------------|------|------------------|
+| NVIDIA ドライバ | `nvidia-smi`、CUDA ランタイム | 595.x、CUDA Version 13.2 表示 |
+| CUDA Toolkit | `nvcc`、開発用ヘッダ／ライブラリ | `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.x` |
+| cuDNN | 深層学習向け畳み込み（**任意**） | ZIP 手動配置（下記） |
+| Docker `nvidia` runtime | `docker run --gpus all` | Docker Desktop で GPU 有効化 |
+
+### インストール手順（自動＋手動）
+
+1. **ドライバ** — [NVIDIA ドライバ](https://www.nvidia.com/Download/index.aspx)。`nvidia-smi` が動けば OK。
+2. **CUDA Toolkit** — [CUDA Downloads](https://developer.nvidia.com/cuda-downloads)（Windows 11 x86_64）。**ドライバの最大 CUDA ランタイム以下**の Toolkit を選ぶ。確認: `nvcc --version`。
+3. **cuDNN（任意）** — [cuDNN](https://developer.nvidia.com/cudnn)（要アカウント）。`bin` / `lib` / `include` を `%CUDA_PATH%` へコピー。
+4. **Docker GPU** — Docker Desktop → Settings → Resources で NVIDIA GPU を有効化。
+
+```powershell
+docker run --rm --gpus all nvidia/cuda:12.6.0-base-ubuntu22.04 nvidia-smi
+```
+
+`winget` 試行（管理者・対話が必要な場合あり）:
+
+```powershell
+.\scripts\install-nvidia-toolkit-windows.ps1 -InstallCudaWinget
+```
+
+### WSL 上の CUDA
+
+`wsl -d <distro> -- nvidia-smi` が失敗する場合は **Docker `--gpus`** または **Windows ネイティブ Ollama** を主経路にしてください。
+
 ## 手順 1: プリフライト（毎回）
 
 ```powershell
@@ -144,7 +183,7 @@ GTX 1650 向けにメモリを抑えた設定で起動:
 | モデル | `Qwen/Qwen2.5-0.5B-Instruct` |
 | `--gpu-memory-utilization` | 0.75（GTX 1650 + Docker/WDDM） |
 | `--max-model-len` | 2048 |
-| `--max-num-seqs` | 32 |
+| `--max-num-seqs` | 8 |
 | ポート | 8000 |
 
 確認:
