@@ -390,3 +390,7 @@ Actions â†’ **vLLM Model Benchmark** â†’ `compare_set: extended`
 - [vllm/docs/MODEL_SELECTION.md](../vllm/docs/MODEL_SELECTION.md)
 - [vllm/docs/MODEL_CANDIDATES_EXTENDED.md](../vllm/docs/MODEL_CANDIDATES_EXTENDED.md)
 - [kubeadm/scripts/06-gpu-node-setup.md](../kubeadm/scripts/06-gpu-node-setup.md)
+
+## WSL2 kubeadm + vLLM
+
+WSL ã‚Å Kubernetes (kubeadm) ‚©‚ç GPU vLLM ‚ğ“®‚©‚·è‡‚Í [WSL_KUBEADM_GPU.md](WSL_KUBEADM_GPU.md) ‚ğQÆ‚µ‚Ä‚­‚¾‚³‚¢B
