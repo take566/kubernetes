@@ -49,7 +49,7 @@
 
 | 意図 | 結果 |
 |------|------|
-| `qwen3.6` (Ollama) | レジストリにタグ未確認／`ollama pull qwen3.6` は長時間応答なし → **代替: `qwen3.5:9b`**（ローカル既存） |
+| `qwen3.6` (Ollama) | **2026-06-12 解決:** `ollama pull qwen3.6` 成功（≈23 GB, 36B MoE Q4_K_M）。サブタグ `qwen3.6:8b` 等は manifest なし。`qwen3:8b` は別モデル（≈5.2 GB） |
 | `gemma3:4b` / `gemma2:2b` | 未 pull（`gemma4:latest` は既存 8B Q4） |
 | vLLM CPU Docker + Gemma/LFM | **未実施** — HF 上の Gemma4/LFM は vLLM CPU スモーク未検証；Qwen のみ `Qwen/Qwen2.5-0.5B-Instruct` 再計測 |
 
@@ -60,6 +60,7 @@
 | **LFM** | `sam860/LFM2:1.2b` | ~1.2B | **779.0** | 784.0 | **75.8** | **1.18** | `bench-ollama-openai-sam860_LFM2_1.2b-2026-06-11T214640.json` |
 | **Gemma** | `gemma4:latest` | 8B Q4_K_M | 2843.3 | 2872.5 | 22.2 | 0.35 | `bench-ollama-openai-gemma4_latest-2026-06-11T214716.json` |
 | **Qwen** | `qwen3.5:9b` | 9B | 4544.4 | 4580.0 | 14.6 | 0.23 | `bench-ollama-openai-qwen3.5_9b-2026-06-11T214907.json` |
+| **Qwen** | `qwen3.6` | 36B MoE (Q4) | 12017.1 | 34444.4 | 12.4 | 0.19 | `bench-ollama-openai-qwen3.6-2026-06-12T010933.json` |
 
 > Ollama JSON は `.gitignore` 対象（`bench-ollama-openai-*.json`）。数値は上記ファイルから再現可能。
 
@@ -71,12 +72,13 @@
 
 ### この 3 ファミリーでの Mac 推奨
 
-**Ollama Metal では `sam860/LFM2:1.2b` が最速**（最低 p50・最高 tok/s）。Gemma4 8B・Qwen3.5 9B は同一ベンチ条件下で遅いが、モデルサイズが大きいため品質とのトレードオフ。`qwen3.6` が Ollama に登場したら同スクリプトで再計測推奨。
+**Ollama Metal では `sam860/LFM2:1.2b` が最速**（最低 p50・最高 tok/s）。Gemma4 8B・Qwen3.5 9B は同一ベンチ条件下で遅いが、モデルサイズが大きいため品質とのトレードオフ。`qwen3.6` は計測済み（36B MoE・最大 p50）；Mac 24GB ではロード/初回が重い。日常比較は `qwen3.5:9b` または `qwen2.5:0.5b` も検討。
 
 ```bash
 ./scripts/bench_ollama_openai.sh -m sam860/LFM2:1.2b
 ./scripts/bench_ollama_openai.sh -m gemma4:latest
 ./scripts/bench_ollama_openai.sh -m qwen3.5:9b
+./scripts/bench_ollama_openai.sh -m qwen3.6
 ```
 
 ## 推奨
