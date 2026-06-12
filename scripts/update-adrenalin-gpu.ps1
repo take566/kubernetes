@@ -1,16 +1,36 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Detect outdated AMD Adrenalin driver and guide GPU recovery for Ollama (RX 5700).
+  Verify Ollama GPU inference path on AMD Radeon (RX 5700 / RDNA1: Vulkan backend).
 .DESCRIPTION
-  Cannot auto-install drivers. Compares WMI DriverVersion, checks HIP runtime DLLs
-  (Ollama needs amdhip64_7.dll), scans Ollama logs, and prints remediation steps.
+  RX 5700 (RDNA1, gfx1010) can NOT reach HIP7 / driver build 31000+:
+  Adrenalin 26.x ships two driver branches — RDNA1/2 get variant A
+  (Driver 25.10.43.12 = WMI 32.0.21043.12001, the LATEST for RDNA1),
+  while build 31019+ (bundling HIP7) is variant B for RDNA3/4 only.
+  Telling RDNA1 users to "update to build 31000+" is therefore wrong.
+
+  The correct GPU path for RX 5700 is Ollama's Vulkan backend:
+  Ollama 0.30.x bundles lib\ollama\vulkan\ggml-vulkan.dll in the full
+  Windows installer and OLLAMA_VULKAN is enabled by default (set 0 to disable).
+  Measured on this project: RX 5700 detected as Vulkan0, 100% GPU offload,
+  ~157 tok/s (3.4x CPU).
+
+  Known failure mode: Ollama SELF-UPDATE may replace only ollama.exe and
+  drop lib\ollama\vulkan\ — fix is re-running the official OllamaSetup.exe
+  (supports /VERYSILENT), NOT an Adrenalin driver update.
+
+  This script checks:
+    (a) lib\ollama\vulkan\ggml-vulkan.dll exists (else: repair install)
+    (b) server.log "inference compute" reports library=Vulkan + GPU name
+    (c) ollama ps PROCESSOR column (note: Vulkan may be misreported as
+        "100% CPU" — log offload evidence is used to disambiguate)
+  Driver-build / HIP7 checks remain for RDNA3/4 only (informational on RDNA1/2).
 .PARAMETER VerifyAfterUpdate
-  Run a short inference test and check Ollama reports GPU (not CPU).
+  Run a short inference test and check Ollama actually uses the GPU.
 .PARAMETER OpenDownloadPage
-  Open AMD driver download / auto-detect pages in the default browser.
+  Open the Ollama download page (and AMD driver pages for RDNA3/4 cases).
 .PARAMETER TryWinget
-  Search winget for AMD packages (usually no Adrenalin WHQL; informational only).
+  Search winget for AMD packages (informational only).
 .EXAMPLE
   .\scripts\update-adrenalin-gpu.ps1
 .EXAMPLE
@@ -27,15 +47,17 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# WMI DriverVersion 32.0.<build>.<revision> — new Adrenalin WHQL for RDNA uses build 31xxx+.
-# Legacy branch (e.g. 32.0.21043.x) ships HIP6 only; Ollama 0.30+ needs HIP7 (amdhip64_7.dll).
-$MinDriverBuild = 31000
+# WMI DriverVersion 32.0.<build>.<revision>
+# RDNA1/2 (variant A): 32.0.21043.x is the LATEST branch — normal, do not "upgrade".
+# RDNA3/4 (variant B): 32.0.31xxx+ bundles HIP7 (amdhip64_7.dll) for Ollama ROCm.
+$MinDriverBuildRdna34 = 31000
+$OllamaDownloadUrl = 'https://ollama.com/download'
+$OllamaSetupUrl = 'https://ollama.com/download/OllamaSetup.exe'
 $AdrenalinDownloadUrl = 'https://www.amd.com/en/support/download/drivers.html'
 $AmdAutoDetectUrl = 'https://www.amd.com/en/support/download/auto-detect-tool.html'
 $AdrenalinWslDocUrl = 'https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.2/docs/install/installrad/wsl/install-radeon.html'
-$Rx5700ProductUrl = 'https://www.amd.com/en/support/downloads/drivers.html/graphics/radeon-rx/radeon-rx-5000-series/radeon-rx-5700.html'
 
-# GPU inference p50 for qwen2.5:0.5b on RX 5700 (project benchmarks).
+# GPU inference p50 for qwen2.5:0.5b on RX 5700 via Vulkan (project benchmarks).
 $GpuLatencyP50Ms = 750
 $CpuLatencyP50Ms = 1200
 
@@ -48,6 +70,15 @@ function Get-AmdGpuInfo {
         Where-Object { $_.Name -match 'AMD|Radeon' -and $_.Name -notmatch 'Microsoft|Remote' }
 }
 
+function Get-RdnaGeneration([string]$GpuName) {
+    # Coarse classification by marketing name; enough to pick the right driver branch.
+    if ($GpuName -match 'RX\s*5\d{3}') { return 1 }   # RX 5300-5700 = RDNA1
+    if ($GpuName -match 'RX\s*6\d{3}') { return 2 }   # RX 6000 = RDNA2
+    if ($GpuName -match 'RX\s*7\d{3}') { return 3 }   # RX 7000 = RDNA3
+    if ($GpuName -match 'RX\s*9\d{3}') { return 4 }   # RX 9000 = RDNA4
+    return 0                                          # unknown / APU etc.
+}
+
 function Get-DriverBuildNumber([string]$DriverVersion) {
     if (-not $DriverVersion) { return $null }
     $parts = $DriverVersion -split '\.'
@@ -57,54 +88,88 @@ function Get-DriverBuildNumber([string]$DriverVersion) {
     return $null
 }
 
-function Test-DriverBuildSufficient([string]$DriverVersion) {
-    $build = Get-DriverBuildNumber -DriverVersion $DriverVersion
-    if ($null -eq $build) { return $false }
-    return ($build -ge $MinDriverBuild)
+function Get-OllamaInstallDir {
+    $cmd = Get-Command ollama -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source) { return (Split-Path -Parent $cmd.Source) }
+    $default = Join-Path $env:LOCALAPPDATA 'Programs\Ollama'
+    if (Test-Path (Join-Path $default 'ollama.exe')) { return $default }
+    return $null
 }
 
-function Test-HipRuntimeDlls {
-    $hip6 = $null -ne (Get-Command amdhip64_6.dll -ErrorAction SilentlyContinue)
-    $hip7 = $null -ne (Get-Command amdhip64_7.dll -ErrorAction SilentlyContinue)
+function Test-VulkanBackendFiles {
+    # (a) Main check: full installer bundles lib\ollama\vulkan\ggml-vulkan.dll.
+    # Self-update may replace only ollama.exe and drop this directory.
+    $dir = Get-OllamaInstallDir
+    $dll = if ($dir) { Join-Path $dir 'lib\ollama\vulkan\ggml-vulkan.dll' } else { $null }
     [PSCustomObject]@{
-        Hip6Present = $hip6
-        Hip7Present = $hip7
-        OllamaWouldWarn = ($hip6 -and -not $hip7)
+        InstallDir    = $dir
+        VulkanDllPath = $dll
+        VulkanDllOk   = ($dll -and (Test-Path $dll))
     }
 }
 
-function Get-OllamaDriverWarning {
+function Get-OllamaServerLogPath {
     $candidates = @(
         (Join-Path $env:LOCALAPPDATA 'Ollama\server.log'),
         (Join-Path $env:LOCALAPPDATA 'Ollama\logs\server.log')
     )
     foreach ($path in $candidates) {
-        if (-not (Test-Path $path)) { continue }
-        $tail = Get-Content -Path $path -Tail 300 -ErrorAction SilentlyContinue
-        $hit = $tail | Select-String -Pattern 'AMD driver is too old|falling back to CPU|no compatible GPUs|library=cpu' -SimpleMatch:$false
-        if ($hit) { return $hit | Select-Object -First 1 -ExpandProperty Line }
+        if (Test-Path $path) { return $path }
     }
     return $null
 }
 
-function Get-OllamaComputeBackend {
-    $path = Join-Path $env:LOCALAPPDATA 'Ollama\server.log'
-    if (-not (Test-Path $path)) { return $null }
-    $lines = Get-Content -Path $path -Tail 400 -ErrorAction SilentlyContinue
-    $hit = $lines | Select-String -Pattern 'inference compute' | Select-Object -Last 1
+function Get-OllamaInferenceCompute {
+    # (b) Last "inference compute" line: library=Vulkan + GPU description expected.
+    $path = Get-OllamaServerLogPath
+    if (-not $path) { return $null }
+    $hit = Select-String -Path $path -Pattern 'inference compute' -ErrorAction SilentlyContinue |
+        Select-Object -Last 1
     if (-not $hit) { return $null }
-    if ($hit.Line -match 'library=(\S+)') { return $Matches[1] }
-    return $null
+    $library = $null; $name = $null
+    if ($hit.Line -match 'library=(\S+)') { $library = $Matches[1] }
+    if ($hit.Line -match 'description="([^"]+)"') { $name = $Matches[1] }
+    [PSCustomObject]@{
+        Line    = $hit.Line
+        Library = $library
+        GpuName = $name
+        IsVulkanGpu = ($library -eq 'Vulkan' -and $name -match 'AMD|Radeon')
+    }
 }
 
-function Test-OllamaUsingGpu {
-    $backend = Get-OllamaComputeBackend
-    if ($backend -and $backend -ne 'cpu') { return $true }
-
-    $psOut = & ollama ps 2>&1 | Out-String
-    if ($psOut -match '100%\s*GPU') { return $true }
-    if ($psOut -match '100%\s*CPU') { return $false }
+function Test-VulkanOffloadEvidence {
+    # Disambiguates "ollama ps: 100% CPU" misreport: if the last model load
+    # offloaded layers to Vulkan0, inference really runs on the GPU.
+    $path = Get-OllamaServerLogPath
+    if (-not $path) { return $false }
+    $tail = Get-Content -Path $path -Tail 2000 -ErrorAction SilentlyContinue
+    $offload = $tail | Select-String -Pattern 'offloaded (\d+)/(\d+) layers to GPU' |
+        Select-Object -Last 1
+    if (-not $offload) { return $false }
+    if ($offload.Line -match 'offloaded (\d+)/(\d+) layers to GPU') {
+        return ([int]$Matches[1] -gt 0)
+    }
     return $false
+}
+
+function Get-OllamaPsProcessor {
+    # (c) PROCESSOR column of "ollama ps" for the first loaded model.
+    $ollama = Get-Command ollama -ErrorAction SilentlyContinue
+    if (-not $ollama) { return $null }
+    $psOut = & ollama ps 2>&1 | Out-String
+    if ($psOut -match '(\d+%\s*GPU(?:/\d+%\s*CPU)?)') { return $Matches[1] }
+    if ($psOut -match '(\d+%\s*CPU)') { return $Matches[1] }
+    return $null   # no model loaded
+}
+
+function Test-HipRuntimeDlls {
+    # Informational only: HIP7 is relevant for RDNA3/4 ROCm path, never for RDNA1/2.
+    $hip6 = $null -ne (Get-Command amdhip64_6.dll -ErrorAction SilentlyContinue)
+    $hip7 = $null -ne (Get-Command amdhip64_7.dll -ErrorAction SilentlyContinue)
+    [PSCustomObject]@{
+        Hip6Present = $hip6
+        Hip7Present = $hip7
+    }
 }
 
 function Show-WingetStatus {
@@ -129,8 +194,8 @@ function Show-WingetStatus {
 }
 
 function Open-AmdDownloadPages {
-    Write-Step 'Opening AMD download pages'
-    foreach ($url in @($AmdAutoDetectUrl, $Rx5700ProductUrl, $AdrenalinDownloadUrl)) {
+    Write-Step 'Opening download pages'
+    foreach ($url in @($OllamaDownloadUrl, $AmdAutoDetectUrl, $AdrenalinDownloadUrl)) {
         Write-Host "  $url"
         Start-Process $url
     }
@@ -139,41 +204,44 @@ function Open-AmdDownloadPages {
 function Show-Remediation {
     param(
         [string]$Reason,
-        [string]$CurrentVersion,
-        [int]$CurrentBuild
+        [bool]$VulkanDllMissing,
+        [string]$InstallDir
     )
     Write-Host "`n--- Remediation (manual) ---" -ForegroundColor Yellow
     Write-Host "  Reason: $Reason"
-    if ($CurrentVersion) {
-        Write-Host ("  Current WMI: {0} (build {1}, need >= {2})" -f $CurrentVersion, $CurrentBuild, $MinDriverBuild) -ForegroundColor Yellow
+    Write-Host ''
+    Write-Host '  RX 5700 (RDNA1) GPU path = Ollama Vulkan backend, NOT Adrenalin/HIP7.' -ForegroundColor White
+    Write-Host '  Driver 32.0.21043.x is the latest RDNA1 branch — do NOT chase build 31000+.' -ForegroundColor White
+    Write-Host ''
+    if ($VulkanDllMissing) {
+        Write-Host '  Vulkan backend files are missing (known Ollama self-update breakage:' -ForegroundColor Red
+        Write-Host '  the updater can replace only ollama.exe and drop lib\ollama\vulkan\).' -ForegroundColor Red
+        Write-Host ''
+    }
+    Write-Host '  Steps (repair install):' -ForegroundColor Green
+    Write-Host '  1. Quit Ollama from the system tray.'
+    Write-Host "  2. Download the official installer: $OllamaSetupUrl"
+    Write-Host '  3. Re-run it (restores lib\ollama\vulkan\):'
+    Write-Host '       .\OllamaSetup.exe /VERYSILENT'
+    Write-Host '  4. Ensure OLLAMA_VULKAN is not set to 0 (default = enabled):'
+    Write-Host '       [Environment]::GetEnvironmentVariable("OLLAMA_VULKAN","User")'
+    Write-Host '  5. Start Ollama, then verify:'
+    Write-Host '       .\scripts\update-adrenalin-gpu.ps1 -VerifyAfterUpdate'
+    Write-Host '       # server.log should show: inference compute ... library=Vulkan ... RX 5700'
+    Write-Host '       # model load should show: offloaded N/N layers to GPU'
+    Write-Host "     Target p50: ~$GpuLatencyP50Ms ms (GPU). CPU fallback is ~$CpuLatencyP50Ms ms+." -ForegroundColor DarkGray
+    if ($InstallDir) {
+        Write-Host ''
+        Write-Host "  Install dir: $InstallDir" -ForegroundColor DarkGray
     }
     Write-Host ''
-    Write-Host '  Ollama 0.30+ on Windows requires HIP7 runtime (amdhip64_7.dll).' -ForegroundColor White
-    Write-Host '  Your driver branch (32.0.21xxx) only provides HIP6 (amdhip64_6.dll).' -ForegroundColor White
-    Write-Host ''
-    Write-Host '  Recommended: install latest AMD Software: Adrenalin Edition (e.g. 26.6.1).' -ForegroundColor Green
-    Write-Host '  After update, WMI should show build 32.0.31xxx+ (e.g. 32.0.31019.2002).' -ForegroundColor Green
-    Write-Host ''
-    Write-Host '  Steps:'
-    Write-Host '  1. Auto-detect (easiest):'
-    Write-Host "       $AmdAutoDetectUrl"
-    Write-Host '     Or RX 5700 product page:'
-    Write-Host "       $Rx5700ProductUrl"
-    Write-Host '  2. Run installer — choose Factory Reset / Clean Install if offered.'
-    Write-Host '  3. Reboot if prompted.'
-    Write-Host '  4. Quit Ollama from system tray, then start Ollama again.'
-    Write-Host '  5. Verify:'
-    Write-Host '       .\scripts\update-adrenalin-gpu.ps1 -VerifyAfterUpdate'
-    Write-Host '       ollama ps   # should show GPU, not 100% CPU'
-    Write-Host '       .\scripts\bench_ollama_openai.ps1 -Model qwen2.5:0.5b-rx5700 -LatencySamples 3'
-    Write-Host "     Target p50: ~$GpuLatencyP50Ms ms (GPU). CPU fallback is ~$CpuLatencyP50Ms ms+." -ForegroundColor DarkGray
-    Write-Host ''
-    Write-Host "  General portal: $AdrenalinDownloadUrl" -ForegroundColor DarkGray
+    Write-Host '  RDNA3/4 only: ROCm/HIP7 path additionally needs Adrenalin build 31000+:' -ForegroundColor DarkGray
+    Write-Host "    $AdrenalinDownloadUrl" -ForegroundColor DarkGray
     Write-Host "  WSL ROCm (RX 5700 NOT supported): $AdrenalinWslDocUrl" -ForegroundColor DarkGray
     Write-Host '  See also: docs/RX5700_WSL_GPU.md' -ForegroundColor DarkGray
 }
 
-Write-Host '=== AMD Adrenalin GPU Driver Check (Ollama / RX 5700) ===' -ForegroundColor Cyan
+Write-Host '=== Ollama GPU Path Check (AMD Radeon / RX 5700 = Vulkan) ===' -ForegroundColor Cyan
 
 if ($OpenDownloadPage) {
     Open-AmdDownloadPages
@@ -190,55 +258,107 @@ if ($amdGpus.Count -eq 0) {
     exit 0
 }
 
-$needsUpdate = $false
-$primaryVersion = $null
-$primaryBuild = $null
+$needsAction = $false
+$maxRdnaGen = 0
 
 foreach ($g in $amdGpus) {
     $build = Get-DriverBuildNumber -DriverVersion $g.DriverVersion
-    $ok = Test-DriverBuildSufficient -DriverVersion $g.DriverVersion
-    $color = if ($ok) { 'Green' } else { 'Yellow' }
+    $gen = Get-RdnaGeneration -GpuName $g.Name
+    if ($gen -gt $maxRdnaGen) { $maxRdnaGen = $gen }
     Write-Host ("  {0}" -f $g.Name)
-    Write-Host ("    DriverVersion: {0}" -f $g.DriverVersion) -ForegroundColor $color
-    Write-Host ("    Build (3rd component): {0} — minimum >= {1}" -f $build, $MinDriverBuild) -ForegroundColor DarkGray
-    if ($build -lt 31000 -and $build -ge 21000) {
-        Write-Host '    Branch: legacy 32.0.21xxx (HIP6 only) — upgrade to 32.0.31xxx for Ollama GPU' -ForegroundColor Yellow
+    Write-Host ("    DriverVersion: {0} (build {1})" -f $g.DriverVersion, $build)
+    if ($gen -in 1, 2) {
+        if ($build -ge 21000 -and $build -lt 31000) {
+            Write-Host '    Branch: RDNA1/2 variant A (32.0.21xxx) — this IS the latest for this GPU. Normal.' -ForegroundColor Green
+            Write-Host '    Note: build 31019+ (HIP7) is RDNA3/4-only variant B — structurally unreachable here.' -ForegroundColor DarkGray
+        } else {
+            Write-Host '    RDNA1/2: driver branch unrecognized — Vulkan path is unaffected either way.' -ForegroundColor DarkGray
+        }
+    } elseif ($gen -ge 3) {
+        if ($build -ge $MinDriverBuildRdna34) {
+            Write-Host ("    RDNA3/4: build {0} >= {1} — HIP7/ROCm capable." -f $build, $MinDriverBuildRdna34) -ForegroundColor Green
+        } else {
+            Write-Host ("    RDNA3/4: build {0} < {1} — update Adrenalin for HIP7/ROCm GPU." -f $build, $MinDriverBuildRdna34) -ForegroundColor Yellow
+            $needsAction = $true
+        }
+    } else {
+        Write-Host '    Generation not classified — driver build check skipped (Vulkan path applies).' -ForegroundColor DarkGray
     }
-    if (-not $primaryVersion) {
-        $primaryVersion = $g.DriverVersion
-        $primaryBuild = $build
-    }
-    if (-not $ok) { $needsUpdate = $true }
 }
 
-Write-Step 'HIP runtime DLLs (Ollama amd.go check)'
-$hip = Test-HipRuntimeDlls
-Write-Host ("  amdhip64_6.dll (HIP6): {0}" -f $(if ($hip.Hip6Present) { 'found' } else { 'MISSING' })) -ForegroundColor $(if ($hip.Hip6Present) { 'Green' } else { 'Red' })
-Write-Host ("  amdhip64_7.dll (HIP7): {0}" -f $(if ($hip.Hip7Present) { 'found' } else { 'MISSING' })) -ForegroundColor $(if ($hip.Hip7Present) { 'Green' } else { 'Red' })
-if ($hip.OllamaWouldWarn) {
-    Write-Host '  Ollama: HIP6 present but HIP7 missing → "AMD driver is too old"' -ForegroundColor Red
-    $needsUpdate = $true
-} elseif ($hip.Hip7Present) {
-    Write-Host '  HIP7 runtime OK for Ollama GPU inference.' -ForegroundColor Green
-}
-
-Write-Step 'Ollama log scan'
-$logWarn = Get-OllamaDriverWarning
-$backend = Get-OllamaComputeBackend
-if ($logWarn) {
-    Write-Host "  WARN: $logWarn" -ForegroundColor Red
-    $needsUpdate = $true
+Write-Step 'Ollama Vulkan backend files (main check)'
+$files = Test-VulkanBackendFiles
+$vulkanDllMissing = $false
+if (-not $files.InstallDir) {
+    Write-Host '  Ollama install dir not found (ollama not in PATH?).' -ForegroundColor Red
+    $needsAction = $true
+    $vulkanDllMissing = $true
 } else {
-    Write-Host '  No recent driver-too-old / CPU-fallback warning in Ollama logs.' -ForegroundColor Green
+    Write-Host ("  Install dir: {0}" -f $files.InstallDir) -ForegroundColor DarkGray
+    if ($files.VulkanDllOk) {
+        Write-Host ("  lib\ollama\vulkan\ggml-vulkan.dll: found") -ForegroundColor Green
+    } else {
+        Write-Host ("  lib\ollama\vulkan\ggml-vulkan.dll: MISSING") -ForegroundColor Red
+        Write-Host '  Likely broken self-update (exe replaced, vulkan dir dropped).' -ForegroundColor Red
+        Write-Host '  Fix: re-run official OllamaSetup.exe (supports /VERYSILENT).' -ForegroundColor Yellow
+        $needsAction = $true
+        $vulkanDllMissing = $true
+    }
 }
-if ($backend) {
-    $bc = if ($backend -eq 'cpu') { 'Red' } else { 'Green' }
-    Write-Host ("  Active compute backend (last startup): {0}" -f $backend) -ForegroundColor $bc
-    if ($backend -eq 'cpu') { $needsUpdate = $true }
+
+Write-Step 'OLLAMA_VULKAN environment'
+$vulkanEnv = $env:OLLAMA_VULKAN
+if ($null -eq $vulkanEnv) { $vulkanEnv = [Environment]::GetEnvironmentVariable('OLLAMA_VULKAN', 'User') }
+if ($null -eq $vulkanEnv) { $vulkanEnv = [Environment]::GetEnvironmentVariable('OLLAMA_VULKAN', 'Machine') }
+if ($vulkanEnv -eq '0') {
+    Write-Host '  OLLAMA_VULKAN=0 — Vulkan backend DISABLED. Unset it or set to 1.' -ForegroundColor Red
+    $needsAction = $true
+} elseif ($vulkanEnv) {
+    Write-Host ("  OLLAMA_VULKAN={0} (Vulkan enabled)" -f $vulkanEnv) -ForegroundColor Green
+} else {
+    Write-Host '  OLLAMA_VULKAN not set — default is enabled. OK.' -ForegroundColor Green
+}
+
+Write-Step 'server.log: inference compute backend'
+$compute = Get-OllamaInferenceCompute
+if (-not $compute) {
+    Write-Host '  No "inference compute" line found (Ollama not started yet?).' -ForegroundColor Yellow
+    $needsAction = $true
+} elseif ($compute.IsVulkanGpu) {
+    Write-Host ("  library={0} name=""{1}"" — Vulkan GPU detected." -f $compute.Library, $compute.GpuName) -ForegroundColor Green
+} else {
+    Write-Host ("  library={0} name=""{1}"" — GPU not on Vulkan path." -f $compute.Library, $compute.GpuName) -ForegroundColor Red
+    $needsAction = $true
+}
+
+Write-Step 'ollama ps: PROCESSOR column'
+$proc = Get-OllamaPsProcessor
+$offloadOk = Test-VulkanOffloadEvidence
+if ($null -eq $proc) {
+    Write-Host '  No model loaded (or ollama unavailable) — skipping ps check.' -ForegroundColor DarkGray
+} elseif ($proc -match 'GPU') {
+    Write-Host ("  PROCESSOR: {0} — GPU active." -f $proc) -ForegroundColor Green
+} elseif ($offloadOk) {
+    Write-Host ("  PROCESSOR: {0} — but server.log shows layers offloaded to Vulkan0." -f $proc) -ForegroundColor Yellow
+    Write-Host '  Known quirk: ollama ps may misreport the Vulkan backend as CPU. GPU is active.' -ForegroundColor Green
+} else {
+    Write-Host ("  PROCESSOR: {0} and no GPU offload evidence in server.log — CPU fallback." -f $proc) -ForegroundColor Red
+    $needsAction = $true
+}
+
+Write-Step 'HIP runtime DLLs (informational — RDNA3/4 ROCm path only)'
+$hip = Test-HipRuntimeDlls
+Write-Host ("  amdhip64_6.dll (HIP6): {0}" -f $(if ($hip.Hip6Present) { 'found' } else { 'not found' })) -ForegroundColor DarkGray
+Write-Host ("  amdhip64_7.dll (HIP7): {0}" -f $(if ($hip.Hip7Present) { 'found' } else { 'not found' })) -ForegroundColor DarkGray
+if ($maxRdnaGen -le 2) {
+    Write-Host '  RDNA1/2: HIP7 is unreachable and NOT required — Vulkan path is used instead.' -ForegroundColor DarkGray
+    Write-Host '  The "AMD driver is too old" ROCm warning in logs is expected and harmless.' -ForegroundColor DarkGray
+} elseif (-not $hip.Hip7Present) {
+    Write-Host '  RDNA3/4: HIP7 missing — Adrenalin build 31000+ needed for the ROCm path.' -ForegroundColor Yellow
 }
 
 if ($VerifyAfterUpdate) {
-    Write-Step 'Post-update verification'
+    Write-Step 'Inference verification'
     $ollama = Get-Command ollama -ErrorAction SilentlyContinue
     if (-not $ollama) {
         Write-Host '  ollama CLI not in PATH' -ForegroundColor Yellow
@@ -249,16 +369,18 @@ if ($VerifyAfterUpdate) {
             $null = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/generate' -Method Post -Body $body -ContentType 'application/json' -TimeoutSec 120
             $sw.Stop()
             $ms = $sw.ElapsedMilliseconds
-            $usingGpu = Test-OllamaUsingGpu
-            $procLine = (& ollama ps 2>&1 | Select-Object -Skip 1 | Select-Object -First 1)
+            $compute2 = Get-OllamaInferenceCompute
+            $proc2 = Get-OllamaPsProcessor
+            $offload2 = Test-VulkanOffloadEvidence
+            $usingGpu = (($compute2 -and $compute2.IsVulkanGpu) -and (($proc2 -match 'GPU') -or $offload2))
             Write-Host ("  Inference OK ({0} ms)" -f $ms) -ForegroundColor Green
-            if ($procLine) { Write-Host ("  ollama ps: {0}" -f $procLine.Trim()) }
+            if ($proc2) { Write-Host ("  ollama ps PROCESSOR: {0}" -f $proc2) }
             if ($usingGpu) {
-                Write-Host '  GPU active (ROCm backend or ollama ps shows GPU).' -ForegroundColor Green
+                Write-Host '  GPU active (Vulkan backend; layers offloaded to GPU).' -ForegroundColor Green
             } else {
                 Write-Host '  CPU inference — GPU not active.' -ForegroundColor Red
                 Write-Host ("  Latency {0} ms vs GPU target ~{1} ms — likely CPU fallback." -f $ms, $GpuLatencyP50Ms) -ForegroundColor Yellow
-                $needsUpdate = $true
+                $needsAction = $true
             }
         } catch {
             Write-Host "  Ollama generate failed: $_" -ForegroundColor Red
@@ -267,11 +389,11 @@ if ($VerifyAfterUpdate) {
     }
 }
 
-if ($needsUpdate) {
-    Show-Remediation -Reason 'Driver build below minimum, HIP7 DLL missing, and/or Ollama on CPU' `
-        -CurrentVersion $primaryVersion -CurrentBuild $primaryBuild
+if ($needsAction) {
+    Show-Remediation -Reason 'Vulkan backend files/env/log indicate GPU path is broken (or RDNA3/4 driver below 31000)' `
+        -VulkanDllMissing $vulkanDllMissing -InstallDir $files.InstallDir
     exit 1
 }
 
-Write-Host "`nDriver check passed — Ollama should use GPU." -ForegroundColor Green
+Write-Host "`nGPU path check passed — Ollama uses the Vulkan backend on this GPU." -ForegroundColor Green
 exit 0

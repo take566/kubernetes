@@ -41,4 +41,4 @@ overlay は `vllm/overlays/kind/windows-ollama-external/`。
 - GPU は Windows ドライバ / Ollama バックエンドに依存（ROCm・`/dev/kfd` 不要）。
 - kind ノード（Docker Desktop VM）からも WSL gateway IP で到達可能（`host.docker.internal` は IPv6 にしか解決されないため使用不可）。
 - kind ノードには `http_proxy` が注入されており、proxy 経由だと **403**。クライアント Pod に `HTTP_PROXY` を設定する場合は `NO_PROXY=ollama-external.vllm,.svc,.svc.cluster.local` が必要。
-- GPU 化は AMD Adrenalin ドライバ **build 31000+**（HIP7, `amdhip64_7.dll`）が条件。古いと "AMD driver is too old" で CPU フォールバック。検査・更新誘導: `scripts/update-adrenalin-gpu.ps1`（`-OpenDownloadPage` / `-VerifyAfterUpdate`）。ドライバ更新後はクラスタ側変更ゼロで GPU 化される。
+- GPU 化は **Vulkan バックエンド**（Ollama フルインストールで `lib\ollama\vulkan\` が存在し `OLLAMA_VULKAN` が無効化されていないこと）が条件。RX 5700 (RDNA1) に Adrenalin build 31000+ / HIP7 は配布されないため**ドライバ更新は条件ではない**（build 21043 系が最新で正常）。Ollama 自己アップデートで vulkan ディレクトリが欠落し CPU フォールバックする既知問題あり — 修復は公式 OllamaSetup.exe 再実行。診断: `scripts/update-adrenalin-gpu.ps1`（`-OpenDownloadPage` / `-VerifyAfterUpdate`）。修復後はクラスタ側変更ゼロで GPU 化される。"AMD driver is too old" ログは RDNA1 では恒常表示で無害（Vulkan 経路に無関係）。詳細: [docs/RX5700_WSL_GPU.md](../../../docs/RX5700_WSL_GPU.md)。
