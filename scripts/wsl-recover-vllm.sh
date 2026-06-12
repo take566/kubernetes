@@ -23,4 +23,4 @@ kubectl patch deployment vllm -n vllm --type=json -p='[{"op":"add","path":"/spec
 kubectl get nodes -o custom-columns=NAME:.metadata.name,READY:.status.conditions[-1].status,GPU:.status.allocatable.nvidia\\.com/gpu
 kubectl -n kube-system get pods -l name=nvidia-device-plugin-ds
 kubectl -n vllm get pods -o wide
-kubectl -n vllm describe pod -l app=vllm | tail -12
+kubectl -n vllm describe pod -l app=vllm | tail -n 12
