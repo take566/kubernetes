@@ -5,6 +5,12 @@ metadata:
   namespace: nexus
 spec:
   replicas: 1
+  # One replica on a ReadWriteOnce volume: stop the old pod before starting
+  # the new one. With the default RollingUpdate the new pod waited for CPU
+  # the crash-looping old pod still held, and the rollout never finished
+  # (deploy-note, #31 follow-up).
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: nexus
