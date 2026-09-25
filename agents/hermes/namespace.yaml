@@ -5,6 +5,10 @@ metadata:
   labels:
     app.kubernetes.io/part-of: agents
     app.kubernetes.io/managed-by: kustomize
-    pod-security.kubernetes.io/enforce: restricted
+    # baseline, not restricted (#31): the hermes-agent image must start as
+    # root and drops to HERMES_UID itself (s6-overlay; it refuses a pinned
+    # non-root --user). audit / warn stay restricted so every deviation is
+    # still reported.
+    pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted

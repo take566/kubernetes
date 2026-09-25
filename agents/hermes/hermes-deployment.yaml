@@ -24,10 +24,12 @@ spec:
         app.kubernetes.io/managed-by: kustomize
     spec:
       terminationGracePeriodSeconds: 60
+      # Starts as root on purpose (#31). The image is s6-overlay based: its
+      # bootstrap remaps the hermes user to HERMES_UID/HERMES_GID, chowns the
+      # data volume and then runs Hermes as that user. With runAsUser: 1000 it
+      # stopped with "container started with --user 1000 ... not supported
+      # under the s6-overlay image". Hermes itself still runs as uid 1000.
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
@@ -50,6 +52,11 @@ spec:
               value: "1"
             - name: GATEWAY_HEALTH_URL
               value: "http://127.0.0.1:8642/healthz"
+            # The user the image's bootstrap drops to (see securityContext).
+            - name: HERMES_UID
+              value: "1000"
+            - name: HERMES_GID
+              value: "1000"
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -85,9 +92,17 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
+            # Only what the bootstrap needs to remap the user, chown the data
+            # volume and drop to it; all within the baseline profile.
             capabilities:
               drop:
                 - ALL
+              add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - FOWNER
+                - SETUID
+                - SETGID
           volumeMounts:
             - name: data
               mountPath: /opt/data
