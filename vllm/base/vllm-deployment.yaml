@@ -83,19 +83,29 @@ spec:
           volumeMounts:
             - name: model-cache
               mountPath: /data/huggingface
+          # Startup (model download + load + compile) can take far longer than
+          # the old liveness grace of 120s + 5x30s: on deploy-note (GTX 1650)
+          # liveness killed the engine mid-start (exit 137, 13 restarts) before
+          # it ever listened on :8000. startupProbe allows up to 30 minutes and
+          # holds liveness / readiness off until the server answers once.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
           readinessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 5
-            failureThreshold: 40
+            failureThreshold: 4
           livenessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 120
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
