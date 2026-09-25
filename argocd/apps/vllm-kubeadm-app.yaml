@@ -15,7 +15,14 @@ spec:
   source:
     repoURL: https://github.com/take566/kubernetes.git
     targetRevision: master
-    path: vllm/overlays/kubeadm
+    # The only cluster this root Application runs on is deploy-note (WSL
+    # kubeadm, GTX 1650 4 GB, managed by take566/ansible terraform/argocd).
+    # The generic kubeadm overlay has no runtimeClassName, so the pod got no
+    # GPU libraries ("No CUDA runtime is found" -> "Failed to infer device
+    # type") and asked for more memory / VRAM than the laptop has. The
+    # gtx1650 overlay adds runtimeClassName: nvidia and a 0.5B model sized
+    # for 4 GB.
+    path: vllm/overlays/kubeadm/gtx1650
   destination:
     server: https://kubernetes.default.svc
     namespace: vllm
