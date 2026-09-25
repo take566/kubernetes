@@ -20,6 +20,36 @@ spec:
         fsGroup: 200
         seccompProfile:
           type: RuntimeDefault
+      # nexus-pv is a hostPath volume (/data/nexus). kubelet creates that
+      # directory owned by root, and fsGroup does not apply to hostPath, so
+      # nexus (uid 200) could not create /nexus-data/log and crashed with
+      # "openFile(.../nexus3/log/nexus.log) ... FileNotFoundException" (#31).
+      # Hand the volume root to uid 200 before nexus starts; everything below
+      # it is then created by nexus itself.
+      initContainers:
+      - name: volume-owner
+        image: busybox:1.36
+        command: ["sh", "-c", "chown 200:200 /nexus-data && chmod 0750 /nexus-data"]
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - CHOWN
+            - FOWNER
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "32Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: nexus-data
+          mountPath: /nexus-data
       containers:
       - name: nexus
         image: sonatype/nexus3:3.85.0
