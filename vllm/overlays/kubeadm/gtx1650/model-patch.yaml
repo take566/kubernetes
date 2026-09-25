@@ -10,4 +10,3 @@ data:
     --max-model-len 2048
     --max-num-seqs 8
     --enforce-eager
-    --disable-log-requests

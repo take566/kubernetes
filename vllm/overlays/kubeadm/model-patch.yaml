@@ -13,4 +13,3 @@ data:
     --max-num-batched-tokens 8192
     --enable-prefix-caching
     --enable-chunked-prefill
-    --disable-log-requests

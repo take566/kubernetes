@@ -86,19 +86,30 @@ spec:
         volumeMounts:
         - name: nexus-data
           mountPath: /nexus-data
+        # /service/rest/v1/status is Nexus's unauthenticated "can serve
+        # requests" endpoint. /service/metrics/healthcheck requires the
+        # nx-metrics-all privilege and answered 403, so liveness restarted a
+        # healthy Nexus forever (deploy-note). The first boot (database
+        # creation) takes minutes; startupProbe holds liveness off for up to
+        # 10 minutes instead of a fixed initialDelaySeconds.
+        startupProbe:
+          httpGet:
+            path: /service/rest/v1/status
+            port: nexus-web
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 60
         livenessProbe:
           httpGet:
-            path: /service/metrics/healthcheck
+            path: /service/rest/v1/status
             port: nexus-web
-          initialDelaySeconds: 60
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /service/metrics/healthcheck
+            path: /service/rest/v1/status
             port: nexus-web
-          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3

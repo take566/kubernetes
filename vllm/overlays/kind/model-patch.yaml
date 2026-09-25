@@ -11,4 +11,3 @@ data:
     --max-model-len 2048
     --max-num-batched-tokens 1024
     --enforce-eager
-    --disable-log-requests

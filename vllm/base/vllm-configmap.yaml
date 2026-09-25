@@ -20,5 +20,4 @@ data:
     --max-num-seqs 256
     --max-model-len 4096
     --enable-prefix-caching
-    --disable-log-requests
   HF_HOME: "/data/huggingface"
