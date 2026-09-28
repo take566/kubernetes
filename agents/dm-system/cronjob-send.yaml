@@ -1,0 +1,76 @@
+# 平日 09:30 JST: フォーム → 追いメール → メールの実送信 (#159 の送信予算 2700 秒 + sync)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dm-system-send
+  namespace: dm-system
+spec:
+  schedule: "30 9 * * 1-5"
+  timeZone: Asia/Tokyo
+  # 前の実行が残っていたら重ねない / クラスタ停止中に逃した回は 1800 秒以内なら実行する
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 1800
+  # 実送信を伴うため停止状態で入れる。dry-run 確認後に利用者が解除する (README 参照)
+  suspend: true
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      # 自動リトライしない (送信の二重実行を避ける)。失敗は Discord に通知される
+      backoffLimit: 0
+      activeDeadlineSeconds: 7200
+      ttlSecondsAfterFinished: 1209600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: dm-system
+            app.kubernetes.io/component: send
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+          containers:
+            - name: send
+              image: dm-system:local
+              imagePullPolicy: IfNotPresent
+              command: ["/app/.venv/bin/python", "/app/scripts/hermes/dm-system-send.py"]
+              envFrom:
+                - secretRef:
+                    name: dm-system-env
+              env:
+                # .env.tpl のローカル (Windows) パスを上書きする
+                - name: GMAIL_OAUTH2_TOKEN_PATH
+                  value: /app/secrets/gmail_token.json
+                - name: GMAIL_OAUTH2_CREDENTIALS_PATH
+                  value: /app/secrets/gmail_credentials.json
+                - name: GOOGLE_APPLICATION_CREDENTIALS
+                  value: /app/secrets/google_adc_credentials.json
+                - name: GOOGLE_CREDENTIALS_PATH
+                  value: /app/secrets/credentials.json
+                - name: DM_SEND_DRY_RUN
+                  value: "0"
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 512Mi
+                limits:
+                  memory: 2Gi
+              volumeMounts:
+                - name: state
+                  mountPath: /app/data
+                  subPath: data
+                - name: state
+                  mountPath: /app/secrets
+                  subPath: secrets
+                - name: dshm
+                  mountPath: /dev/shm
+          volumes:
+            - name: state
+              persistentVolumeClaim:
+                claimName: dm-system-state
+            # Playwright (chromium) 用
+            - name: dshm
+              emptyDir:
+                medium: Memory
+                sizeLimit: 256Mi
