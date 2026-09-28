@@ -1,0 +1,31 @@
+# dm-system の状態 (SQLite DB・スナップショット・認証ファイル) はホストの
+# D:\k8s-data\dm-system に置く (kind/kind-config-ops.yaml の extraMounts)。
+# クラスタを作り直してもデータは残る。
+#   D:\k8s-data\dm-system\data     → /app/data     (dm_system.db, sheet_snapshots/ 等)
+#   D:\k8s-data\dm-system\secrets  → /app/secrets  (gmail_token.json 等。トークン更新で書き換わる)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: dm-system-state
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: dm-system-hostpath
+  hostPath:
+    path: /k8s-data/dm-system
+    type: Directory
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dm-system-state
+  namespace: dm-system
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: dm-system-hostpath
+  volumeName: dm-system-state
+  resources:
+    requests:
+      storage: 5Gi

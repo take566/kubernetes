@@ -1,0 +1,16 @@
+# kind cluster for always-on scheduled jobs (dm-system CronJobs etc.)
+#
+# dev クラスタ (kind-config.yaml) は実験で作り直すことが多いため、定期実行はこちらに分ける。
+# 状態はホストの D:\k8s-data にマウントするので、クラスタを作り直してもデータは残る。
+#
+#   kind create cluster --config kind/kind-config-ops.yaml
+#   kubectl config use-context kind-ops
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: ops
+nodes:
+  - role: control-plane
+    extraMounts:
+      # hostPath PV (agents/dm-system/pv.yaml) の実体
+      - hostPath: D:\k8s-data
+        containerPath: /k8s-data
