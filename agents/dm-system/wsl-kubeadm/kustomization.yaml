@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# WSL 上の kubeadm (tmf-desktop) 用 (Deploy-inc/OpenClaw#2813)。
+# kind-ops との違いは 2 点:
+#   - hostPath: kind の extraMounts (/k8s-data) ではなく WSL の /mnt/d/k8s-data
+#   - 2 本とも suspend で入る。kind 側と同じ DB (D:\k8s-data\dm-system) を使うので、
+#     切替は「kind 側を suspend → こちらを resume」の順で行い、両方を同時に動かさない
+#     (手順: take566/dm-system docs/K8S_CRONJOB.md)
+resources:
+  - ../base
+patches:
+  - target:
+      kind: PersistentVolume
+      name: dm-system-state
+    patch: |-
+      - op: replace
+        path: /spec/hostPath/path
+        value: /mnt/d/k8s-data/dm-system
+  - target:
+      kind: CronJob
+    patch: |-
+      - op: add
+        path: /spec/suspend
+        value: true
