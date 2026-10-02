@@ -37,6 +37,11 @@ spec:
                 - secretRef:
                     name: dm-system-env
               env:
+                # 全体の時間予算 (Deploy-inc/dm-system#177)。activeDeadlineSeconds (10800) で
+                # Pod ごと殺されるとログも Discord 通知も残らないので、その 600 秒手前で
+                # パイプライン自身に打ち切らせて失敗を通知させる。上の deadline を変えたら合わせる
+                - name: DM_PIPELINE_BUDGET_SEC
+                  value: "10200"
                 # .env.tpl のローカル (Windows) パスを上書きする
                 - name: GMAIL_OAUTH2_TOKEN_PATH
                   value: /app/secrets/gmail_token.json
