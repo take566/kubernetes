@@ -1,5 +1,5 @@
 # dm-system の状態 (SQLite DB・スナップショット・認証ファイル) はホストの
-# D:\k8s-data\dm-system に置く (kind/kind-config-ops.yaml の extraMounts)。
+# D:\k8s-data\dm-system に置く (path は overlay が差し替える。WSL kubeadm では /mnt/d/k8s-data/dm-system)。
 # クラスタを作り直してもデータは残る。
 #   D:\k8s-data\dm-system\data     → /app/data     (dm_system.db, sheet_snapshots/ 等)
 #   D:\k8s-data\dm-system\secrets  → /app/secrets  (gmail_token.json 等。トークン更新で書き換わる)
