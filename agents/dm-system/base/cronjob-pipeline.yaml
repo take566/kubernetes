@@ -37,6 +37,10 @@ spec:
                 - secretRef:
                     name: dm-system-env
               env:
+                # シートに書いてよい実行環境の印 (Deploy-inc/dm-system#175)。dm-system は
+                # SHEETS_WRITER の無い環境ではシートに書かない (古い・別マシンのコピー対策)
+                - name: SHEETS_WRITER
+                  value: k8s
                 # 全体の時間予算 (Deploy-inc/dm-system#177)。activeDeadlineSeconds (10800) で
                 # Pod ごと殺されるとログも Discord 通知も残らないので、その 600 秒手前で
                 # パイプライン自身に打ち切らせて失敗を通知させる。上の deadline を変えたら合わせる
