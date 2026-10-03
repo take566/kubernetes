@@ -39,6 +39,10 @@ spec:
                 - secretRef:
                     name: dm-system-env
               env:
+                # シートに書いてよい実行環境の印 (Deploy-inc/dm-system#175)。dm-system は
+                # SHEETS_WRITER の無い環境ではシートに書かない (古い・別マシンのコピー対策)
+                - name: SHEETS_WRITER
+                  value: k8s
                 # .env.tpl のローカル (Windows) パスを上書きする
                 - name: GMAIL_OAUTH2_TOKEN_PATH
                   value: /app/secrets/gmail_token.json
