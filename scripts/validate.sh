@@ -4,6 +4,8 @@
 
 set -euo pipefail
 
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
@@ -34,49 +36,40 @@ else
   echo -e "  ${GREEN}SKIP${NC}: model-profiles.json (python3 not installed)"
 fi
 
-# Dry-run validation for each directory
-for dir in elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/cpu vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export; do
-  echo ""
-  echo "--- Validating $dir/ ---"
-  for file in "$dir"/*.yaml; do
-    # Skip non-resource files
-    case "$(basename "$file")" in
-      kustomization.yaml|values.yaml|Chart.yaml|Chart.lock|controller-daemonset-hostport.yaml|*.md) continue ;;
-    esac
-
-    if kubectl apply --dry-run=client --validate=false -f "$file" > /dev/null 2>&1; then
-      echo -e "  ${GREEN}OK${NC}: $file"
-    else
-      echo -e "  ${RED}FAIL${NC}: $file"
-      kubectl apply --dry-run=client -f "$file" 2>&1 | sed 's/^/    /'
-      ERRORS=$((ERRORS + 1))
-    fi
-  done
-done
-
-# Kustomize build validation
+# kubeconform: 全 kustomization のビルド結果 + 単体マニフェスト（パッチ除く）
+# CI の validate ジョブと同じ scripts/kubeconform-validate.sh を使う
 echo ""
-echo "--- Validating Kustomize builds ---"
-KUSTOMIZE_DIRS=(
-  elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes
-  vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark
-  kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies
-  kind/addons
-  vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export
-  vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/cpu vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export
-)
-KUSTOMIZE_LOAD_FLAGS=(--load-restrictor LoadRestrictionsNone)
-for dir in "${KUSTOMIZE_DIRS[@]}"; do
-  if [ -f "$dir/kustomization.yaml" ]; then
-    if kubectl kustomize "$dir" "${KUSTOMIZE_LOAD_FLAGS[@]}" > /dev/null 2>&1; then
-      echo -e "  ${GREEN}OK${NC}: kustomize build $dir"
-    else
-      echo -e "  ${RED}FAIL${NC}: kustomize build $dir"
-      kubectl kustomize "$dir" "${KUSTOMIZE_LOAD_FLAGS[@]}" 2>&1 | sed 's/^/    /'
-      ERRORS=$((ERRORS + 1))
-    fi
+echo "--- Validating manifests with kubeconform (scripts/kubeconform-validate.sh) ---"
+if command -v kubeconform &> /dev/null; then
+  if bash scripts/kubeconform-validate.sh; then
+    echo -e "  ${GREEN}OK${NC}: kubeconform-validate.sh"
+  else
+    echo -e "  ${RED}FAIL${NC}: kubeconform-validate.sh"
+    ERRORS=$((ERRORS + 1))
   fi
-done
+else
+  echo -e "  ${GREEN}SKIP${NC}: kubeconform-validate.sh (kubeconform not installed) — falling back to kubectl dry-run"
+
+  # Dry-run validation for each directory
+  for dir in elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/cpu vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export; do
+    echo ""
+    echo "--- Validating $dir/ ---"
+    for file in "$dir"/*.yaml; do
+      # Skip non-resource files
+      case "$(basename "$file")" in
+        kustomization.yaml|values.yaml|Chart.yaml|Chart.lock|controller-daemonset-hostport.yaml|*.md) continue ;;
+      esac
+
+      if kubectl apply --dry-run=client --validate=false -f "$file" > /dev/null 2>&1; then
+        echo -e "  ${GREEN}OK${NC}: $file"
+      else
+        echo -e "  ${RED}FAIL${NC}: $file"
+        kubectl apply --dry-run=client -f "$file" 2>&1 | sed 's/^/    /'
+        ERRORS=$((ERRORS + 1))
+      fi
+    done
+  done
+fi
 
 # Helm wrapper dirs (gitlab/jenkins use Chart.yaml — optional helm template check)
 echo ""
@@ -90,25 +83,6 @@ for dir in "${HELM_WRAPPER_DIRS[@]}"; do
       else
         echo -e "  ${RED}FAIL${NC}: helm template $dir"
         helm template test "$dir" -f "$dir/values.yaml" 2>&1 | sed 's/^/    /' | head -20
-        ERRORS=$((ERRORS + 1))
-      fi
-    else
-      echo -e "  ${GREEN}SKIP${NC}: $dir (helm not installed)"
-    fi
-  fi
-done
-
-# Helm wrapper dirs (monitoring uses helmCharts in kustomization — needs helm on PATH)
-echo ""
-echo "--- Validating Helm-backed kustomize (optional) ---"
-HELM_KUSTOMIZE_DIRS=(monitoring cert-manager)
-for dir in "${HELM_KUSTOMIZE_DIRS[@]}"; do
-  if [ -f "$dir/kustomization.yaml" ]; then
-    if command -v helm &> /dev/null; then
-      if kubectl kustomize "$dir" "${KUSTOMIZE_LOAD_FLAGS[@]}" > /dev/null 2>&1; then
-        echo -e "  ${GREEN}OK${NC}: kustomize build $dir (helm)"
-      else
-        echo -e "  ${RED}FAIL${NC}: kustomize build $dir (helm)"
         ERRORS=$((ERRORS + 1))
       fi
     else

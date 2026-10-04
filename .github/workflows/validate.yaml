@@ -39,36 +39,33 @@ jobs:
 
   validate:
     runs-on: ubuntu-latest
+    env:
+      KUBECONFORM_VERSION: v0.8.0
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.37.1
+
       - name: Install kubeconform
         run: |
-          wget -q https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
-          tar xzf kubeconform-linux-amd64.tar.gz
+          set -euo pipefail
+          wget -q "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          tar xzf kubeconform-linux-amd64.tar.gz kubeconform
           sudo mv kubeconform /usr/local/bin/
+          kubeconform -v
 
-      - name: Validate K8s manifests
-        run: |
-          find . -name '*.yaml' \
-            -not -path './.github/*' \
-            -not -path './data/*' \
-            -not -path './gitlab/*' \
-            -not -path './jenkins/*' \
-            -not -path './actions-runner-controller/*' \
-            -not -path './github-runners/*' \
-            -not -path './github-runners/github-runners-secret.example.yaml' \
-            -not -path './cert-manager/cert-manager.custom.yaml' \
-            -not -name 'kustomization.yaml' \
-            -not -name 'values.yaml' \
-            -not -name 'Chart.yaml' \
-            -not -name 'Chart.lock' \
-            -not -name 'nginx-ingress.yaml' \
-            -not -name 'prometheus-values.yaml' \
-            | xargs kubeconform -strict -summary \
-              -schema-location default \
-              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
-              -ignore-missing-schemas
+      - name: Set up helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v4.3.0
+
+      # kustomize ビルド結果と単体マニフェスト（パッチ除く）を kubeconform で検証する。
+      # 旧 kustomize ジョブ（ビルドのみ）はこのジョブに統合した。
+      - name: Validate K8s manifests (kustomize build + kubeconform)
+        run: bash scripts/kubeconform-validate.sh
 
   model-profiles:
     runs-on: ubuntu-latest
@@ -77,35 +74,6 @@ jobs:
 
       - name: Validate vLLM model profiles JSON
         run: python3 vllm/benchmark/scripts/validate_model_profiles.py
-
-  kustomize:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Validate Kustomize builds
-        run: |
-          set -euo pipefail
-          for dir in \
-            kubeadm/addons \
-            kind/addons \
-            vllm/base \
-            vllm/components/amd \
-            vllm/components/finetune \
-            vllm/benchmark \
-            vllm/overlays/kubeadm \
-            vllm/overlays/kubeadm/amd \
-            vllm/overlays/kubeadm/finetune \
-            vllm/overlays/kind \
-            vllm/overlays/kind/amd \
-            vllm/overlays/kind/finetune \
-            nginx; do
-            echo "kubectl kustomize ${dir}"
-            kubectl kustomize "${dir}" --load-restrictor LoadRestrictionsNone > /dev/null
-          done
 
   security-scan:
     runs-on: ubuntu-latest
