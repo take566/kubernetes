@@ -9,8 +9,11 @@ spec:
       containers:
         - name: vllm
           resources:
+            # Measured on deploy-note 2026-10-04: ~15m CPU at steady state (the
+            # model runs on the GPU). A 1-core request reserved 20% of the
+            # 5-CPU node for nothing; the 2-core limit still covers startup.
             requests:
-              cpu: "1"
+              cpu: 250m
               memory: 4Gi
               nvidia.com/gpu: "1"
             limits:

@@ -77,9 +77,13 @@ spec:
           containerPort: 8083
           protocol: TCP
         resources:
+          # CPU request sized to measured use (~3m idle on deploy-note,
+          # 2026-10-04); the 2-core limit still covers JVM startup.
+          # nexus/ has no overlays: this applies to every cluster that syncs
+          # or applies nexus/, not only deploy-note.
           requests:
             memory: "2Gi"
-            cpu: "1000m"
+            cpu: "250m"
           limits:
             memory: "4Gi"
             cpu: "2000m"
