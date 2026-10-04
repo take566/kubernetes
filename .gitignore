@@ -48,3 +48,6 @@ vllm/benchmark/results/ollama-rx5700-*.json
 # Helm vendor charts (regenerate via helm dependency update)
 gitlab/charts/*.tgz
 jenkins/charts/*.tgz
+# kustomize --enable-helm が展開する Helm chart（CI/ローカル検証で生成）
+cert-manager/charts/
+monitoring/charts/
