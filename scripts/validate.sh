@@ -48,27 +48,10 @@ if command -v kubeconform &> /dev/null; then
     ERRORS=$((ERRORS + 1))
   fi
 else
-  echo -e "  ${GREEN}SKIP${NC}: kubeconform-validate.sh (kubeconform not installed) — falling back to kubectl dry-run"
-
-  # Dry-run validation for each directory
-  for dir in elk-stack elk-stack/base elk-stack/overlays/kind elk-stack/overlays/kubeadm prometheus nexus nginx cert-manager agents/hermes vllm/base vllm/components/amd vllm/components/finetune vllm/components/distill vllm/components/distill-export vllm/components/serena-export vllm/benchmark kubeadm/addons kubeadm/addons/local-path-storage kubeadm/addons/metrics-server kubeadm/addons/metallb kubeadm/addons/longhorn kubeadm/addons/nvidia-device-plugin kubeadm/addons/ingress-nginx kubeadm/addons/network-policies kind/addons vllm/overlays/kubeadm vllm/overlays/kubeadm/amd vllm/overlays/kubeadm/finetune vllm/overlays/kubeadm/distill vllm/overlays/kubeadm/serena-export vllm/overlays/kind vllm/overlays/kind/amd vllm/overlays/kind/cpu vllm/overlays/kind/finetune vllm/overlays/kind/distill vllm/overlays/kind/serena-export; do
-    echo ""
-    echo "--- Validating $dir/ ---"
-    for file in "$dir"/*.yaml; do
-      # Skip non-resource files
-      case "$(basename "$file")" in
-        kustomization.yaml|values.yaml|Chart.yaml|Chart.lock|controller-daemonset-hostport.yaml|*.md) continue ;;
-      esac
-
-      if kubectl apply --dry-run=client --validate=false -f "$file" > /dev/null 2>&1; then
-        echo -e "  ${GREEN}OK${NC}: $file"
-      else
-        echo -e "  ${RED}FAIL${NC}: $file"
-        kubectl apply --dry-run=client -f "$file" 2>&1 | sed 's/^/    /'
-        ERRORS=$((ERRORS + 1))
-      fi
-    done
-  done
+  echo -e "  ${RED}FAIL${NC}: kubeconform is not installed (required)"
+  echo "    install: go install github.com/yannh/kubeconform/cmd/kubeconform@latest"
+  echo "         or: https://github.com/yannh/kubeconform/releases"
+  ERRORS=$((ERRORS + 1))
 fi
 
 # Helm wrapper dirs (gitlab/jenkins use Chart.yaml — optional helm template check)
@@ -91,32 +74,31 @@ for dir in "${HELM_WRAPPER_DIRS[@]}"; do
   fi
 done
 
-# Argo CD Application manifests (syntax + duplicate names)
+# Argo CD Application manifests: 名前の重複チェックのみ
+# （スキーマは kubeconform-validate.sh で検証済み。kubectl dry-run は API サーバーが要るので使わない）
+# 1 ファイルに複数ドキュメントがあるので、全ドキュメントの metadata.name を拾う
 echo ""
-echo "--- Validating Argo CD Applications ---"
+echo "--- Validating Argo CD Applications (duplicate names; schema は kubeconform で検証済み) ---"
 declare -A APP_NAMES=()
-for file in argocd/apps/*-app.yaml; do
-  [ -f "$file" ] || continue
-  if kubectl apply --dry-run=client --validate=false -f "$file" > /dev/null 2>&1; then
-    echo -e "  ${GREEN}OK${NC}: $file"
-    name=$(grep -E '^  name:' "$file" | head -1 | awk '{print $2}')
-    if [ -n "${APP_NAMES[$name]:-}" ]; then
-      echo -e "  ${RED}FAIL${NC}: duplicate Application name '$name' in ${APP_NAMES[$name]} and $file"
-      ERRORS=$((ERRORS + 1))
-    else
-      APP_NAMES[$name]=$file
-    fi
+APP_COUNT=0
+DUP_ERRORS=0
+while IFS=$'\t' read -r name file; do
+  [ -n "$name" ] || continue
+  APP_COUNT=$((APP_COUNT + 1))
+  if [ -n "${APP_NAMES[$name]:-}" ]; then
+    echo -e "  ${RED}FAIL${NC}: duplicate Application name '$name' in ${APP_NAMES[$name]} and $file"
+    DUP_ERRORS=$((DUP_ERRORS + 1))
   else
-    echo -e "  ${RED}FAIL${NC}: $file"
-    ERRORS=$((ERRORS + 1))
+    APP_NAMES[$name]=$file
   fi
-done
-
-if kubectl apply --dry-run=client --validate=false -f argocd/apps/root-application.yaml > /dev/null 2>&1; then
-  echo -e "  ${GREEN}OK${NC}: argocd/apps/root-application.yaml"
-else
-  echo -e "  ${RED}FAIL${NC}: argocd/apps/root-application.yaml"
+done < <(awk 'FNR==1{m=0} /^metadata:/{m=1;next} /^[^ \t#]/{m=0} m&&/^  name:/{n=$2; gsub(/["\047]/,"",n); print n"\t"FILENAME; m=0}' argocd/apps/*.yaml)
+if [ "$APP_COUNT" -eq 0 ]; then
+  echo -e "  ${RED}FAIL${NC}: no Application found in argocd/apps/*.yaml"
   ERRORS=$((ERRORS + 1))
+elif [ "$DUP_ERRORS" -eq 0 ]; then
+  echo -e "  ${GREEN}OK${NC}: ${APP_COUNT} Applications, no duplicate names"
+else
+  ERRORS=$((ERRORS + DUP_ERRORS))
 fi
 
 echo ""
