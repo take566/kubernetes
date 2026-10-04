@@ -73,11 +73,14 @@ spec:
                   name: hermes-secret
                   key: API_SERVER_KEY
           resources:
+            # Measured on deploy-note 2026-10-04: ~771m CPU, close to the old
+            # 1-core limit (throttled). Fits the agents ResourceQuota
+            # (requests.cpu 2 / limits.cpu 4).
             requests:
-              cpu: 200m
+              cpu: 800m
               memory: 512Mi
             limits:
-              cpu: "1"
+              cpu: "2"
               memory: 2Gi
           livenessProbe:
             tcpSocket:
