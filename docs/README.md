@@ -20,7 +20,7 @@
 
 Claude Code のセッション開始時（`startup`）に SessionStart フック [.claude/hooks/git-auto-pull.sh](../.claude/hooks/git-auto-pull.sh) が実行されます（設定は [.claude/settings.json](../.claude/settings.json)）。
 
-- 現在のブランチの upstream の remote（無ければ `origin`）を `git fetch --prune` します（タイムアウト 20 秒。オフライン時や認証が必要な場合はプロンプトを出さずに終了）
+- 現在のブランチの upstream の remote（無ければ `origin`。upstream がローカルブランチの場合は fetch しない）を `git fetch --prune` します（タイムアウト 20 秒。オフライン時や認証が必要な場合はプロンプトを出さずに終了）
 - 現在のブランチに upstream があり、作業ツリーがクリーンで、ローカルコミットが無い場合のみ `git merge --ff-only --no-overwrite-ignore` で取り込みます（ignored ファイルは上書きしません）
 - dirty / diverged / detached HEAD / upstream なしの場合は pull せず、理由を 1 行表示します。セッション開始を妨げないよう常に正常終了します
 

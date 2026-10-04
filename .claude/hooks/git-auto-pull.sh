@@ -37,11 +37,14 @@ remote=""
 if [ -n "$branch" ]; then
   remote=$(git config --get "branch.$branch.remote" 2>/dev/null)
 fi
-[ -z "$remote" ] || [ "$remote" = "." ] && remote="origin"
+[ -z "$remote" ] && remote="origin"
 
-if ! $TIMEOUT_CMD git fetch --prune --quiet "$remote" >/dev/null 2>&1; then
-  say "fetch failed (offline?)"
-  exit 0
+# remote "." means the upstream is a local branch: nothing to fetch
+if [ "$remote" != "." ]; then
+  if ! $TIMEOUT_CMD git fetch --prune --quiet "$remote" >/dev/null 2>&1; then
+    say "fetch failed (offline?)"
+    exit 0
+  fi
 fi
 
 if [ -z "$branch" ]; then
