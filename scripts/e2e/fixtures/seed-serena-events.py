@@ -6,7 +6,8 @@ kind 内の toolbox Pod から stdin 経由で実行する想定:
 
 種類:
   --info N       通常の serena イベント（INFO）
-  --error N      ERROR レベルの serena イベント
+  --error N      ERROR レベルの serena イベント（TimeoutError）
+  --warning N    WARNING レベルの serena イベント（ERROR と無関係な内容）
   --pii N        Windows パスとメールアドレスを含む serena イベント（PII マスク確認用）
   --sensitive N  api_key= を含む serena イベント（sensitive_pattern 確認用）
   --plain N      serena ではないイベント（logstash-* に入る想定）
@@ -48,6 +49,10 @@ def build(args: argparse.Namespace) -> list[dict]:
     for _ in range(args.error):
         events.append(serena_event(s, i, "ERROR", f"e2e error event {i}: tool execution failed with TimeoutError"))
         i += 1
+    for _ in range(args.warning):
+        # ERROR とは無関係な WARNING（RAG の順位付けが内容で区別できるかを見るためのノイズ）
+        events.append(serena_event(s, i, "WARNING", f"e2e warning event {i}: disk usage high on volume cache-dir"))
+        i += 1
     for _ in range(args.pii):
         events.append(serena_event(
             s, i, "INFO",
@@ -77,7 +82,7 @@ def main() -> None:
     p.add_argument("--session", required=True)
     p.add_argument("--host", default="logstash.elk-stack.svc")
     p.add_argument("--port", type=int, default=5000)
-    for k in ("info", "error", "pii", "sensitive", "plain", "unmapped"):
+    for k in ("info", "error", "warning", "pii", "sensitive", "plain", "unmapped"):
         p.add_argument(f"--{k}", type=int, default=0)
     args = p.parse_args()
     events = build(args)

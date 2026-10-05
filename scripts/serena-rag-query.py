@@ -58,15 +58,23 @@ def cosine(a: list[float], b: list[float]) -> float:
     return dot / (na * nb)
 
 
-def ollama_embed(base_url: str, model: str, text: str) -> list[float] | None:
+class EmbeddingUnavailable(RuntimeError):
+    """--require-embeddings 指定時に埋め込みが得られなかった。"""
+
+
+def ollama_embed(base_url: str, model: str, text: str, required: bool = False) -> list[float] | None:
     url = f"{base_url.rstrip('/')}/api/embeddings"
     try:
         result = http_json(url, "POST", {"model": model, "prompt": text}, timeout_s=120.0)
         emb = result.get("embedding")
         if isinstance(emb, list) and emb:
             return [float(x) for x in emb]
+        reason = "empty embedding"
     except Exception as exc:
-        print(f"Warning: Ollama embedding failed ({exc}); falling back to keyword ranking.", file=sys.stderr)
+        reason = str(exc)
+    if required:
+        raise EmbeddingUnavailable(f"Ollama embedding failed ({reason})")
+    print(f"Warning: Ollama embedding failed ({reason}); falling back to keyword ranking.", file=sys.stderr)
     return None
 
 
@@ -157,13 +165,14 @@ def rank_chunks(
     chunks: list[dict[str, Any]],
     ollama_url: str,
     embed_model: str,
+    require_embeddings: bool = False,
 ) -> list[dict[str, Any]]:
-    query_vec = ollama_embed(ollama_url, embed_model, query)
+    query_vec = ollama_embed(ollama_url, embed_model, query, required=require_embeddings)
     scored: list[tuple[float, dict[str, Any]]] = []
     for chunk in chunks:
         kw = keyword_score(query, chunk["text"])
         if query_vec is not None:
-            chunk_vec = ollama_embed(ollama_url, embed_model, chunk["text"])
+            chunk_vec = ollama_embed(ollama_url, embed_model, chunk["text"], required=require_embeddings)
             sim = cosine(query_vec, chunk_vec) if chunk_vec else 0.0
             score = 0.6 * sim + 0.4 * kw
         else:
@@ -223,6 +232,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--top-k", type=int, default=8, help="Top chunks for context")
     p.add_argument("--search-size", type=int, default=50, help="Initial ES result size")
     p.add_argument("--query", required=True, help="Natural language question")
+    p.add_argument(
+        "--require-embeddings",
+        action="store_true",
+        help="Fail (exit 2) instead of falling back to keyword ranking when Ollama embeddings are unavailable",
+    )
     return p.parse_args()
 
 
@@ -233,7 +247,11 @@ def main() -> int:
         print("No matching ERROR/WARNING Serena logs found.")
         return 1
 
-    ranked = rank_chunks(args.query, chunks, args.ollama, args.embed_model)
+    try:
+        ranked = rank_chunks(args.query, chunks, args.ollama, args.embed_model, args.require_embeddings)
+    except EmbeddingUnavailable as exc:
+        print(f"Error: {exc}; --require-embeddings is set.", file=sys.stderr)
+        return 2
     top = [c for c in ranked if c.get("score", 0) > 0][: args.top_k]
     if not top:
         top = ranked[: args.top_k]

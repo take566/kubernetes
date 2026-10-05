@@ -40,6 +40,10 @@ _es_count() {  # <index> <session-field> <session>
 }
 
 _serena_ge() { e2e::es POST /logs-serena/_refresh >/dev/null; (( $(_es_count logs-serena serena.session_id "$1") >= $2 )); }
+_plain_indexed() {
+  e2e::es POST "/logstash-*/_refresh" >/dev/null
+  (( $(_es_count 'logstash-*' labels.session_id.keyword "$1") >= 1 ))
+}
 _rejected_logged() { (( $(_rejected_count "$1") >= 1 )); }
 # Logstash 9.x の書き込み失敗ログ（"Could not index event to Elasticsearch. status: 400 ..."）のうち対象セッション分
 _rejected_count() {
@@ -115,7 +119,9 @@ suite_main() {
   e2e::assert_eq "event.original is removed (#13)" \
     "$(jq '[.hits.hits[]._source.event.original // empty] | length' <<<"${hits}")" 0
 
-  # logstash-* は ecs-logstash の動的マッピングで labels.* が text になるため .keyword で完全一致させる
+  # logstash-* は ecs-logstash の動的マッピングで labels.* が text になるため .keyword で完全一致させる。
+  # plain は別 index（logstash-<日付>）の初回作成を伴い、logs-serena より遅れて入ることがある（CI で発生）ので待つ
+  _wait_until 60 _plain_indexed "${session}" || true
   e2e::assert_eq "plain event goes to logstash-*" "$(_es_count 'logstash-*' labels.session_id.keyword "${session}")" 1
 
   # 意図的に 1 件だけ 400 を起こし、ログのパターンが実際にマッチすることも同時に確かめる
