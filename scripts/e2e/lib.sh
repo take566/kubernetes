@@ -83,29 +83,67 @@ e2e::claim_namespace() {
   e2e::kubectl label ns "${ns}" "${E2E_MANAGED_LABEL}=true" --overwrite >/dev/null
 }
 
-# hostPath PV は fsGroup が効かないため、全ノードでディレクトリを作り所有者を合わせる（root の一時 Pod）
+# hostPath PV は fsGroup が効かないため、全ノードでディレクトリを作り所有者を合わせる（root の一時 Pod）。
+#   e2e::prepare_hostpath <path> [owner] [wipe=false]
+# wipe=true なら中身を消して空から始める（前回の実行のデータを持ち越さない）。消してよいのは
+# e2e が作ったディレクトリ（親に .e2e-managed-<name> の印がある）か空のディレクトリだけで、それ以外は中止する
 e2e::prepare_hostpath() {
-  local path="$1" owner="${2:-1000:1000}" ns="${3:-default}" node i=0
+  local path="$1" owner="${2:-1000:1000}" wipe="${3:-false}" ns=default node i=0
+  local parent name
+  parent="$(dirname "${path}")"
+  name="$(basename "${path}")"
+  local script='set -e
+d="/parent/$NAME"; m="/parent/.e2e-managed-$NAME"
+if [ -d "$d" ] && [ -n "$(ls -A "$d")" ] && [ ! -f "$m" ]; then
+  if [ "$WIPE" = true ]; then echo "refusing to wipe $d: not created by e2e (no $m)" >&2; exit 1; fi
+else
+  touch "$m"
+  [ "$WIPE" = true ] && rm -rf "$d"
+fi
+mkdir -p "$d"
+chown -R "$OWNER" "$d"'
   for node in $(e2e::kubectl get nodes -o jsonpath='{.items[*].metadata.name}'); do
     local pod="e2e-hostpath-${i}"
     i=$((i + 1))
     e2e::kubectl -n "${ns}" delete pod "${pod}" --ignore-not-found --wait=true >/dev/null
     e2e::kubectl -n "${ns}" run "${pod}" --restart=Never --image=busybox:1.36 --overrides="$(jq -cn \
-      --arg node "${node}" --arg path "${path}" --arg owner "${owner}" '{
+      --arg node "${node}" --arg parent "${parent}" --arg name "${name}" --arg owner "${owner}" \
+      --arg wipe "${wipe}" --arg script "${script}" '{
         spec: {
           nodeName: $node,
           tolerations: [{operator: "Exists"}],
           containers: [{
             name: "c", image: "busybox:1.36",
-            command: ["sh", "-c", ("chown -R " + $owner + " /target")],
+            command: ["sh", "-c", $script],
+            env: [{name: "NAME", value: $name}, {name: "OWNER", value: $owner}, {name: "WIPE", value: $wipe}],
             securityContext: {runAsUser: 0},
-            volumeMounts: [{name: "t", mountPath: "/target"}]
+            volumeMounts: [{name: "p", mountPath: "/parent"}]
           }],
-          volumes: [{name: "t", hostPath: {path: $path, type: "DirectoryOrCreate"}}]
+          volumes: [{name: "p", hostPath: {path: $parent, type: "DirectoryOrCreate"}}]
         }}')" >/dev/null
-    e2e::kubectl -n "${ns}" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/${pod}" --timeout=120s >/dev/null
+    if ! e2e::kubectl -n "${ns}" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/${pod}" --timeout=120s >/dev/null; then
+      e2e::kubectl -n "${ns}" logs "${pod}" >&2 || true
+      e2e::kubectl -n "${ns}" delete pod "${pod}" --wait=false >/dev/null
+      return 1
+    fi
     e2e::kubectl -n "${ns}" delete pod "${pod}" --wait=false >/dev/null
   done
+}
+
+# kind の既定 StorageClass は "standard"（rancher.io/local-path）。
+# マニフェストが指定する "local-path" が無ければ同じ provisioner で作る（既存クラスタでは何もしない）
+e2e::ensure_local_path_sc() {
+  e2e::kubectl get storageclass local-path >/dev/null 2>&1 && return 0
+  [[ "${E2E_TARGET}" == kind ]] || { echo "storageclass local-path not found" >&2; return 1; }
+  e2e::kubectl apply -f - >/dev/null <<'EOF'
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path
+provisioner: rancher.io/local-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+EOF
 }
 
 # NetworkPolicy が実際に適用されるかを試す（bridge CNI などは適用しない）。結果は E2E_NETPOL_ENFORCED に入れる
@@ -149,7 +187,8 @@ e2e::deploy_elk() {
     echo "pv/elasticsearch-pv already exists and is not managed by e2e; refusing to touch it" >&2
     return 1
   fi
-  e2e::prepare_hostpath /data/elasticsearch
+  # 実行ごとに ES を空にする（前回の e2e のデータが件数の検証に混ざらないように）
+  e2e::prepare_hostpath /data/elasticsearch 1000:1000 true
   # elk-stack/base は親ディレクトリのファイルを参照するため load-restrictor を外す（scripts/kubeconform-validate.sh と同じ）
   e2e::kubectl kustomize --load-restrictor LoadRestrictionsNone "${E2E_ROOT}/elk-stack/overlays/kind" \
     | e2e::kubectl apply -f - >/dev/null
