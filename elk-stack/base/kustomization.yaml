@@ -20,6 +20,7 @@ resources:
   - ../logstash-configmap.yaml
   - ../logstash-deployment.yaml
   - ../logstash-distill-networkpolicy.yaml
+  - ../logstash-serena-ingest-networkpolicy.yaml
   - ../logstash-service.yaml
   - ../elasticsearch-distill-export-networkpolicy.yaml
   - ../elasticsearch-serena-export-networkpolicy.yaml

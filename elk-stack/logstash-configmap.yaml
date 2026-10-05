@@ -203,10 +203,12 @@ data:
           remove_field => [ "@version", "[event][original]" ]
         }
 
+        # Logstash の文字列はエスケープを処理しないため、ここに書いた文字列がそのまま正規表現になる。
+        # [^\\\s] = バックスラッシュと空白以外（ユーザー名部分）、\. = ドット（#14 e2e で検出）
         mutate {
           gsub => [
-            "message", "[A-Za-z]:\\Users\\[^\\s]+", "[USER_HOME]",
-            "message", "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "[EMAIL]"
+            "message", "[A-Za-z]:\\Users\\[^\\\s]+", "[USER_HOME]",
+            "message", "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", "[EMAIL]"
           ]
         }
 
