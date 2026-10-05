@@ -51,3 +51,6 @@ jenkins/charts/*.tgz
 # kustomize --enable-helm が展開する Helm chart（CI/ローカル検証で生成）
 cert-manager/charts/
 monitoring/charts/
+
+# e2e (scripts/e2e/run.sh) の結果
+e2e-results/

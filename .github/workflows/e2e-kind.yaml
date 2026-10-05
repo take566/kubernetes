@@ -1,0 +1,58 @@
+name: E2E on kind
+
+# kind 上の e2e スイート（scripts/e2e/run.sh）。
+# 設計: docs/design/k8s-native-backlog-redesign.md 1.4 節
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "elk-stack/**"
+      - "scripts/e2e/**"
+      - "kind/test-cluster*.yaml"
+      - ".github/workflows/e2e-kind.yaml"
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "suite name (scripts/e2e/run.sh --list)"
+        required: true
+        default: elk-serena-ingest
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', inputs.suite)) || fromJSON('["elk-serena-ingest"]') }}
+    env:
+      KIND_VERSION: v0.33.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runner resources
+        run: |
+          nproc
+          free -g
+          df -h /
+
+      - name: Install kind
+        run: |
+          set -euo pipefail
+          # リポジトリに kind/ ディレクトリがあるため、カレントではなく RUNNER_TEMP に落とす
+          curl -fsSLo "${RUNNER_TEMP}/kind" "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          sudo install -m 0755 "${RUNNER_TEMP}/kind" /usr/local/bin/kind
+          kind version
+          kubectl version --client
+          jq --version
+
+      - name: Run suite ${{ matrix.suite }}
+        run: bash scripts/e2e/run.sh "${{ matrix.suite }}" --target kind
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.suite }}
+          path: e2e-results/
+          if-no-files-found: ignore

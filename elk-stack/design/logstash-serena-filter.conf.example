@@ -13,8 +13,8 @@ filter {
 
     mutate {
       gsub => [
-        "message", "[A-Za-z]:\\Users\\[^\\s]+", "[USER_HOME]",
-        "message", "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "[EMAIL]"
+        "message", "[A-Za-z]:\\Users\\[^\\\s]+", "[USER_HOME]",
+        "message", "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", "[EMAIL]"
       ]
     }
 

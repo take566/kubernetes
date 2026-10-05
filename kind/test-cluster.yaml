@@ -1,0 +1,9 @@
+# e2e テスト用 kind クラスタ（scripts/e2e/run.sh が使う）。
+# hostPort は持たない（kind/kind-config.yaml の 80/443 と同時に起動できるようにする）。
+# 設計: docs/design/k8s-native-backlog-redesign.md 1.2 節
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+  - role: worker
+  - role: worker
