@@ -20,7 +20,7 @@ kubectl apply -f argocd/apps/root-application.yaml
 | `vllm-finetune` | `vllm/overlays/kubeadm/finetune` | vllm | No |
 | `vllm-benchmark` | `vllm/benchmark` | vllm | No |
 | `nginx` | `nginx` | default | Yes |
-| `nexus` | `nexus` | nexus | Yes |
+| `nexus` | `nexus/overlays/deploy-note` | nexus | Yes |
 | `cert-manager` | `cert-manager` | cert-manager | Yes |
 | `agents` | `agents/hermes` | agents | Yes |
 | `prometheus` | `prometheus/overlays/deploy-note` | monitoring | Yes |

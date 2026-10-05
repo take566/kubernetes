@@ -23,6 +23,8 @@ jobs:
             prometheus/base/*.yaml \
             prometheus/overlays/deploy-note/*.yaml \
             nexus/*.yaml \
+            nexus/base/*.yaml \
+            nexus/overlays/deploy-note/*.yaml \
             nginx/*.yaml \
             vllm/base/*.yaml \
             vllm/components/amd/*.yaml \

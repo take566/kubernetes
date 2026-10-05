@@ -19,7 +19,7 @@
 | `vllm-finetune` | `vllm/overlays/kubeadm/finetune` | No | vllm | AMD LoRA Job |
 | `vllm-benchmark` | `vllm/benchmark` | No | vllm | On-demand perf Jobs |
 | `nginx` | `nginx` | Yes | default | Ingress sample |
-| `nexus` | `nexus` | Yes | nexus | Artifact repository |
+| `nexus` | `nexus/overlays/deploy-note` | Yes | nexus | Artifact repository (Ingress removed on deploy-note, NodePort only, #70) |
 | `cert-manager` | `cert-manager` | Yes | cert-manager | TLS operator (Helm via kustomize) |
 | `agents` | `agents/hermes` | Yes | agents | Hermes agent stack |
 | `prometheus` | `prometheus/overlays/deploy-note` | Yes | monitoring | Lightweight Prometheus manifests (Ingress removed on deploy-note, port-forward only, #73) |

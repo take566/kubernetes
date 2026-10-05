@@ -5,6 +5,9 @@
 
 set -e
 
+# マニフェストは base/ にある (#70)
+cd "$(dirname "$0")/base"
+
 echo "🚀 Nexus Repository Manager をデプロイしています..."
 
 # Namespace 作成

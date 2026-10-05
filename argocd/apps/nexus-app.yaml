@@ -10,7 +10,8 @@ spec:
   source:
     repoURL: https://github.com/take566/kubernetes.git
     targetRevision: master
-    path: nexus
+    # deploy-note に Ingress コントローラが無いので Ingress を消す overlay (#70)
+    path: nexus/overlays/deploy-note
   destination:
     server: https://kubernetes.default.svc
     namespace: nexus

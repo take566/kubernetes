@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: nexus
+resources:
+  - namespace.yaml
+  - nexus-pv.yaml
+  - nexus-deployment.yaml
+  - nexus-service.yaml
+  - nexus-ingress.yaml
+# selector を変えない（Deployment 再作成を避ける）ため includeSelectors: true で
+# 旧 commonLabels と同一の出力にする (#51)
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: nexus
+    includeSelectors: true

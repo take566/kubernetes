@@ -20,22 +20,22 @@ chmod +x deploy.sh
 ./deploy.sh
 
 # または手動で実行
-kubectl apply -f namespace.yaml
-kubectl apply -f nexus-pv.yaml
-kubectl apply -f nexus-deployment.yaml
-kubectl apply -f nexus-service.yaml
-kubectl apply -f nexus-ingress.yaml
+kubectl apply -f base/namespace.yaml
+kubectl apply -f base/nexus-pv.yaml
+kubectl apply -f base/nexus-deployment.yaml
+kubectl apply -f base/nexus-service.yaml
+kubectl apply -f base/nexus-ingress.yaml
 ```
 
 #### Windows (PowerShell)
 
 ```powershell
 # 同じコマンドで実行可能
-kubectl apply -f namespace.yaml
-kubectl apply -f nexus-pv.yaml
-kubectl apply -f nexus-deployment.yaml
-kubectl apply -f nexus-service.yaml
-kubectl apply -f nexus-ingress.yaml
+kubectl apply -f base/namespace.yaml
+kubectl apply -f base/nexus-pv.yaml
+kubectl apply -f base/nexus-deployment.yaml
+kubectl apply -f base/nexus-service.yaml
+kubectl apply -f base/nexus-ingress.yaml
 ```
 
 ### 方法 2: ArgoCD による管理（推奨）
@@ -173,11 +173,11 @@ resources:
 
 ```
 nexus/
-├── namespace.yaml              # Kubernetes Namespace
-├── nexus-pv.yaml              # PersistentVolume と PersistentVolumeClaim
-├── nexus-deployment.yaml       # Nexus Deployment
-├── nexus-service.yaml         # Service (ClusterIP と NodePort)
-├── nexus-ingress.yaml         # Ingress
+├── base/namespace.yaml              # Kubernetes Namespace
+├── base/nexus-pv.yaml              # PersistentVolume と PersistentVolumeClaim
+├── base/nexus-deployment.yaml       # Nexus Deployment
+├── base/nexus-service.yaml         # Service (ClusterIP と NodePort)
+├── base/nexus-ingress.yaml         # Ingress
 ├── deploy.sh                  # デプロイスクリプト (Linux/macOS)
 ├── get-admin-password.ps1     # パスワード取得スクリプト (PowerShell)
 ├── configure-registries.md    # リポジトリ設定ガイド

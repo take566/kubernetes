@@ -42,11 +42,11 @@ profiles:
     deploy:
       kubectl:
         manifests:
-          - nexus/namespace.yaml
-          - nexus/nexus-pv.yaml
-          - nexus/nexus-deployment.yaml
-          - nexus/nexus-service.yaml
-          - nexus/nexus-ingress.yaml
+          - nexus/base/namespace.yaml
+          - nexus/base/nexus-pv.yaml
+          - nexus/base/nexus-deployment.yaml
+          - nexus/base/nexus-service.yaml
+          - nexus/base/nexus-ingress.yaml
   - name: full
     deploy:
       kustomize:
