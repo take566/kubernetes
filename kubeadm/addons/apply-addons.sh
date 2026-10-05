@@ -52,7 +52,7 @@ if [[ "${WITH_LONGHORN}" == true ]]; then
     kubectl annotate storageclass local-path storageclass.kubernetes.io/is-default-class- --overwrite
   fi
   echo "Longhorn UI: kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80"
-  echo "vLLM: uncomment longhorn-storage-patch.yaml in vllm/overlays/kubeadm/kustomization.yaml"
+  echo "vLLM: kubectl apply -k vllm/overlays/kubeadm/longhorn/"
 fi
 
 if [[ "${WITH_METALLB}" == true ]]; then

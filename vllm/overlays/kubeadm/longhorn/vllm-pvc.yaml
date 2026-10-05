@@ -1,0 +1,18 @@
+# PVC — Longhorn（kubeadm/addons/longhorn + apply-addons.sh --with-longhorn）。要件は ../vllm-pvc.yaml と同じ
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vllm-model-cache
+  namespace: vllm
+  labels:
+    app: vllm
+    app.kubernetes.io/name: vllm
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi

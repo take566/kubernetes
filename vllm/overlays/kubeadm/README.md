@@ -38,7 +38,7 @@ kubectl apply -k vllm/overlays/kubeadm/finetune/  # AMD 学習 Job
 | ノード要件 | 単一ノード検証可 | **3+ worker 推奨**（レプリカ） |
 | アクセス | RWO、ノード拘束 | RWO / RWX、レプリカ付き |
 | default SC | はい | `--with-longhorn` で昇格 |
-| vLLM overlay | そのまま | `longhorn-storage-patch.yaml` を有効化 |
+| vLLM overlay | `vllm/overlays/kubeadm/` | `vllm/overlays/kubeadm/longhorn/` |
 
 ### Longhorn 有効化手順
 
@@ -46,9 +46,11 @@ kubectl apply -k vllm/overlays/kubeadm/finetune/  # AMD 学習 Job
 # 1. Longhorn 導入（default SC を longhorn に昇格）
 sudo kubeadm/addons/apply-addons.sh --with-longhorn
 
-# 2. vLLM overlay でストレージパッチを有効化
-#    vllm/overlays/kubeadm/kustomization.yaml の longhorn-storage-patch.yaml のコメントを外す
-kubectl apply -k vllm/overlays/kubeadm/
+# 2. PVC の要件（RWO / 50Gi、Pod を作り直してもデータが残る）を longhorn で満たすか確かめる
+E2E_STORAGE_CLASS=longhorn bash scripts/e2e/run.sh storage-pvc-contract
+
+# 3. Longhorn 用 overlay を適用（vllm-model-cache が storageClassName: longhorn になる）
+kubectl apply -k vllm/overlays/kubeadm/longhorn/
 
 # AMD / finetune も Longhorn を使う場合は各 overlay の PVC を同様に longhorn へ変更
 ```
@@ -57,8 +59,8 @@ Longhorn はマニフェスト上 default SC にならないようパッチ済�
 
 ### GTX 1650 (4GB VRAM)
 
-`ash
+```bash
 kubectl apply -k vllm/overlays/kubeadm/gtx1650/
-`
+```
 
-�ڍ�: [gtx1650/README.md](gtx1650/README.md) / [docs/WSL_KUBEADM_GPU.md](../../../docs/WSL_KUBEADM_GPU.md)
+詳細: [gtx1650/README.md](gtx1650/README.md) / [docs/WSL_KUBEADM_GPU.md](../../../docs/WSL_KUBEADM_GPU.md)
