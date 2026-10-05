@@ -67,10 +67,20 @@ _apply_pre_fix_policies() {
   e2e::kubectl -n kube-system delete networkpolicy "${ADDON_EGRESS[@]}" --ignore-not-found >/dev/null
 }
 
+# Terminating の Pod（止まった rollout の残り）を除き、CoreDNS の Ready 数が replicas に達したか
+_coredns_ready() {
+  local want
+  want="$(e2e::kubectl -n kube-system get deploy coredns -o jsonpath='{.spec.replicas}')"
+  (( $(e2e::kubectl -n kube-system get pods -l k8s-app=kube-dns -o json | jq '[.items[]
+      | select(.metadata.deletionTimestamp == null)
+      | select(any(.status.conditions[]?; .type == "Ready" and .status == "True"))] | length') >= want ))
+}
+
 _check_healthy() {  # <label>
-  local label="$1" probe
-  e2e::kubectl -n kube-system wait --for=condition=Ready pod -l k8s-app=kube-dns --timeout=180s >/dev/null 2>&1 \
-    && e2e::check "${label}: CoreDNS Ready" true || e2e::check "${label}: CoreDNS Ready" false
+  local label="$1" probe start=${SECONDS}
+  # kubectl wait -l は Terminating の Pod も待ってしまい、復旧直後に誤って失敗する（CI で発生）ので自前で待つ
+  until _coredns_ready; do (( SECONDS - start >= 180 )) && break; sleep 3; done
+  _coredns_ready && e2e::check "${label}: CoreDNS Ready" true || e2e::check "${label}: CoreDNS Ready" false
   e2e::assert_ge "${label}: kube-dns endpoints" \
     "$(e2e::kubectl -n kube-system get endpointslices -l kubernetes.io/service-name=kube-dns -o json \
         | jq '[.items[].endpoints[]? | select(.conditions.ready)] | length')" 1
