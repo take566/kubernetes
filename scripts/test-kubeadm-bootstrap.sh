@@ -116,6 +116,17 @@ else
   if grep -q "Phase: 05-install-cni" <<<"${OUT}"; then fail "phases after failure must not run"; else pass "stops after failed phase"; fi
 fi
 
+echo "--- 00-configure-lb.sh --check-api (#19) ---"
+LB="${REPO_ROOT}/kubeadm/scripts/00-configure-lb.sh"
+# 127.0.0.1:1 は待ち受けが無い（届かない endpoint）
+run env CONTROL_PLANE_IP=127.0.0.1 CONTROL_PLANE_PORT=1 bash "${LB}" --check-api
+expect_ec 0 "unreachable API without --strict only warns"
+expect_out "127.0.0.1:1" "CONTROL_PLANE_PORT is used in the endpoint"
+run env CONTROL_PLANE_IP=127.0.0.1 CONTROL_PLANE_PORT=1 bash "${LB}" --check-api --strict
+expect_ec 1 "unreachable API with --strict fails"
+run env CONTROL_PLANE_IP=999.1.1.1 bash "${LB}"
+expect_ec 1 "invalid CONTROL_PLANE_IP fails"
+
 echo
 if [[ "${FAILED}" -ne 0 ]]; then
   echo "kubeadm bootstrap tests FAILED"

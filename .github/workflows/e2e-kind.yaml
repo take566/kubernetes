@@ -2,6 +2,7 @@ name: E2E on kind
 
 # kind 上の e2e スイート（scripts/e2e/run.sh）。
 # 設計: docs/design/k8s-native-backlog-redesign.md 1.4 節
+# スイートの一覧は scripts/e2e/suites/*.sh から自動で作る（スイート追加時にこのファイルを触らない）
 on:
   pull_request:
     branches: [master]
@@ -10,11 +11,14 @@ on:
       - "scripts/e2e/**"
       - "kind/test-cluster*.yaml"
       - "kubeadm/addons/network-policies/**"
+      - "kubeadm/addons/metallb/**"
+      - "kubeadm/scripts/00-configure-lb.sh"
       - "vllm/components/serena-export/**"
       - "vllm/overlays/kind/serena-export/**"
+      - "vllm/components/teacher-stub/**"
+      - "vllm/benchmark/**"
       - "ollama/k8s/**"
       - "scripts/serena-rag-query.py"
-      - "vllm/components/teacher-stub/**"
       - ".github/workflows/e2e-kind.yaml"
   workflow_dispatch:
     inputs:
@@ -24,13 +28,34 @@ on:
         default: elk-serena-ingest
 
 jobs:
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      suites: ${{ steps.suites.outputs.suites }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: suites
+        env:
+          INPUT_SUITE: ${{ inputs.suite }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = workflow_dispatch ]; then
+            suites="$(jq -cn --arg s "${INPUT_SUITE}" '[$s]')"
+          else
+            suites="$(find scripts/e2e/suites -name '*.sh' -printf '%f\n' | sed 's/\.sh$//' | sort | jq -Rsc 'split("\n") | map(select(length > 0))')"
+          fi
+          echo "suites=${suites}"
+          echo "suites=${suites}" >> "${GITHUB_OUTPUT}"
+
   e2e:
+    needs: list
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        suite: ${{ github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', inputs.suite)) || fromJSON('["elk-serena-ingest","calico-netpol-dns","serena-collector","serena-export","serena-rag"]') }}
+        suite: ${{ fromJSON(needs.list.outputs.suites) }}
     env:
       KIND_VERSION: v0.33.0
     steps:

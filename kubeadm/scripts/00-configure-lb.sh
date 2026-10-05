@@ -3,7 +3,9 @@
 # Usage:
 #   export CONTROL_PLANE_IP=192.168.1.10
 #   export CONTROL_PLANE_DNS=cp.example.com   # VIP or LB hostname (recommended for HA)
-#   ./kubeadm/scripts/00-configure-lb.sh [--check-api]
+#   ./kubeadm/scripts/00-configure-lb.sh [--check-api [--strict]]
+#   CONTROL_PLANE_PORT=6443 (default)
+#   --strict: exit 1 when the API is not reachable (default: warn only, since it is expected before init)
 #
 # Run on any host with network access to the planned endpoint.
 # For external LB (keepalived/haproxy): see kubeadm/docs/load-balancer-external.md
@@ -15,11 +17,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common.sh"
 
 CHECK_API=false
+STRICT=false
 for arg in "$@"; do
   case "${arg}" in
     --check-api) CHECK_API=true ;;
+    --strict) STRICT=true ;;
     -h|--help)
-      sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -57,7 +61,16 @@ if [[ -z "${CONTROL_PLANE_DNS}" ]]; then
   warn "CONTROL_PLANE_DNS not set; using CONTROL_PLANE_IP (${CONTROL_PLANE_DNS})"
 fi
 
-ENDPOINT="${CONTROL_PLANE_DNS}:6443"
+CONTROL_PLANE_PORT="${CONTROL_PLANE_PORT:-6443}"
+ENDPOINT="${CONTROL_PLANE_DNS}:${CONTROL_PLANE_PORT}"
+
+# API に届かないとき: 既定は警告のみ（init 前は届かないのが普通）。--strict なら失敗にする
+api_unreachable() {
+  if [[ "${STRICT}" == true ]]; then
+    die "$* (--strict)"
+  fi
+  warn "$*"
+}
 
 log "=== Control plane endpoint checklist ==="
 echo "  CONTROL_PLANE_IP:   ${CONTROL_PLANE_IP}"
@@ -66,7 +79,7 @@ echo "  controlPlaneEndpoint (kubeadm): ${ENDPOINT}"
 echo ""
 echo "Before kubeadm init, confirm:"
 echo "  [ ] DNS or /etc/hosts resolves ${CONTROL_PLANE_DNS} on every node"
-echo "  [ ] TCP 6443 on ${CONTROL_PLANE_DNS} reaches API server backend(s)"
+echo "  [ ] TCP ${CONTROL_PLANE_PORT} on ${CONTROL_PLANE_DNS} reaches API server backend(s)"
 echo "  [ ] External LB/VIP configured (Option A) OR single-node IP acceptable for dev"
 echo "  [ ] kubeadm-config.yaml controlPlaneEndpoint matches ${ENDPOINT}"
 echo "  [ ] advertiseAddress will be ${CONTROL_PLANE_IP} (03-init-control-plane.sh)"
@@ -95,18 +108,18 @@ if [[ "${CHECK_API}" == true ]]; then
     elif curl -sk --connect-timeout 5 -o /dev/null -w "%{http_code}" "https://${ENDPOINT}/" 2>/dev/null | grep -qE '^(401|403|200)'; then
       log "API port open (TLS responded; cluster may be up)"
     else
-      warn "API not reachable at https://${ENDPOINT} (expected before init unless LB/backends are ready)"
+      api_unreachable "API not reachable at https://${ENDPOINT} (expected before init unless LB/backends are ready)"
     fi
   elif command_exists nc; then
     host="${CONTROL_PLANE_DNS}"
-    port=6443
+    port="${CONTROL_PLANE_PORT}"
     if nc -z -w 5 "${host}" "${port}" 2>/dev/null; then
       log "TCP ${port} open on ${host}"
     else
-      warn "TCP ${port} not open on ${host}"
+      api_unreachable "TCP ${port} not open on ${host}"
     fi
   else
-    warn "--check-api skipped: install curl or nc"
+    api_unreachable "--check-api skipped: install curl or nc"
   fi
 fi
 
