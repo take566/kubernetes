@@ -1,0 +1,27 @@
+{
+  "measured_at": "2026-10-05T03:11:53Z",
+  "environment": "WSL2 kubeadm single node (tmf-desktop, 16 vCPU), Ollama CPU (ollama/k8s, ollama/ollama:0.35.1)",
+  "bench": {
+    "max_tokens": 32,
+    "latency_samples": 5,
+    "throughput_requests": 8,
+    "concurrency": 2
+  },
+  "note": "CPU reference only (#9). GPU ranking cannot be inferred from CPU numbers; final model choice requires GPU compare_models.sh.",
+  "results": [
+    {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "status": "ok",
+      "p50_ms": 1020.11,
+      "p99_ms": 1106.39,
+      "tokens_per_s": 30.5915
+    },
+    {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "status": "ok",
+      "p50_ms": 2493.58,
+      "p99_ms": 2944.98,
+      "tokens_per_s": 10.0588
+    }
+  ]
+}
