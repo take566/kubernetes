@@ -1,0 +1,30 @@
+# deploy-note 用 overlay (#74)
+# deploy-note の kubeadm には LoadBalancer の実装（MetalLB など、#19 は未実施）が無い。
+# base の Service default/nginx (type: LoadBalancer) は status.loadBalancer.ingress が
+# 空のままで、Argo CD の nginx Application が Progressing のまま終わらない。
+# ここでは Service を type: NodePort にする。nodePort は、LoadBalancer のときに
+# 既に割り当てられていた値 (31873、2026-10-06 に deploy-note で実測) を固定するので、
+# 変更は in-place で、このポートを使っているクライアントはそのまま使える。
+# loadBalancerSourceRanges は type: LoadBalancer 専用のフィールドなので外す。
+# base (nginx/) は変えないので、LoadBalancer 実装のあるクラスタはそのまま使える。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+patches:
+  - target:
+      version: v1
+      kind: Service
+      name: nginx
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: NodePort
+      - op: remove
+        path: /spec/loadBalancerSourceRanges
+      - op: test
+        path: /spec/ports/0/port
+        value: 8080
+      - op: add
+        path: /spec/ports/0/nodePort
+        value: 31873
