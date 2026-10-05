@@ -134,7 +134,7 @@ WSL では **amdgpu カーネルモジュールではなく** `/dev/dxg` 経由�
 | `KFD_MISSING` | ドライバ未反映 or rocr4wsl 未導入 | `sudo ./scripts/install-wsl-rocm.sh` → `wsl --shutdown` |
 | `DXG_MISSING` | WSL GPU パススルー自体が無効 | `wsl --update`、GPU ドライバ再インストール、Windows 再起動 |
 
-**RX 5700 + WSL kubeadm:** ROCm ワーカーは諦め、Windows Ollama を外部エンドポイント登録する（`kubeadm/README.md` WSL2 + AMD GPU 節参照）。
+**RX 5700 + WSL kubeadm:** ROCm ワーカーは諦め、Windows Ollama を外部エンドポイント登録する（[kubeadm/README.md「WSL2 + AMD GPU」](../kubeadm/README.md#wsl2--amd-gpu単一ノード) 参照。スクリプト全体と reset 手順は [kubeadm/README.md](../kubeadm/README.md#スクリプト一覧)）。
 
 **RX 5700 WSL GPU 調査の詳細**（試した回避策・公式マトリクス・実機ログ）: [RX5700_WSL_GPU.md](RX5700_WSL_GPU.md)  
 実験スクリプト: `./scripts/try-rx5700-wsl-gpu-experimental.sh`

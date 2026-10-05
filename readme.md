@@ -65,6 +65,19 @@ kubectl apply -k vllm/overlays/kind/
 
 スクリプトは **Linux ノード上** で実行します（Windows では編集・レビューのみ）。
 
+通常は統一エントリポイント [`kubeadm/bootstrap.sh`](kubeadm/README.md#quick-startbootstrapsh) を使います。
+
+```bash
+# 最初の control-plane（prerequisites → kubeadm → init → CNI → addons）
+sudo ./kubeadm/bootstrap.sh --role init
+# worker 参加
+sudo ./kubeadm/bootstrap.sh --role join-worker --join-command 'kubeadm join ...'
+# 実行内容の確認のみ
+sudo ./kubeadm/bootstrap.sh --role init --dry-run
+```
+
+個別スクリプトを順に実行する場合（全スクリプトは [kubeadm/README.md のスクリプト一覧](kubeadm/README.md#スクリプト一覧)）:
+
 ```bash
 # control-plane で順に実行（詳細は kubeadm/README.md）
 ./kubeadm/scripts/01-prerequisites.sh
@@ -78,6 +91,9 @@ kubectl apply -k vllm/overlays/kind/
 # クラスタアドオン
 ./kubeadm/addons/apply-addons.sh
 ```
+
+- GPU ノード: [kubeadm/README.md「4. GPU ノード」](kubeadm/README.md#4-gpu-ノードvllm-用) / AMD は [docs/GPU_WORKER_JOIN_AMD.md](docs/GPU_WORKER_JOIN_AMD.md)
+- 作り直し: `sudo ./kubeadm/scripts/99-reset-cluster.sh --yes`（データも消す場合は `--purge-data`）
 
 ---
 
