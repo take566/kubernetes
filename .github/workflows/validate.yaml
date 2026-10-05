@@ -26,6 +26,8 @@ jobs:
             nexus/base/*.yaml \
             nexus/overlays/deploy-note/*.yaml \
             nginx/*.yaml \
+            nginx/base/*.yaml \
+            nginx/overlays/deploy-note/*.yaml \
             vllm/base/*.yaml \
             vllm/components/amd/*.yaml \
             vllm/components/finetune/*.yaml \

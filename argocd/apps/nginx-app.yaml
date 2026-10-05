@@ -10,7 +10,8 @@ spec:
   source:
     repoURL: https://github.com/take566/kubernetes.git
     targetRevision: master
-    path: nginx
+    # deploy-note に LoadBalancer 実装が無いので Service を NodePort にする overlay (#74)
+    path: nginx/overlays/deploy-note
   destination:
     server: https://kubernetes.default.svc
     namespace: default

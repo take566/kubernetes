@@ -5,8 +5,8 @@ metadata:
 deploy:
   kubectl:
     manifests:
-      - nginx/nginx-deployment.yaml
-      - nginx/nginx-service.yaml
+      - nginx/base/nginx-deployment.yaml
+      - nginx/base/nginx-service.yaml
       - nginx/nginx-ingress.yaml
 profiles:
   - name: elk

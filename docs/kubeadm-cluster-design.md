@@ -334,7 +334,7 @@ Windows 開発者向け接続は [kubeadm-connect.md](kubeadm-connect.md) / `scr
 | `vllm-amd` | `vllm/overlays/kubeadm/amd` | vllm | **No** | AMD 推論（排他） |
 | `vllm-finetune` | `vllm/overlays/kubeadm/finetune` | vllm | No | 学習 Job |
 | `vllm-benchmark` | `vllm/benchmark` | vllm | No | ベンチマーク |
-| `nginx` | `nginx` | default | Yes | Ingress |
+| `nginx` | `nginx/overlays/deploy-note` | default | Yes | Ingress |
 | `cert-manager` | `cert-manager` | cert-manager | Yes | TLS |
 | `prometheus` | `prometheus/overlays/deploy-note` | monitoring | Yes | メトリクス |
 | `monitoring` | `monitoring` | monitoring | **No** | namespace 競合回避 |

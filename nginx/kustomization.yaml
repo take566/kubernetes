@@ -1,12 +1,9 @@
+# path: nginx を使う既存の利用者（LoadBalancer 実装のあるクラスタ、kubectl apply -k nginx/）
+# 向けの入口。中身は base/ と同一（#74 で base/ に移動）。
+# kustomize は overlay の祖先ディレクトリを base にできない（cycle detected）ため、
+# マニフェスト本体は nginx/base/ に置き、overlays/<cluster>/ から ../../base を参照する。
+# nginx-ingress.sh / nginx-ingress.yaml（Helm values、K8s マニフェストではない）はここに残す。
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - nginx-deployment.yaml
-  - nginx-service.yaml
-  # nginx-ingress.yaml is Helm values for nginx-ingress.sh — not a K8s manifest
-labels:
-  - pairs:
-      app.kubernetes.io/part-of: nginx
-      app.kubernetes.io/managed-by: kustomize
-    includeSelectors: false
-    includeTemplates: false
+  - base
