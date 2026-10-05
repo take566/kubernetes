@@ -3,6 +3,8 @@
 # Usage on additional control-plane node (after 01-prerequisites + 02-install-kubeadm):
 #   sudo ./kubeadm/scripts/03b-join-control-plane.sh --join 'kubeadm join ...' --certificate-key <key>
 #   sudo ./kubeadm/scripts/03b-join-control-plane.sh --config /path/to/join-config.yaml
+#   ./kubeadm/scripts/03b-join-control-plane.sh --join '...' --certificate-key <key> --dry-run
+#     (--dry-run: print the final join command with secrets masked and exit; no root needed)
 #
 # The join command from the first CP must include --control-plane and --certificate-key,
 # or pass --certificate-key to this script. See kubeadm/docs/ha-control-plane.md.
@@ -12,7 +14,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
 source "${SCRIPT_DIR}/common.sh"
 
-require_root
+# --dry-run はどの位置でも受け付ける（残りの引数は従来どおり位置で解釈する）
+DRY_RUN=false
+ARGS=()
+for a in "$@"; do
+  if [[ "${a}" == "--dry-run" ]]; then DRY_RUN=true; else ARGS+=("${a}"); fi
+done
+set -- "${ARGS[@]+"${ARGS[@]}"}"
+
+# token / CA ハッシュ / certificate-key をログに平文で出さない
+mask_secrets() {
+  sed -E 's/(--token|--discovery-token-ca-cert-hash|--certificate-key)([ =])[^ ]+/\1\2***/g' <<<"$1"
+}
 
 print_usage() {
   cat <<'EOF'
@@ -84,9 +97,14 @@ case "${MODE}" in
       CERTIFICATE_KEY="${4:-}"
     fi
     [[ -n "${CERTIFICATE_KEY}" ]] || die "HA CP join requires --certificate-key (or set CERTIFICATE_KEY env)"
-    ensure_prerequisites
     JOIN_CMD="$(append_cp_flags "${JOIN_CMD}" "${CERTIFICATE_KEY}")"
-    log "Running: ${JOIN_CMD}"
+    if [[ "${DRY_RUN}" == true ]]; then
+      log "[dry-run] $(mask_secrets "${JOIN_CMD}")"
+      exit 0
+    fi
+    require_root
+    ensure_prerequisites
+    log "Running: $(mask_secrets "${JOIN_CMD}")"
     # shellcheck disable=SC2086
     eval "${JOIN_CMD}"
     log "Control-plane node joined."
@@ -95,10 +113,15 @@ case "${MODE}" in
   --config)
     JOIN_CFG="${2:-}"
     [[ -f "${JOIN_CFG}" ]] || die "Config not found: ${JOIN_CFG}"
-    ensure_prerequisites
     if ! grep -q 'certificateKey:' "${JOIN_CFG}"; then
       die "HA CP join config must set controlPlane.certificateKey (see join-config.yaml.example)"
     fi
+    if [[ "${DRY_RUN}" == true ]]; then
+      log "[dry-run] kubeadm join --config ${JOIN_CFG}"
+      exit 0
+    fi
+    require_root
+    ensure_prerequisites
     log "Joining control-plane with config ${JOIN_CFG}"
     kubeadm join --config "${JOIN_CFG}"
     log "Control-plane node joined."
