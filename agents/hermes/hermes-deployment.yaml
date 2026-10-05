@@ -35,8 +35,11 @@ spec:
           type: RuntimeDefault
       containers:
         - name: hermes
-          image: nousresearch/hermes-agent:latest
-          imagePullPolicy: Always
+          # Pinned by digest (#88): with :latest + Always, a pod restart pulled an
+          # upstream build that started the #72 dashboard restart loop unnoticed.
+          # Bump by replacing the digest in a PR; the tag is informational only.
+          image: nousresearch/hermes-agent:latest@sha256:d4da4a40cd7a28aba983775d9fd31d94cbf153eeb0cb9e844d6d0f612b7c24db
+          imagePullPolicy: IfNotPresent
           args: ["gateway", "run"]
           ports:
             - name: gateway
