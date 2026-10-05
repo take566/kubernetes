@@ -28,6 +28,10 @@ WITH_NVIDIA=false
 WITH_AMD=false
 ADDON_ARGS=()
 
+# 終了コード: 0=成功 / 1=実行環境エラー（root でない等）/ 2=引数エラー /
+# それ以外=失敗したフェーズのスクリプトの終了コード
+usage_error() { echo "[ERROR] $*" >&2; exit 2; }
+
 print_usage() {
   cat <<EOF
 Unified kubeadm bootstrap
@@ -118,16 +122,16 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      die "Unknown argument: $1 (try --help)"
+      usage_error "Unknown argument: $1 (try --help)"
       ;;
   esac
 done
 
-[[ -n "${ROLE}" ]] || die "Missing --role (init|join-worker|join-cp)"
+[[ -n "${ROLE}" ]] || usage_error "Missing --role (init|join-worker|join-cp)"
 
 case "${CNI}" in
   calico|cilium) ;;
-  *) die "Invalid CNI=${CNI}. Use calico or cilium." ;;
+  *) usage_error "Invalid CNI=${CNI}. Use calico or cilium." ;;
 esac
 
 run_phase() {
@@ -138,11 +142,13 @@ run_phase() {
     log "[dry-run] ${*}"
     return 0
   fi
-  if "$@"; then
+  # `if "$@"; then ... fi` の後の $? は if 文自体の 0 になるため、ここで直接捕捉する
+  local ec=0
+  "$@" || ec=$?
+  if [[ "${ec}" -eq 0 ]]; then
     log "Phase OK: ${name}"
     return 0
   fi
-  local ec=$?
   echo "[ERROR] Phase failed: ${name} (exit ${ec})" >&2
   exit "${ec}"
 }
@@ -176,7 +182,7 @@ role_init() {
 }
 
 role_join_worker() {
-  [[ -n "${JOIN_COMMAND}" ]] || die "join-worker requires --join-command '<kubeadm join ...>'"
+  [[ -n "${JOIN_COMMAND}" ]] || usage_error "join-worker requires --join-command '<kubeadm join ...>'"
   run_prerequisites
   run_install_kubeadm
   run_phase "04-join-worker" "${SCRIPTS_DIR}/04-join-worker.sh" --join "${JOIN_COMMAND}"
@@ -184,8 +190,8 @@ role_join_worker() {
 }
 
 role_join_cp() {
-  [[ -n "${JOIN_COMMAND}" ]] || die "join-cp requires --join-command '<kubeadm join ...>'"
-  [[ -n "${CERTIFICATE_KEY}" ]] || die "join-cp requires --certificate-key '<key>' (or export CERTIFICATE_KEY)"
+  [[ -n "${JOIN_COMMAND}" ]] || usage_error "join-cp requires --join-command '<kubeadm join ...>'"
+  [[ -n "${CERTIFICATE_KEY}" ]] || usage_error "join-cp requires --certificate-key '<key>' (or export CERTIFICATE_KEY)"
   run_prerequisites
   run_install_kubeadm
   run_phase "03b-join-control-plane" \
@@ -200,7 +206,7 @@ case "${ROLE}" in
   init) role_init ;;
   join-worker) role_join_worker ;;
   join-cp) role_join_cp ;;
-  *) die "Invalid --role=${ROLE}. Use init, join-worker, or join-cp." ;;
+  *) usage_error "Invalid --role=${ROLE}. Use init, join-worker, or join-cp." ;;
 esac
 
 exit 0
