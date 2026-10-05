@@ -27,6 +27,9 @@ _ready_cps() {
     | jq '[.items[] | select(any(.status.conditions[]; .type == "Ready" and .status == "True"))] | length'
 }
 _all_cps_ready() { [[ "$(_ready_cps)" -eq 3 ]]; }
+_write_once() {  # <label>
+  e2e::kubectl --request-timeout=10s -n default create configmap "e2e-ha-$1-${RANDOM}${RANDOM}" >/dev/null 2>&1
+}
 _readyz_ok() { [[ "$(e2e::kubectl --request-timeout=10s get --raw /readyz 2>/dev/null)" == ok ]]; }
 
 # kind ネットワーク上のコンテナで 00-configure-lb.sh を実行する（Docker Desktop でも CI でも同じ）
@@ -78,17 +81,22 @@ suite_main() {
   else
     e2e::check "1 CP paused: API /readyz ok via LB" false
   fi
-  e2e::kubectl --request-timeout=20s -n default create configmap "e2e-ha-1cp-${RANDOM}" >/dev/null 2>&1 \
-    && e2e::check "1 CP paused: write succeeds (etcd quorum 2/3)" true \
-    || e2e::check "1 CP paused: write succeeds (etcd quorum 2/3)" false
+  # 止めた CP にも LB が振り分けたり（haproxy が down と判定するまで）、etcd のリーダー再選出が起きたりするので、
+  # 1 回の試行ではなく「60 秒以内にどれかが通る」で判定する（初回 CI で 1 回の試行が失敗した）
+  if _wait_until 60 _write_once 1cp; then
+    e2e::check "1 CP paused: write succeeds within 60s (etcd quorum 2/3)" true
+  else
+    e2e::check "1 CP paused: write succeeds within 60s (etcd quorum 2/3)" false
+  fi
 
   e2e::log "pause ${cp3} too (2 of 3): quorum lost"
   docker pause "${cp3}" >/dev/null && PAUSED+=("${cp3}")
   sleep 10
-  if e2e::kubectl --request-timeout=15s -n default create configmap "e2e-ha-2cp-${RANDOM}" >/dev/null 2>&1; then
-    e2e::check "2 CP paused: write fails (quorum lost)" false
+  # 陰性: 30 秒間、どの試行も通らない
+  if _wait_until 30 _write_once 2cp; then
+    e2e::check "2 CP paused: no write succeeds for 30s (quorum lost)" false
   else
-    e2e::check "2 CP paused: write fails (quorum lost)" true
+    e2e::check "2 CP paused: no write succeeds for 30s (quorum lost)" true
   fi
 
   e2e::log "unpause both: cluster must recover"
@@ -98,6 +106,6 @@ suite_main() {
   else
     e2e::check "recovered: /readyz ok and 3 CP Ready within 5 min" false "ready CPs: $(_ready_cps)"
   fi
-  e2e::kubectl --request-timeout=20s -n default create configmap "e2e-ha-recovered-${RANDOM}" >/dev/null 2>&1 \
+  _wait_until 60 _write_once recovered \
     && e2e::check "recovered: write succeeds" true || e2e::check "recovered: write succeeds" false
 }
