@@ -24,7 +24,6 @@
 | `agents` | `agents/hermes` | Yes | agents | Hermes agent stack |
 | `prometheus` | `prometheus` | Yes | monitoring | Lightweight Prometheus manifests |
 | `monitoring` | `monitoring` | No | monitoring | kube-prometheus-stack — conflicts with `prometheus` |
-| `gitlab` | `gitlab` | No | gitlab | GitLab Helm (heavy/stateful) |
 | `jenkins` | `jenkins` | No | jenkins | Jenkins Helm (stateful CI/CD) |
 | `actions-runner-controller` | `actions-runner-controller` | No | actions-runner-system | ARC v2 scale-set controller (sync before github-runners) |
 | `github-runners` | `github-runners` | No | github-runners | GitHub Actions self-hosted runners (Secret required) |
@@ -49,3 +48,8 @@
 3. Sync `vllm-kubeadm` in Argo CD UI or `argocd app sync vllm-kubeadm`
 
 See [kind/README.md](../../kind/README.md) and [kubeadm/README.md](../../kubeadm/README.md).
+## Inactive: kept in `argocd/apps-inactive/`, not synced by root-application
+
+| Application | Why | To restore |
+|-------------|-----|------------|
+| `gitlab` | `gitlab/` held only a dangling gitlink with no chart (#44/#75), so the app was a permanent ComparisonError and never deployed anything | Vendor or reference the chart properly, then `git mv` the manifest back into `argocd/apps/` |
