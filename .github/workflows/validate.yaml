@@ -76,6 +76,17 @@ jobs:
       - name: Test kubeadm/bootstrap.sh
         run: bash scripts/test-kubeadm-bootstrap.sh
 
+  # Serena collector の単体テスト（パース / ローテーション / 再接続。クラスタ不要）
+  serena-collector-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test elk-stack/design/serena-collector
+        run: |
+          pip install pytest
+          python -m pytest elk-stack/design/serena-collector -q
+
   model-profiles:
     runs-on: ubuntu-latest
     steps:

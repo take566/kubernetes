@@ -1,0 +1,14 @@
+# e2e 用 collector 設定（形式は elk-stack/design/serena-collector/collector-config.example.yml と同じ）
+logstash:
+  host: logstash.elk-stack.svc
+  port: 5000
+
+serena_home: /serena-home
+
+projects:
+  - /proj1
+  - /proj2
+
+poll_interval: 0.5
+reconnect_delay: 2.0
+hostname: e2e-collector

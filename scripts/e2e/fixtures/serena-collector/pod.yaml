@@ -1,0 +1,43 @@
+# e2e 用: Windows ホスト用の elk-stack/design/serena-collector/collector.py を Pod で動かす（#15）。
+# ConfigMap serena-collector（collector.py と collector-config.yml）は suites/serena-collector.sh が作る。
+# serena_home / projects は emptyDir。ログはスイートが kubectl exec で書き込む。
+apiVersion: v1
+kind: Pod
+metadata:
+  name: serena-collector
+  namespace: elk-stack
+  labels:
+    app: serena-collector
+spec:
+  restartPolicy: Never
+  containers:
+    - name: collector
+      image: python:3.11-slim-bookworm
+      command: ["python", "-u", "/app/collector.py", "--config", "/app/collector-config.yml", "-v"]
+      volumeMounts:
+        - name: app
+          mountPath: /app
+          readOnly: true
+        - name: serena-home
+          mountPath: /serena-home
+        - name: proj1
+          mountPath: /proj1
+        - name: proj2
+          mountPath: /proj2
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+  volumes:
+    - name: app
+      configMap:
+        name: serena-collector
+    - name: serena-home
+      emptyDir: {}
+    - name: proj1
+      emptyDir: {}
+    - name: proj2
+      emptyDir: {}
