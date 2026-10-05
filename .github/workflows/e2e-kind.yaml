@@ -39,8 +39,9 @@ jobs:
       - name: Install kind
         run: |
           set -euo pipefail
-          curl -fsSLo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
-          sudo install -m 0755 kind /usr/local/bin/kind
+          # リポジトリに kind/ ディレクトリがあるため、カレントではなく RUNNER_TEMP に落とす
+          curl -fsSLo "${RUNNER_TEMP}/kind" "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          sudo install -m 0755 "${RUNNER_TEMP}/kind" /usr/local/bin/kind
           kind version
           kubectl version --client
           jq --version
