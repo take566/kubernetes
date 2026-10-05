@@ -67,6 +67,15 @@ jobs:
       - name: Validate K8s manifests (kustomize build + kubeconform)
         run: bash scripts/kubeconform-validate.sh
 
+  # bash -n / 実行ビット / --dry-run のフェーズ順序 / 終了コード区分（ランナーは passwordless sudo）
+  kubeadm-bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test kubeadm/bootstrap.sh
+        run: bash scripts/test-kubeadm-bootstrap.sh
+
   model-profiles:
     runs-on: ubuntu-latest
     steps:
