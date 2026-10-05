@@ -14,10 +14,6 @@
 |-------------|------|-----------|-----------|-------|
 | `root-application` | `argocd/apps` | Yes | argocd | App of Apps |
 | `vllm-kubeadm` | `vllm/overlays/kubeadm` | Yes | vllm | Production NVIDIA inference |
-| `vllm-kind` | `vllm/overlays/kind` | No | vllm | Local kind dev (no GPU auto-deploy) |
-| `vllm-amd` | `vllm/overlays/kubeadm/amd` | No | vllm | AMD inference — one stack only |
-| `vllm-finetune` | `vllm/overlays/kubeadm/finetune` | No | vllm | AMD LoRA Job |
-| `vllm-benchmark` | `vllm/benchmark` | No | vllm | On-demand perf Jobs |
 | `nexus` | `nexus/overlays/deploy-note` | Yes | nexus | Artifact repository (Ingress removed on deploy-note, NodePort only, #70) |
 | `nginx` | `nginx/overlays/deploy-note` | Yes | default | Ingress sample (Service is NodePort 31873 on deploy-note, #74) |
 | `cert-manager` | `cert-manager` | Yes | cert-manager | TLS operator (Helm via kustomize) |
@@ -37,7 +33,7 @@
 | `vllm/base`, `vllm/components` | Consumed via overlays only |
 | `docs/`, `scripts/`, `policies/` | Operational helpers |
 
-**Rule:** Only `vllm-kubeadm` uses automated sync for NVIDIA inference. Enable `vllm-amd` manual sync only after disabling/removing kubeadm auto sync in the same cluster.
+**Rule:** Only `vllm-kubeadm` targets the `vllm` namespace on deploy-note. The other vllm-* Applications are inactive (#71): restoring one (for example `vllm-amd`) is only safe after disabling/removing kubeadm auto sync in the same cluster, since they share object names.
 
 **Rule:** Do not auto-sync both `prometheus` and `monitoring` — they target the same namespace.
 
@@ -53,3 +49,10 @@ See [kind/README.md](../../kind/README.md) and [kubeadm/README.md](../../kubeadm
 | Application | Why | To restore |
 |-------------|-----|------------|
 | `gitlab` | `gitlab/` held only a dangling gitlink with no chart (#44/#75), so the app was a permanent ComparisonError and never deployed anything | Vendor or reference the chart properly, then `git mv` the manifest back into `argocd/apps/` |
+| `vllm-kind` | kind-only overlay, but its resources use the production object names in the shared `vllm` namespace (#71) | Only on a kind cluster: `git mv` back, never on deploy-note |
+| `vllm-amd` | AMD stack; would collide with `vllm-kubeadm` in the same namespace (#71) | Disable `vllm-kubeadm` auto sync first, then `git mv` back |
+| `vllm-finetune` | AMD LoRA Job; no AMD GPU on deploy-note (#71) | `git mv` back on an AMD cluster |
+| `vllm-benchmark` | On-demand perf Jobs, never synced on deploy-note (#71) | `git mv` back when a benchmark run is planned |
+| `vllm-distill-kubeadm` / `vllm-distill-kind` | Distillation experiments, never synced on deploy-note (#71) | `git mv vllm-distill-app.yaml` back |
+
+The finalizers on these six were removed first (#78), so pruning them orphans rather than deletes whatever they listed.
