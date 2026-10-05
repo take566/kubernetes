@@ -47,15 +47,23 @@ spec:
               TEMPLATE_FILE="$(mktemp)"
               sed "s/\"index.lifecycle.name\": \"serena-logs-kubeadm\"/\"index.lifecycle.name\": \"${ILM_POLICY}\"/" \
                 /config/serena-index-template.json > "${TEMPLATE_FILE}"
-              curl -sfS -X PUT "${ES_URL}/_index_template/serena-logs" \
-                -H "Content-Type: application/json" \
-                --data-binary @"${TEMPLATE_FILE}"
+              # テンプレートが参照する ILM ポリシーを先に作成する
               curl -sfS -X PUT "${ES_URL}/_ilm/policy/serena-logs-kind" \
                 -H "Content-Type: application/json" \
                 --data-binary @/config/serena-logs-ilm-kind.json
               curl -sfS -X PUT "${ES_URL}/_ilm/policy/serena-logs-kubeadm" \
                 -H "Content-Type: application/json" \
                 --data-binary @/config/serena-logs-ilm-kubeadm.json
+              # 旧名 serena-logs は同じ index_patterns・priority のため、残っていると
+              # logs-serena の PUT が重複エラーになる。未作成なら 404 で無視する (#13)
+              code="$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE "${ES_URL}/_index_template/serena-logs")"
+              case "${code}" in
+                200|404) ;;
+                *) echo "failed to delete legacy template serena-logs (HTTP ${code})" >&2; exit 1 ;;
+              esac
+              curl -sfS -X PUT "${ES_URL}/_index_template/logs-serena" \
+                -H "Content-Type: application/json" \
+                --data-binary @"${TEMPLATE_FILE}"
               echo "Serena index template and ILM policies applied (default ILM: ${ILM_POLICY})"
           volumeMounts:
             - name: config
