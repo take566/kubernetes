@@ -28,6 +28,7 @@ on:
 jobs:
   validate-map:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # two short python checks; no run in the last 60 workflow runs, floor 5 (#85)
     steps:
       - uses: actions/checkout@v4
 
@@ -75,6 +76,8 @@ jobs:
     needs: validate-map
     if: inputs.run_benchmark == true
     runs-on: [self-hosted, Windows, ollama]
+    # No timeout-minutes yet (#85): no run in the last 60 workflow runs, so no duration to size it from;
+    # the 360 min default applies. Set ~3x p95 once runs exist.
     steps:
       - uses: actions/checkout@v4
 

@@ -6,9 +6,16 @@ on:
   pull_request:
     branches: [master]
 
+# PR runs of the same branch supersede each other (#85). Push/dispatch runs get a
+# unique group (run_id), so a master run is never cancelled or replaced.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # p95 9s over 38-41 runs; floor 5 (#85)
     steps:
       - uses: actions/checkout@v4
 
@@ -45,6 +52,7 @@ jobs:
 
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # p95 27s over 38-41 runs; floor 5 (#85)
     env:
       KUBECONFORM_VERSION: v0.8.0
     steps:
@@ -76,6 +84,7 @@ jobs:
   # bash -n / 実行ビット / --dry-run のフェーズ順序 / 終了コード区分（ランナーは passwordless sudo）
   kubeadm-bootstrap:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # p95 6s over 38-41 runs; floor 5 (#85)
     steps:
       - uses: actions/checkout@v4
 
@@ -85,6 +94,7 @@ jobs:
   # Serena collector の単体テスト（パース / ローテーション / 再接続。クラスタ不要）
   serena-collector-unit:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # p95 12s over 38-41 runs; floor 5 (#85)
     steps:
       - uses: actions/checkout@v4
 
@@ -95,6 +105,7 @@ jobs:
 
   model-profiles:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # p95 6s over 38-41 runs; floor 5 (#85)
     steps:
       - uses: actions/checkout@v4
 
@@ -103,6 +114,7 @@ jobs:
 
   security-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # p95 18s over 38-41 runs; floor 5 (#85)
     steps:
       - uses: actions/checkout@v4
 

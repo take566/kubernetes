@@ -27,9 +27,16 @@ on:
         required: true
         default: elk-serena-ingest
 
+# PR runs of the same branch supersede each other (#85). Push/dispatch runs get a
+# unique group (run_id), so a master run is never cancelled or replaced.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   list:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # p95 6s; floor 5 (#85)
     outputs:
       suites: ${{ steps.suites.outputs.suites }}
     steps:
@@ -51,7 +58,7 @@ jobs:
   e2e:
     needs: list
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 25  # p95 423s / max 449s over 106 runs, ~3x p95 (#85)
     strategy:
       fail-fast: false
       matrix:

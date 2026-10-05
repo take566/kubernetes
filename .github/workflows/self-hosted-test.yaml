@@ -8,6 +8,7 @@ on:
 jobs:
   self-hosted-smoke:
     runs-on: k8s-self-hosted
+    timeout-minutes: 5  # three trivial steps; no run in the last 60 workflow runs (#85)
     steps:
       - uses: actions/checkout@v4
 
