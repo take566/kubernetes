@@ -7,6 +7,8 @@ filter {
   if [event][kind] == "serena.log" {
     mutate {
       add_tag => [ "serena" ]
+      # event.original は ECS モードの json codec が付けるマスク前の生 JSON（PII を含む）
+      remove_field => [ "@version", "[event][original]" ]
     }
 
     mutate {

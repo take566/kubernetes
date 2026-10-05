@@ -6,6 +6,7 @@
     "settings": {
       "number_of_shards": 1,
       "number_of_replicas": 0,
+      "index.refresh_interval": "5s",
       "index.codec": "best_compression",
       "index.lifecycle.name": "serena-logs-kubeadm"
     },
@@ -13,6 +14,7 @@
       "dynamic": "strict",
       "properties": {
         "@timestamp": { "type": "date" },
+        "tags": { "type": "keyword" },
         "event": {
           "properties": {
             "kind": { "type": "keyword" }
@@ -64,5 +66,9 @@
         }
       }
     }
+  },
+  "_meta": {
+    "description": "Serena MCP log data stream template",
+    "managed_by": "elk-stack"
   }
 }
