@@ -1,0 +1,18 @@
+# Ollama（CPU）を k8s で動かす最小構成。e2e（#18 serena-rag、#9 / #10 の CPU 比較）と kind での検証用。
+# Apply: kubectl apply -k ollama/k8s/
+# モデルの取得: kubectl -n llm exec deploy/ollama -- ollama pull nomic-embed-text
+# GPU 推論は対象外（Windows ホストの Ollama は kubeadm/scripts/register-windows-ollama-external.sh で登録する）
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: llm
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: llm
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
+    includeTemplates: false

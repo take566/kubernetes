@@ -522,6 +522,27 @@ uv run python scripts/serena-rag-query.py `
   --query "直近の health-check 失敗の共通原因は？"
 ```
 
+`--require-embeddings` を付けると、Ollama の埋め込みが使えないときにキーワード順位付けへ切り替えず、exit 2 で失敗する。
+付けない場合は警告を出して続行するため、exit 0 は埋め込みが動いた証拠にならない。
+
+### k8s（WSL の kubeadm / kind）での実行と回帰テスト
+
+`ollama/k8s/`（CPU の Ollama）と teacher-stub を使い、ES のシードから RAG までをクラスタ内で検証する（#18）。
+
+```bash
+# WSL の kubeadm（既存クラスタ）
+wsl -u root -- env KUBECONFIG=/etc/kubernetes/admin.conf bash scripts/e2e/run.sh serena-rag
+# kind（CI と同じ）
+bash scripts/e2e/run.sh serena-rag --target kind
+```
+
+確かめる内容:
+- 埋め込みのベクトルが返ること
+- `--require-embeddings` 付きで exit 0、キーワード順位付けに切り替わっていないこと
+- chat が teacher-stub を通ったこと（要約に `[kind-stub]`、`vLLM chat failed` が出ない）
+- 1 位のチャンクが ERROR のセッションで、無関係な WARNING ではないこと
+- Ollama に届かないとき、`--require-embeddings` 付きなら exit 2 になること
+
 **プロンプト設計:**
 
 - System: 「あなたは Serena MCP ログ分析者。根拠として `serena.session_id` と `message` を引用すること。」
