@@ -338,7 +338,7 @@ Windows 開発者向け接続は [kubeadm-connect.md](kubeadm-connect.md) / `scr
 | `cert-manager` | `cert-manager` | cert-manager | Yes | TLS |
 | `prometheus` | `prometheus` | monitoring | Yes | メトリクス |
 | `monitoring` | `monitoring` | monitoring | **No** | namespace 競合回避 |
-| `nexus` | `nexus` | nexus | Yes | レジストリ |
+| `nexus` | `nexus/overlays/deploy-note` | nexus | Yes | レジストリ |
 | `agents` | `agents/hermes` | agents | Yes | エージェント |
 | `elk-stack` | `elk-stack` | elk-stack | No | ステートフル |
 | `gitlab` | `gitlab` (Helm) | gitlab | No | リソース大 |
