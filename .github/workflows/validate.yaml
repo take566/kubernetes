@@ -21,6 +21,8 @@ jobs:
             elk-stack/*.yaml \
             prometheus/*.yaml \
             nexus/*.yaml \
+            nexus/base/*.yaml \
+            nexus/overlays/deploy-note/*.yaml \
             nginx/*.yaml \
             vllm/base/*.yaml \
             vllm/components/amd/*.yaml \

@@ -189,11 +189,11 @@ kubectl -n nexus patch pvc nexus-pvc -p '{"metadata":{"finalizers":[]}}' --type=
 │   │   └── ...
 │   └── ...
 ├── nexus/                           # ← Nexus リソース定義
-│   ├── namespace.yaml
-│   ├── nexus-pv.yaml
-│   ├── nexus-deployment.yaml
-│   ├── nexus-service.yaml
-│   ├── nexus-ingress.yaml
+│   ├── base/namespace.yaml
+│   ├── base/nexus-pv.yaml
+│   ├── base/nexus-deployment.yaml
+│   ├── base/nexus-service.yaml
+│   ├── base/nexus-ingress.yaml
 │   ├── deploy.sh
 │   ├── get-admin-password.ps1
 │   ├── configure-registries.md
