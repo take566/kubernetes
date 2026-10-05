@@ -6,7 +6,14 @@ SUITE_ISSUE="#9"
 SUITE_DESC="CPU Ollama でモデル比較（p50/p99/tok/s の形式、失敗候補の記録、モデル指定の回帰）"
 SUITE_DUMP_NAMESPACES=(llm)
 
-COMPARE_MODELS="${COMPARE_MODELS:-Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct}"
+# COMPARE_SET=extended-cpu: #10 の拡張候補のうち CPU で回せる LFM2.5 小型（Ollama はコミュニティ版タグ）。
+# Qwen3.6-35B / Gemma4（HF ゲート付き）は GPU 実機の対象で、ここでは回さない
+case "${COMPARE_SET:-default}" in
+  default) DEFAULT_COMPARE_MODELS="Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct" ;;
+  extended-cpu) DEFAULT_COMPARE_MODELS="LiquidAI/LFM2.5-350M LiquidAI/LFM2.5-1.2B-Instruct" ;;
+  *) echo "unknown COMPARE_SET=${COMPARE_SET} (default|extended-cpu)" >&2; exit 2 ;;
+esac
+COMPARE_MODELS="${COMPARE_MODELS:-${DEFAULT_COMPARE_MODELS}}"
 # 存在しないモデル（失敗を記録できることの確認）
 BOGUS_MODEL="e2e-nonexistent/model-does-not-exist"
 
@@ -32,6 +39,8 @@ suite_main() {
   fi
 
   local dir="${E2E_RESULTS_DIR}/${E2E_SUITE}" rc=0
+  # 前回の実行（別の COMPARE_SET など）の結果を summary に混ぜない
+  rm -rf "${dir}"
   mkdir -p "${dir}"
   # compare_ollama.sh は kubectl を直接呼ぶ。利用者の kubeconfig の current-context は変えず、
   # 対象 context だけの一時 kubeconfig を子プロセスに渡す
