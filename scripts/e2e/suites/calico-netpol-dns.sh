@@ -114,6 +114,9 @@ suite_main() {
   fi
 
   e2e::log "restore current policies and verify recovery"
+  # apply -k は prune しないので、修正前にしか無い kube-system/allow-dns-egress が残り、
+  # kube-system の一般 Pod は API に届かないままになる（初回 CI で検出）。旧ポリシーを消してから戻す
+  e2e::kubectl -n kube-system delete networkpolicy allow-dns-egress --ignore-not-found >/dev/null
   _apply_current_policies
   e2e::kubectl -n kube-system rollout status deploy/coredns --timeout=300s >/dev/null 2>&1 \
     && e2e::check "recovered: CoreDNS rollout completes" true || e2e::check "recovered: CoreDNS rollout completes" false
