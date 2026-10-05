@@ -17,7 +17,3 @@ spec:
       port: 8642
       targetPort: gateway
       protocol: TCP
-    - name: dashboard
-      port: 9119
-      targetPort: dashboard
-      protocol: TCP

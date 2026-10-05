@@ -42,14 +42,16 @@ spec:
             - name: gateway
               containerPort: 8642
               protocol: TCP
-            - name: dashboard
-              containerPort: 9119
-              protocol: TCP
           env:
             - name: API_SERVER_HOST
               value: "0.0.0.0"
+            # Dashboard off (#72): the image refuses to bind it to 0.0.0.0 without an
+            # auth provider, and its s6 finish script exits 0, so with "1" it
+            # restarted every ~5 s forever (~800m CPU) while the probes, which only
+            # watch 8642, stayed green. Use `kubectl port-forward` + a loopback
+            # dashboard, or configure auth, if it is ever needed.
             - name: HERMES_DASHBOARD
-              value: "1"
+              value: "0"
             - name: GATEWAY_HEALTH_URL
               value: "http://127.0.0.1:8642/healthz"
             # The user the image's bootstrap drops to (see securityContext).
