@@ -106,7 +106,11 @@ def scroll_search(
                     {"term": {"event.kind": "serena.log"}},
                     {"range": {"serena.quality.score": {"gte": min_quality}}},
                 ],
-                "must_not": [{"term": {"serena.quality.flags": "sensitive_pattern"}}],
+                "must_not": [
+                    {"term": {"serena.quality.flags": "sensitive_pattern"}},
+                    # MARK_EXPORTED=true で印を付けた文書は再出力しない（学習データの重複を防ぐ）
+                    {"term": {"serena.exported": True}},
+                ],
             }
         },
         "_source": ["log.level", "serena.logger", "message", "serena.session_id"],
@@ -177,15 +181,17 @@ def main() -> int:
 
     wait_for_es(es_url)
 
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+    # 同じ日に複数回実行しても前の出力を上書きしないよう、秒まで入れる
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     output_path = os.path.join(output_dir, f"serena-export-{stamp}.jsonl")
+    tmp_path = output_path + ".tmp"
     os.makedirs(output_dir, exist_ok=True)
 
     exported = 0
     scroll_id: str | None = None
     try:
         docs, scroll_id = scroll_search(es_url, es_index, min_quality, batch_size, scroll_ttl)
-        with open(output_path, "w", encoding="utf-8") as out:
+        with open(tmp_path, "w", encoding="utf-8") as out:
             while docs:
                 batch_written: list[dict[str, Any]] = []
                 for doc in docs:
@@ -211,8 +217,14 @@ def main() -> int:
     finally:
         clear_scroll(es_url, scroll_id)
 
+    # 0 件なら空ファイルを残さない（train_lora.py はディレクトリ内の .jsonl をすべて読む）
+    if exported == 0:
+        os.remove(tmp_path)
+        print("Exported 0 rows (no new documents); no file written")
+        return 0
+    os.replace(tmp_path, output_path)
     print(f"Exported {exported} rows to {output_path}")
-    return 0 if exported >= 0 else 1
+    return 0
 
 
 if __name__ == "__main__":
