@@ -7,5 +7,9 @@ resources:
   - nexus-deployment.yaml
   - nexus-service.yaml
   - nexus-ingress.yaml
-commonLabels:
-  app.kubernetes.io/part-of: nexus
+# selector を変えない（Deployment 再作成を避ける）ため includeSelectors: true で
+# 旧 commonLabels と同一の出力にする (#51)
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: nexus
+    includeSelectors: true
