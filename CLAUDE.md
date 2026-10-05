@@ -1,6 +1,6 @@
 ## リポジトリ構成（索引）
 
-- **Bootstrap:** `kind/`（ローカル）, `kubeadm/`（本番）
+- **Bootstrap:** `kind/`（ローカル）, `kubeadm/`（本番: 入口 `kubeadm/bootstrap.sh`、個別手順 `kubeadm/scripts/`、reset `99-reset-cluster.sh`、一覧は `kubeadm/README.md`）
 - **Apps:** `vllm/`, `elk-stack/`, `nginx/`, `nexus/`, `gitlab/`, `prometheus/`, `agents/` 等
 - **GitOps:** `argocd/apps/`（App of Apps）
 - **Scripts:** `scripts/bootstrap.sh`, `scripts/validate.sh`
