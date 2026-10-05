@@ -1,0 +1,27 @@
+{
+  "measured_at": "2026-10-05T03:27:38Z",
+  "environment": "WSL2 kubeadm single node (tmf-desktop, 16 vCPU), Ollama CPU (ollama/k8s, ollama/ollama:0.35.1), community tags sam860/LFM2:*",
+  "bench": {
+    "max_tokens": 32,
+    "latency_samples": 5,
+    "throughput_requests": 8,
+    "concurrency": 2
+  },
+  "note": "CPU reference only (#10 extended-cpu). Qwen3.6-35B / Gemma4 need GPU hardware.",
+  "results": [
+    {
+      "model": "LiquidAI/LFM2.5-1.2B-Instruct",
+      "status": "ok",
+      "p50_ms": 2025.2,
+      "p99_ms": 2042.69,
+      "tokens_per_s": 16.1585
+    },
+    {
+      "model": "LiquidAI/LFM2.5-350M",
+      "status": "ok",
+      "p50_ms": 997.15,
+      "p99_ms": 1003.79,
+      "tokens_per_s": 33.5767
+    }
+  ]
+}
