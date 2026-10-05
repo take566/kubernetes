@@ -127,6 +127,21 @@ expect_ec 1 "unreachable API with --strict fails"
 run env CONTROL_PLANE_IP=999.1.1.1 bash "${LB}"
 expect_ec 1 "invalid CONTROL_PLANE_IP fails"
 
+echo "--- 03b-join-control-plane.sh (#20; root 不要の経路) ---"
+CP="${REPO_ROOT}/kubeadm/scripts/03b-join-control-plane.sh"
+JOIN='kubeadm join lb.example:6443 --token abcdef.0123456789abcdef --discovery-token-ca-cert-hash sha256:deadbeef'
+run bash "${CP}" --help
+expect_ec 0 "--help works without root"
+run bash "${CP}" --join "${JOIN}" --certificate-key SECRETKEY --dry-run
+expect_ec 0 "--join --dry-run"
+expect_out "--control-plane" "dry-run adds --control-plane"
+expect_out "--certificate-key \*\*\*" "dry-run masks the certificate key"
+if grep -qE "SECRETKEY|abcdef\.0123|deadbeef" <<<"${OUT}"; then fail "secrets leaked in dry-run output"; else pass "no secrets in dry-run output"; fi
+run env -u CERTIFICATE_KEY bash "${CP}" --join "${JOIN}" --dry-run
+expect_ec 1 "--join without certificate key fails"
+run bash "${CP}"
+expect_ec 1 "no arguments prints usage and fails"
+
 echo
 if [[ "${FAILED}" -ne 0 ]]; then
   echo "kubeadm bootstrap tests FAILED"
