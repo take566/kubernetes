@@ -1,20 +1,8 @@
+# path: prometheus を使う既存の利用者（Ingress コントローラのあるクラスタ、kubectl apply -k prometheus/）
+# 向けの入口。中身は base/ と同一（#73 で base/ に移動）。
+# kustomize は overlay の祖先ディレクトリを base にできない（cycle detected）ため、
+# マニフェスト本体は prometheus/base/ に置き、overlays/<cluster>/ から ../../base を参照する。
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: monitoring
 resources:
-  - monitoring-namespace.yaml
-  - prometheus-rbac.yaml
-  - prometheus-configmap.yaml
-  - prometheus-pv.yaml
-  - prometheus-statefulset.yaml
-  - prometheus-service.yaml
-  - prometheus-ingress.yaml
-  - node-exporter-daemonset.yaml
-  - node-exporter-service.yaml
-  - grafana-pv.yaml
-labels:
-  - pairs:
-      app.kubernetes.io/part-of: monitoring
-      app.kubernetes.io/managed-by: kustomize
-    includeSelectors: false
-    includeTemplates: false
+  - base

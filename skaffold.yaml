@@ -29,15 +29,15 @@ profiles:
     deploy:
       kubectl:
         manifests:
-          - prometheus/monitoring-namespace.yaml
-          - prometheus/prometheus-rbac.yaml
-          - prometheus/prometheus-configmap.yaml
-          - prometheus/prometheus-pv.yaml
-          - prometheus/prometheus-statefulset.yaml
-          - prometheus/prometheus-service.yaml
-          - prometheus/prometheus-ingress.yaml
-          - prometheus/node-exporter-daemonset.yaml
-          - prometheus/node-exporter-service.yaml
+          - prometheus/base/monitoring-namespace.yaml
+          - prometheus/base/prometheus-rbac.yaml
+          - prometheus/base/prometheus-configmap.yaml
+          - prometheus/base/prometheus-pv.yaml
+          - prometheus/base/prometheus-statefulset.yaml
+          - prometheus/base/prometheus-service.yaml
+          - prometheus/base/prometheus-ingress.yaml
+          - prometheus/base/node-exporter-daemonset.yaml
+          - prometheus/base/node-exporter-service.yaml
   - name: nexus
     deploy:
       kubectl:

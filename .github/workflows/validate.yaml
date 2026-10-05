@@ -20,6 +20,8 @@ jobs:
           yamllint -d "{extends: relaxed, rules: {line-length: {max: 200}}}" \
             elk-stack/*.yaml \
             prometheus/*.yaml \
+            prometheus/base/*.yaml \
+            prometheus/overlays/deploy-note/*.yaml \
             nexus/*.yaml \
             nginx/*.yaml \
             vllm/base/*.yaml \
