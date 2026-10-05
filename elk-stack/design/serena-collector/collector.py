@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import select
 import socket
 import sys
 import threading
@@ -200,11 +201,30 @@ class LogstashSender:
                 pass
             self._sock = None
 
+    def _peer_closed(self) -> bool:
+        """Logstash は何も送ってこないので、読み取り可能 = 相手が切断（EOF / RST）とみなす。
+
+        切断済みのソケットへの最初の sendall は成功してしまい、その 1 件が黙って失われる
+        （Logstash 再起動時）。送信前に確認して再接続する。
+        """
+        if self._sock is None:
+            return False
+        try:
+            readable, _, _ = select.select([self._sock], [], [], 0)
+            if not readable:
+                return False
+            return self._sock.recv(1, socket.MSG_PEEK) == b""
+        except OSError:
+            return True
+
     def send(self, event: dict[str, Any]) -> None:
         payload = (json.dumps(event, ensure_ascii=False) + "\n").encode("utf-8")
         with self._lock:
             for attempt in range(2):
                 try:
+                    if self._peer_closed():
+                        logger.info("logstash connection closed by peer; reconnecting")
+                        self.close()
                     if self._sock is None:
                         self.connect()
                     assert self._sock is not None
@@ -367,6 +387,8 @@ class SerenaCollector:
         self._stop = threading.Event()
         self._watchdog_available = False
         self._observer: Any = None
+        # 最初の poll が終わるまで False。最初の poll で見つかったファイルだけ末尾から読む
+        self._primed = False
 
     def _dedupe_key(self, event: dict[str, Any]) -> str:
         payload = json.dumps(event, sort_keys=True, ensure_ascii=False)
@@ -418,9 +440,10 @@ class SerenaCollector:
         key = self._tail_key(path)
         if key not in self._tails:
             state = FileTailState(path)
-            # Start at end for existing files to avoid replaying full history on startup
+            # 起動時に既にあったファイルは履歴を再送しないよう末尾から読む。
+            # 起動後に現れたファイル（ローテーション等）は先頭から読む（先頭行の欠落を防ぐ）
             stat = state._stat()
-            if stat is not None:
+            if stat is not None and not self._primed:
                 state.offset = stat.st_size
             self._tails[key] = state
         return self._tails[key]
@@ -447,6 +470,7 @@ class SerenaCollector:
             tail = self._get_tail(path)
             for line in tail.read_new_lines():
                 self._process_line(line, path, stream)
+        self._primed = True
 
     def _on_file_event(self, path: Path, stream: str) -> None:
         if not path.is_file():
@@ -502,6 +526,8 @@ class SerenaCollector:
             [str(p) for p in self.config.projects],
         )
 
+        # watchdog のイベントより先に、起動時点のファイルを登録しておく
+        self.poll_files()
         use_watchdog = self._setup_watchdog()
 
         try:
