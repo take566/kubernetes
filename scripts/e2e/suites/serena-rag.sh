@@ -27,6 +27,13 @@ socket.create_connection(("logstash.elk-stack.svc", 5000), timeout=5).close()
 PY
 }
 
+_stub_reachable() {
+  e2e::toolbox_py 2>/dev/null <<'PY'
+import urllib.request
+urllib.request.urlopen("http://teacher-stub.elk-stack.svc:8000/health", timeout=5).read()
+PY
+}
+
 _serena_count_ge() {
   e2e::es POST /logs-serena/_refresh >/dev/null
   (( $(e2e::es POST /logs-serena/_count '{"query":{"term":{"event.kind":"serena.log"}}}' | jq -r '.count // 0') >= $1 ))
@@ -87,6 +94,8 @@ PY
       "volumes":[{"name":"s","configMap":{"name":"teacher-stub-script"}}]}}' >/dev/null
   e2e::kubectl -n elk-stack expose pod teacher-stub --port=8000 --name=teacher-stub >/dev/null 2>&1 || true
   e2e::kubectl -n elk-stack wait --for=condition=Ready pod/teacher-stub --timeout=180s >/dev/null
+  # Pod が Ready でも Service の経路（kube-proxy）が反映されるまでは connection refused になる（CI で発生）
+  _wait_until 60 _stub_reachable || { e2e::check "teacher-stub reachable via Service" false; return 1; }
 
   e2e::log "RAG: embeddings required, chat via teacher-stub"
   local rc=0
