@@ -336,7 +336,7 @@ Windows 開発者向け接続は [kubeadm-connect.md](kubeadm-connect.md) / `scr
 | `vllm-benchmark` | `vllm/benchmark` | vllm | No | ベンチマーク |
 | `nginx` | `nginx` | default | Yes | Ingress |
 | `cert-manager` | `cert-manager` | cert-manager | Yes | TLS |
-| `prometheus` | `prometheus` | monitoring | Yes | メトリクス |
+| `prometheus` | `prometheus/overlays/deploy-note` | monitoring | Yes | メトリクス |
 | `monitoring` | `monitoring` | monitoring | **No** | namespace 競合回避 |
 | `nexus` | `nexus` | nexus | Yes | レジストリ |
 | `agents` | `agents/hermes` | agents | Yes | エージェント |

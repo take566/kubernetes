@@ -23,7 +23,7 @@ kubectl apply -f argocd/apps/root-application.yaml
 | `nexus` | `nexus` | nexus | Yes |
 | `cert-manager` | `cert-manager` | cert-manager | Yes |
 | `agents` | `agents/hermes` | agents | Yes |
-| `prometheus` | `prometheus` | monitoring | Yes |
+| `prometheus` | `prometheus/overlays/deploy-note` | monitoring | Yes |
 | `monitoring` | `monitoring` | monitoring | No |
 | `gitlab` | `gitlab` (Helm) | gitlab | No |
 | `jenkins` | `jenkins` (Helm) | jenkins | No |

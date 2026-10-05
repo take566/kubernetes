@@ -10,7 +10,8 @@ spec:
   source:
     repoURL: https://github.com/take566/kubernetes.git
     targetRevision: master
-    path: prometheus
+    # deploy-note に Ingress コントローラが無いので Ingress を消す overlay (#73)
+    path: prometheus/overlays/deploy-note
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring

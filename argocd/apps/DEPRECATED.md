@@ -22,7 +22,7 @@
 | `nexus` | `nexus` | Yes | nexus | Artifact repository |
 | `cert-manager` | `cert-manager` | Yes | cert-manager | TLS operator (Helm via kustomize) |
 | `agents` | `agents/hermes` | Yes | agents | Hermes agent stack |
-| `prometheus` | `prometheus` | Yes | monitoring | Lightweight Prometheus manifests |
+| `prometheus` | `prometheus/overlays/deploy-note` | Yes | monitoring | Lightweight Prometheus manifests (Ingress removed on deploy-note, port-forward only, #73) |
 | `monitoring` | `monitoring` | No | monitoring | kube-prometheus-stack — conflicts with `prometheus` |
 | `jenkins` | `jenkins` | No | jenkins | Jenkins Helm (stateful CI/CD) |
 | `actions-runner-controller` | `actions-runner-controller` | No | actions-runner-system | ARC v2 scale-set controller (sync before github-runners) |
