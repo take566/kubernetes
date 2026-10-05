@@ -1,0 +1,10 @@
+# e2e 用 kind クラスタ（Calico）。scripts/e2e/suites/calico-netpol-dns.sh が使う（#30）。
+# podSubnet は kubeadm/kubeadm-config.yaml と同じ（Calico manifest の既定プールとも一致）。
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true
+  podSubnet: 192.168.0.0/16
+nodes:
+  - role: control-plane
+  - role: worker

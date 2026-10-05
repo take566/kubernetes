@@ -36,8 +36,13 @@ e2e::cluster_up() {
       e2e::log "reuse kind cluster ${E2E_CLUSTER}"
     else
       e2e::log "create kind cluster ${E2E_CLUSTER} (${config})"
-      kind create cluster --name "${E2E_CLUSTER}" --config "${config}" --wait 180s
+      # SUITE_KIND_WAIT=0: CNI を自前で入れる構成（disableDefaultCNI）ではノードが Ready にならないので待たない
+      local wait_args=(--wait "${SUITE_KIND_WAIT:-180s}")
+      [[ "${SUITE_KIND_WAIT:-}" == 0 ]] && wait_args=()
+      kind create cluster --name "${E2E_CLUSTER}" --config "${config}" "${wait_args[@]}"
     fi
+    # ノードの Ready を待つ前に入れるもの（CNI など）
+    if declare -F suite_bootstrap >/dev/null; then suite_bootstrap; fi
   else
     e2e::log "use existing cluster (context: ${E2E_CONTEXT:-$(kubectl config current-context 2>/dev/null || echo '<kubeconfig default>')})"
     e2e::kubectl get --raw /readyz >/dev/null || { echo "cluster is not reachable" >&2; return 1; }

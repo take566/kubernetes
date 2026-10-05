@@ -68,6 +68,12 @@ SUITE_DUMP_NAMESPACES=()
 source "${SUITES_DIR}/${SUITE}.sh"
 E2E_ISSUE="${SUITE_ISSUE:-}"
 
+# SUITE_TARGETS="kind" などで実行先を制限する（既存クラスタの CNI やポリシーを書き換えるスイート用）
+if [[ -n "${SUITE_TARGETS:-}" && " ${SUITE_TARGETS} " != *" ${E2E_TARGET} "* ]]; then
+  echo "suite ${SUITE} supports --target ${SUITE_TARGETS// /|} only (got ${E2E_TARGET})${SUITE_TARGETS_REASON:+: ${SUITE_TARGETS_REASON}}" >&2
+  exit 2
+fi
+
 trap 'e2e::cluster_down' EXIT
 
 e2e::log "suite=${SUITE} issue=${E2E_ISSUE} cluster=${E2E_CLUSTER}"

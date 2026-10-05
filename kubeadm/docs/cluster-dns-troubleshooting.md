@@ -41,8 +41,14 @@ sudo crictl ps --name coredns -q | head -1 | xargs -I{} sudo crictl logs --tail 
 NetworkPolicy を更新して適用:
 
 ```bash
+kubectl -n kube-system delete networkpolicy allow-dns-egress --ignore-not-found
 kubectl apply -k kubeadm/addons/network-policies/
 ```
+
+`kubectl apply -k` は既存のリソースを削除しない（prune しない）。旧版を適用したことのあるクラスタでは、
+kube-system の `allow-dns-egress` が残る。CoreDNS は `allow-coredns-egress` の許可で回復するが、
+kube-system のそれ以外の Pod は API に届かないままになるので、先に削除する。
+回帰テスト: `scripts/e2e/run.sh calico-netpol-dns --target kind`（#30、CI でも実行）。
 
 追加リソース:
 
