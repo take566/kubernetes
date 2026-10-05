@@ -6,8 +6,6 @@ metadata:
   labels:
     app.kubernetes.io/part-of: vllm
     app.kubernetes.io/cluster: kubeadm
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:

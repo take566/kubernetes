@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: vllm-kind
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
