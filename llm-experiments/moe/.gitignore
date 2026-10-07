@@ -1,0 +1,5 @@
+results/
+*.gguf
+adapters/
+# The repo root ignores every data/ directory; this one is the committed eval/SFT set.
+!data/
