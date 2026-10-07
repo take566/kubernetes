@@ -200,15 +200,17 @@ docker pull openeuler/vllm-cpu:0.20.1-oe2403sp3
 
 | Ollama tag | HF モデル (総/活性) | llmfit 予測 tok/s (0G / 1G / 4G) | 実測 decode tok/s | output tok/s (c=2) | p50 (ms) | p99 (ms) | QA 正答 | 備考 |
 |------------|------|------|------|------|------|------|------|------|
-| `granite3.1-moe:3b-cpu` | granite-3.1-3b-a800m-instruct (3.3B/0.8B) | 44.5 / 56.7 / 75.4 | **45.9** | 45.4 | 1454.39 | 1496.16 | 25/30 (83.3%) | Q4_K_M 2.0 GB、prompt 2491 tok/s |
-| `granite4:tiny-h-cpu` | granite-4.0-h-tiny (6.9B/1B, Mamba-2 hybrid) | 36.5 / 46.5 / 61.1 | **25.5** | 24.4 | 2682.78 | 2786.51 | 29/30 (96.7%) | Q4_K_M 4.2 GB、prompt 415 tok/s |
+| `granite3.1-moe:3b-cpu` | granite-3.1-3b-a800m-instruct (3.3B/0.8B) | 44.5 / 56.7 / 75.4 | **45.9** | 45.4 | 1454.39 | 1496.16 | 27/30 (90.0%) [初回 25/30] | Q4_K_M 2.0 GB、prompt 2491 tok/s |
+| `granite4:tiny-h-cpu` | granite-4.0-h-tiny (6.9B/1B, Mamba-2 hybrid) | 36.5 / 46.5 / 61.1 | **25.5** | 24.4 | 2682.78 | 2786.51 | 29/30 (96.7%) [初回 29/30] | Q4_K_M 4.2 GB、prompt 415 tok/s |
 | `granite3-moe:1b` / `granite3.1-moe:1b` | granite-3.x-1b-a400m (1.3B/0.4B) | 91.7 / 150.1 / 144.9 | — | — | — | — | — | **LOAD FAIL**: Ollama 0.35.1 llama-server `ggml-impl.h:330: fatal error` (0xc0000409)、CPU/GPU とも |
 
 LoRA ベースモデルの基準値（transformers、CPU bf16、`eval_quality.py --hf-model`）:
 
 | モデル | QA 正答 | held-out loss (sft_heldout 50 行) | 備考 |
 |--------|---------|------|------|
-| ibm-granite/granite-3.1-1b-a400m-instruct | 17/30 (56.7%) | 1.8966 | LoRA 前。窓内の GPU fp16 で再計測して before/after を比較する |
+| ibm-granite/granite-3.1-1b-a400m-instruct | 17/30 (56.7%) [初回 17/30] | 1.8966 | LoRA 前（transformers の CPU greedy は再実行でも同一応答）。窓内の GPU fp16 で再計測して before/after を比較する |
+
+> **QA 採点:** 数値の答えは NFKC 後のテキストで桁境界一致（`(?<!\d)96(?!\d)`、桁区切りカンマは除去）、それ以外は正規化部分一致。表の値はこの採点での再実行（v2）。初回の応答を新しい採点で採点し直しても変化なし（25 / 29 / 17）。granite3.1-moe の 25→27 は Ollama CPU 推論の実行間ゆらぎ（temperature 0 でも応答が変わる: ja-02 / in-06 が正解に、ja-06 は誤答の内容が変化）なので、±2 問程度の差は有意とみなさない。
 
 > **Note:** llmfit の 0G 予測は Q8_0 前提（実測は Q4_K_M）、1G/4G は MoE エキスパートの VRAM/RAM 分割前提。granite3.1-moe はほぼ予測どおり、granite4 (hybrid) は予測の約 7 割。gpt-oss:20b (13.8 GB) / qwen3:30b-a3b (~18 GB) は llmfit 上 4G で Good だが Windows 側 Ollama の空き RAM に収まらないため未計測。vLLM 窓（GPU 全開放）での再計測と LoRA は後続。
 

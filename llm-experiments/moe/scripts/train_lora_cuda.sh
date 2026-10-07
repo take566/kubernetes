@@ -13,7 +13,8 @@
 #
 # Env overrides: BASE_MODEL, LORA_R, LORA_ALPHA, MAX_SEQ_LENGTH, NUM_EPOCHS,
 #   PER_DEVICE_BATCH_SIZE, GRADIENT_ACCUMULATION_STEPS, USE_4BIT (nf4 fallback
-#   on OOM), MIN_FREE_VRAM_MIB, OUTPUT_DIR, LLM_EXP_VENV.
+#   on OOM), MIN_FREE_VRAM_MIB, OUTPUT_DIR (default ~/llm-exp/adapters/...),
+#   LLM_EXP_VENV, VLLM_WINDOW_STATE_DIR (train.pid location, default /var/lib/vllm-window).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,7 +26,8 @@ TS="$(date -u +%Y%m%dT%H%M%SZ)"
 
 export BASE_MODEL="${BASE_MODEL:-ibm-granite/granite-3.1-1b-a400m-instruct}"
 export DATASET_PATH="${DATASET_PATH:-${MOE_DIR}/data/sft_train.jsonl}"
-export OUTPUT_DIR="${OUTPUT_DIR:-${MOE_DIR}/adapters/granite-1b-a400m-cuda-${TS}}"
+# On the WSL ext4 disk, not under the /mnt/c checkout (9p is slow for checkpoints).
+export OUTPUT_DIR="${OUTPUT_DIR:-${HOME}/llm-exp/adapters/granite-1b-a400m-cuda-${TS}}"
 export TRAIN_LORA_PY="${REPO_ROOT}/vllm/components/finetune/scripts/train_lora.py"
 # Turing (sm_75) has no bf16: fp16 mixed precision.
 export USE_BF16=false USE_FP16=true
@@ -59,7 +61,25 @@ mkdir -p "$OUTPUT_DIR"
 vram_log="${OUTPUT_DIR}/vram.csv"
 nvidia-smi --query-gpu=timestamp,memory.used --format=csv,noheader,nounits -l 2 > "$vram_log" 2>/dev/null &
 smi_pid=$!
-trap 'kill "$smi_pid" 2>/dev/null || true' EXIT
+
+# vllm_window.sh start pre-creates this file (owned by the invoking user); stop and
+# the 90-minute watchdog kill the PID recorded here before vLLM is restored, so a
+# run overlapping the deadline cannot hold the GPU while vLLM starts.
+TRAIN_PIDFILE="${VLLM_WINDOW_STATE_DIR:-/var/lib/vllm-window}/train.pid"
+if [[ -w "$TRAIN_PIDFILE" ]]; then
+  echo "$$" > "$TRAIN_PIDFILE"
+  echo "[OK] pid $$ recorded in ${TRAIN_PIDFILE}"
+else
+  echo "[WARNING] ${TRAIN_PIDFILE} not writable - vllm_window.sh cannot stop this run at the deadline" >&2
+  TRAIN_PIDFILE=""
+fi
+cleanup() {
+  kill "$smi_pid" 2>/dev/null || true
+  if [[ -n "$TRAIN_PIDFILE" && "$(cat "$TRAIN_PIDFILE" 2>/dev/null)" == "$$" ]]; then
+    : > "$TRAIN_PIDFILE"
+  fi
+}
+trap cleanup EXIT
 
 echo "[INFO] base=${BASE_MODEL} r=${LORA_R} targets=${LORA_TARGET_MODULES} seq=${MAX_SEQ_LENGTH} epochs=${NUM_EPOCHS} 4bit=${USE_4BIT}"
 set +e

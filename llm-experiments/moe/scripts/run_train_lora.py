@@ -12,6 +12,7 @@ production script and its ConfigMap stay untouched.
 It also:
   * renders {"messages": [...]} rows to a {"text": ...} file with the base
     model's chat template (train_lora.py trains on a plain text field), and
+  * logs the dtype of the trainable LoRA parameters (expected fp32), and
   * prints train wall time, peak torch-allocated VRAM and tokens/s at exit.
 
 Env: same as train_lora.py (BASE_MODEL, DATASET_PATH, OUTPUT_DIR, ...) plus
@@ -111,6 +112,31 @@ def patch_training_arguments() -> None:
     print(f"[INFO] transformers {transformers.__version__}: warmup_ratio -> warmup_steps shim active")
 
 
+def patch_get_peft_model() -> None:
+    """Log the dtype of the trainable (LoRA) parameters right after they are created.
+
+    With an fp16 base model and fp16=True the LoRA weights must be fp32 (PEFT's
+    autocast_adapter_dtype), otherwise GradScaler fails with "Attempting to
+    unscale FP16 gradients". This makes that visible at start.
+    """
+    import peft
+
+    original = peft.get_peft_model
+
+    def get_peft_model(*args, **kwargs):
+        model = original(*args, **kwargs)
+        counts: dict[str, int] = {}
+        for _, p in model.named_parameters():
+            if p.requires_grad:
+                counts[str(p.dtype)] = counts.get(str(p.dtype), 0) + p.numel()
+        print(f"[INFO] trainable parameter dtypes: {counts}")
+        if any(k != "torch.float32" for k in counts):
+            print("[WARNING] trainable parameters are not all fp32 - fp16 GradScaler may fail", file=sys.stderr)
+        return model
+
+    peft.get_peft_model = get_peft_model
+
+
 def main() -> int:
     script = os.environ.get("TRAIN_LORA_PY")
     if not script or not Path(script).is_file():
@@ -119,6 +145,7 @@ def main() -> int:
     render_messages_dataset()
     patch_training_arguments()
     patch_sft_trainer()
+    patch_get_peft_model()
 
     import torch
 

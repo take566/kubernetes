@@ -71,7 +71,7 @@ sudo scripts/vllm_window.sh start            # 90 分ガード付き
     --heldout data/sft_heldout.jsonl --label before --output results/eval-lora-before.json
 scripts/train_lora_cuda.sh                   # OOM なら USE_4BIT=true scripts/train_lora_cuda.sh
 ~/llm-exp/.venv/bin/python scripts/eval_quality.py --hf-model ibm-granite/granite-3.1-1b-a400m-instruct \
-    --adapter adapters/<run> --heldout data/sft_heldout.jsonl --label after --output results/eval-lora-after.json
+    --adapter ~/llm-exp/adapters/<run> --heldout data/sft_heldout.jsonl --label after --output results/eval-lora-after.json
 sudo scripts/vllm_window.sh stop             # 必ず実行（失敗時は非ゼロ終了、state を残す）
 ```
 
@@ -96,12 +96,14 @@ Colima k3s / OpenClaw のワークロードがメモリ不足にならないよ�
 
 | コマンド | 動作 |
 |---|---|
-| `scripts/vllm_window.sh status` | 読み取りのみ。Application の automated / sync / health、deploy の replicas、`/health`、GPU 使用量、UID、窓の残り時間 |
-| `sudo scripts/vllm_window.sh start` | ① state 記録（`vllm-kubeadm` **と tracking-id で辿った親 `root-application`** の syncPolicy、replicas、ns/PVC/Service の UID）② 親 → 子の順に `syncPolicy.automated` を削除 ③ `deploy/vllm` を 0 に、nvidia-smi `memory.used < 200 MiB` まで待つ ④ 90 分後に `stop` を実行する watchdog を起動。②以降で失敗したら自動で `stop`（ロールバック） |
-| `sudo scripts/vllm_window.sh stop` | replicas を戻す → 記録した automated を子 → 親の順に復元し読み戻し確認 → rollout + `/health` 200（API サーバの service proxy 経由）→ UID 不変 → `vllm-kubeadm` Synced/Healthy。どれか不一致なら非ゼロ終了し state を残す |
+| `scripts/vllm_window.sh status` | 読み取りのみ（root 不要）。Application の automated / sync / health、deploy の replicas、生きている（Failed 以外の）vllm Pod 数、`/health`、GPU used/free、UID、学習 PID、窓の残り時間 |
+| `sudo scripts/vllm_window.sh start` | ① state 記録（`vllm-kubeadm` **と tracking-id で辿った親 `root-application`** の syncPolicy、replicas、ns/PVC/Service の UID）② **書き込み前に** 90 分 watchdog を起動（期限後は `stop` が成功するまで 60 秒おきに最大 30 回）③ 親 → 子の順に `syncPolicy.automated` を削除 ④ `deploy/vllm` を 0 に、Failed 以外の vllm Pod が消えるまで待ち、nvidia-smi `memory.free >= 3072 MiB` まで待つ。③以降の失敗、または SIGINT/SIGTERM/SIGHUP で自動 `stop`（ロールバック。ロールバック中はシグナルを無視） |
+| `sudo scripts/vllm_window.sh stop` | `train.pid` の学習プロセスが残っていれば終了（cmdline に `train_lora` を含む場合のみ）→ replicas を戻す → 記録した automated を子 → 親の順に復元し読み戻し確認 → rollout + `/health` 200（API サーバの service proxy 経由）→ UID 不変 → `vllm-kubeadm` Synced/Healthy。書き込みは 5 回 × 10 秒リトライ、途中が失敗しても後続の復元は必ず実行。どれか不一致なら非ゼロ終了し state を残す |
 
 - `root-application` が `vllm-kubeadm` を selfHeal で管理しているため、子だけ automated を外すと数分で親に戻され、vLLM が勝手に復活する。だから親も一緒に止める。
-- kubectl は `--kubeconfig /etc/kubernetes/admin.conf`（root 専用ファイル。読めなければ `sudo -n`）。上書きは `VLLM_WINDOW_KUBECONFIG`。state は `~/.local/state/vllm-window/`（sudo 時は呼び出しユーザーの HOME）。
+- kubectl は `--kubeconfig /etc/kubernetes/admin.conf`（root 専用ファイル。読めなければ `sudo -n`）。上書きは `VLLM_WINDOW_KUBECONFIG`。state は固定の `/var/lib/vllm-window/`（`VLLM_WINDOW_STATE_DIR` で上書き）なので、start / stop / watchdog が誰の権限で動いても同じ場所を見る。
+- `start` は `/var/lib/vllm-window/train.pid` を呼び出しユーザー所有で作り、`train_lora_cuda.sh` が自分の PID をそこに書く。期限の watchdog / `stop` はその学習を止めてから vLLM を戻す。
+- 既存の Failed Pod `vllm-6df68b98cc-w59qx`（UnexpectedAdmissionError、GC されない）は Pod 待ちから除外している。
 - `start`/`stop` とも冪等: 2 回目の `start` は最初に記録した値を保持し、state の無い `stop` は検証だけ行う。
 - 既知のリスク: `deploy/vllm` は `vllm/vllm-openai:latest` + `imagePullPolicy: Always` なので、`stop` 時の再起動で**新しい vLLM イメージを pull しうる**。UID 検査はこれを捕まえないため、ログに出る imageID を確認する。
-- 窓を開ける前に Ollama のモデルをアンロードしておく（GPU 使用量の待ちが通らない）。
+- 窓を開ける前に Ollama のモデルをアンロードしておく（空き VRAM の待ちが通らない）。

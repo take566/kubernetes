@@ -11,7 +11,9 @@ Two backends:
 
 Grading: temperature 0, the reply and every accepted answer are NFKC-normalised,
 lower-cased and stripped of whitespace/punctuation; an item is correct when any
-accepted answer is a substring of the reply. Prints one JSON line per item and a
+accepted answer is a substring of the reply. Purely numeric answers instead must
+appear on digit boundaries in the NFKC reply (thousands separators removed), so
+"1996" does not count for "96". Prints one JSON line per item and a
 summary line, and writes everything to --output when given.
 
 The OpenAI mode needs only the standard library.
@@ -39,9 +41,23 @@ def normalise(text: str) -> str:
     return _STRIP.sub("", unicodedata.normalize("NFKC", text).lower())
 
 
+_THOUSANDS = re.compile(r"(?<=\d)[,，_](?=\d{3}(?!\d))")
+
+
+def _matches(reply: str, answer: str) -> bool:
+    ans = unicodedata.normalize("NFKC", answer).strip()
+    if ans.isdigit():
+        # Numbers must match on digit boundaries: "1996" must not count for "96".
+        # Done on the NFKC text (not the stripped one, which would glue "6 3" into "63"),
+        # with thousands separators removed so "3,776" / "1,000" still match.
+        text = _THOUSANDS.sub("", unicodedata.normalize("NFKC", reply))
+        return re.search(rf"(?<!\d){re.escape(ans)}(?!\d)", text) is not None
+    norm_ans = normalise(answer)
+    return bool(norm_ans) and norm_ans in normalise(reply)
+
+
 def is_correct(reply: str, answers: list[str]) -> bool:
-    norm = normalise(reply)
-    return any(normalise(a) and normalise(a) in norm for a in answers)
+    return any(_matches(reply, a) for a in answers)
 
 
 def load_jsonl(path: str | Path) -> list[dict]:
