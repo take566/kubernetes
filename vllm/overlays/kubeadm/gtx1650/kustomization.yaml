@@ -11,6 +11,12 @@ labels:
 resources:
   - ../../../base
   - vllm-pvc.yaml
+# メモリが足りない間だけ止める (Deploy-inc/OpenClaw#2938)。deploy-note は WSL VM 16GB の単一ノードで、
+# vllm (約 2.5GiB) を含む常駐サービスでノードが 90% を超え、ARC の CI runner が Pending になった。
+# 使う時 (ELK の蒸留 Teacher など) は replicas を 1 に戻す。
+replicas:
+  - name: vllm
+    count: 0
 patches:
   - path: model-patch.yaml
   - path: resources-patch.yaml
