@@ -8,6 +8,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base
+# deploy-note は WSL VM 16GB の単一ノードで、常駐の nexus (約 2.4GiB) が READY 0/1 のまま
+# 追い出しと再作成を繰り返し、ARC の CI runner (k8s-x64) が Insufficient memory で Pending になる
+# (Deploy-inc/OpenClaw#2938)。使う時に replicas を 1 に戻す (または base を直接使う overlay を足す)。
+replicas:
+  - name: nexus
+    count: 0
 patches:
   - patch: |-
       $patch: delete
