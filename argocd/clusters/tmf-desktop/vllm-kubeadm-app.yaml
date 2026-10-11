@@ -1,0 +1,36 @@
+# Primary production vLLM stack (NVIDIA) for kubeadm clusters.
+# Uses local-path PVCs — do NOT enable vllm-amd auto-sync in the same namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vllm-kubeadm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: vllm
+    app.kubernetes.io/cluster: kubeadm
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/take566/kubernetes.git
+    targetRevision: master
+    # The only cluster this root Application runs on is deploy-note (WSL
+    # kubeadm, GTX 1650 4 GB, managed by take566/ansible terraform/argocd).
+    # The generic kubeadm overlay has no runtimeClassName, so the pod got no
+    # GPU libraries ("No CUDA runtime is found" -> "Failed to infer device
+    # type") and asked for more memory / VRAM than the laptop has. The
+    # gtx1650 overlay adds runtimeClassName: nvidia and a 0.5B model sized
+    # for 4 GB.
+    path: vllm/overlays/kubeadm/gtx1650
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
