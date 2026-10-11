@@ -1,0 +1,18 @@
+# tmf-desktop 用 overlay (Argo CD の deploy-note からの移管、take566/ansible #678)。中身は deploy-note 用と同じ:
+# deploy-note には IngressClass / Ingress コントローラが無い。base の Ingress
+# (ingressClassName: nginx) は ADDRESS が付かず、Argo CD の prometheus Application が
+# Progressing のまま終わらない。ここでは Ingress だけを消す。Prometheus には
+# kubectl -n monitoring port-forward svc/prometheus 9090:9090 でアクセスする。
+# base (prometheus/) は変えないので、Ingress コントローラのあるクラスタはそのまま使える。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: prometheus
+        namespace: monitoring

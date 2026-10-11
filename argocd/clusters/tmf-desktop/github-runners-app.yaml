@@ -1,0 +1,25 @@
+# Manual sync — requires github-runners-secret before sync (see github-runners/README.md).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: github-runners
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/take566/kubernetes.git
+    targetRevision: master
+    path: github-runners
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: github-runners
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
