@@ -56,6 +56,11 @@ nodeExporter:
 # `prometheus` app's own node-exporter already holds 9100 in this namespace,
 # so this one moves to 9101 and both stacks can run (#95).
 prometheus-node-exporter:
+  # WSL kubeadm: "/" is not a shared/slave mount, so the chart's hostRootFs
+  # mount with mountPropagation HostToContainer fails with
+  # CreateContainerError (measured on tmf-desktop, #95).
+  hostRootFsMount:
+    enabled: false
   service:
     port: 9101
     targetPort: 9101
