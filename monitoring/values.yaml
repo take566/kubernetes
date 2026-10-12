@@ -15,7 +15,8 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: standard
+          # No storageClassName: the cluster default (local-path on the
+          # kubeadm nodes). "standard" exists only on kind (#95).
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -50,6 +51,14 @@ alertmanager:
 
 nodeExporter:
   enabled: true
+
+# The node-exporter subchart. hostNetwork, so its port is a node port: the
+# `prometheus` app's own node-exporter already holds 9100 in this namespace,
+# so this one moves to 9101 and both stacks can run (#95).
+prometheus-node-exporter:
+  service:
+    port: 9101
+    targetPort: 9101
   resources:
     requests:
       cpu: 100m
