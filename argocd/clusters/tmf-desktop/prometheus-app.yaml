@@ -3,8 +3,9 @@ kind: Application
 metadata:
   name: prometheus
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  # No resources-finalizer (#98): this app owns Namespace/monitoring, which
+  # kube-prometheus-stack also lives in. Without the finalizer, removing this
+  # file prunes only the Application, never the namespace. Step 1 of 2.
 spec:
   project: default
   source:
