@@ -1,5 +1,7 @@
-# Manual sync — shares namespace `monitoring` with `prometheus`. The stack's
-# node-exporter listens on 9101 (values.yaml) so both can run side by side.
+# Manual sync. The legacy `prometheus` Application that shared this namespace
+# was removed (#98): it owned Namespace/monitoring, so its finalizer was
+# dropped first and its objects deleted by hand. node-exporter stays on 9101
+# (values.yaml); 9100 was the legacy DaemonSet's.
 # ServerSideApply: the monitoring.coreos.com CRDs exceed the 256 KiB
 # last-applied annotation client-side apply writes (#95).
 apiVersion: argoproj.io/v1alpha1
