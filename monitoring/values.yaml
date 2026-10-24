@@ -57,6 +57,27 @@ grafana:
       memory: 256Mi
   defaultDashboardsEnabled: true
   defaultDashboardsTimezone: "Asia/Tokyo"
+  # OpsDB (take566/ansible#1017): OpenClaw's hermes-overview / openclaw-ops-jobs
+  # dashboards query Postgres as the read-only role grafana_ro (OpenClaw
+  # migrations 118/119: SELECT on three aggregate views only). Its password is
+  # the Secret grafana-opsdb, written with the role by take566/ansible
+  # playbooks/grafana_opsdb.yml from sops - never in this repo.
+  envFromSecrets:
+    - name: grafana-opsdb
+  additionalDataSources:
+    - name: OpsDB
+      uid: opsdb
+      type: postgres
+      access: proxy
+      url: ops-postgres.openclaw.svc:5432
+      user: grafana_ro
+      editable: false
+      jsonData:
+        database: opshub
+        sslmode: disable
+        postgresVersion: 1600
+      secureJsonData:
+        password: $GRAFANA_DB_PASSWORD
 
 alertmanager:
   enabled: true
