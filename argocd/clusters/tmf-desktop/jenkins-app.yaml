@@ -4,8 +4,8 @@ kind: Application
 metadata:
   name: jenkins
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  # No resources-finalizer (take566/ansible#1002): never deployed (Missing).
+  # Without it, removing this file prunes only the Application. Step 1 of 2.
 spec:
   project: default
   source:
