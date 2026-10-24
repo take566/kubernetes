@@ -34,3 +34,17 @@ kubectl port-forward svc/monitoring-kube-prometheus-prometheus -n monitoring 909
 # Alertmanager
 kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 9093:9093
 ```
+
+## Central metrics store (take566/ansible#991, #1015)
+On tmf-desktop this Prometheus is the fleet's central store:
+
+- `enableRemoteWriteReceiver: true` - mac-k3s (tmf-m3) and deploynote remote_write their OpenClaw Prometheus to
+  `http://100.84.245.6:19090/api/v1/write`, which take566/ansible relays to `monitoring-kube-prometheus-prometheus:9090`
+  (WSL socat + Windows portproxy). There is no auth on the receiver, so it is tailnet-only.
+- A default scrapeClass adds `cluster="tmf-desktop"` to every series scraped here, matching the edges' external label.
+- 30d / 6GB retention inside the 8Gi PVC.
+- OpenClaw's otel-collector is scraped through a ServiceMonitor, and its dashboards are ConfigMaps labeled
+  `grafana_dashboard=1`, both from take566/ansible terraform/k8s. OpenClaw's own prometheus/grafana are scaled to 0
+  on tmf-desktop.
+
+The Argo Application `monitoring` has no automated sync: sync it after a merge.
