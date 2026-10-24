@@ -16,7 +16,10 @@ prometheus:
       - name: cluster
         default: true
         relabelings:
-          - targetLabel: cluster
+          # action is spelled out: the CRD defaults it, and Argo then shows
+          # the Prometheus as OutOfSync forever.
+          - action: replace
+            targetLabel: cluster
             replacement: tmf-desktop
     # 30 days like the OpenClaw Prometheus it replaces; the size cap keeps the
     # TSDB inside the 8Gi PVC with three clusters writing.
