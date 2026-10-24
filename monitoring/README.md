@@ -48,3 +48,10 @@ On tmf-desktop this Prometheus is the fleet's central store:
   on tmf-desktop.
 
 The Argo Application `monitoring` has no automated sync: sync it after a merge.
+
+## OpsDB datasource (take566/ansible#1017)
+Grafana has a Postgres datasource `opsdb` for OpenClaw's `hermes-overview` / `openclaw-ops-jobs` dashboards. It logs in
+to `ops-postgres.openclaw.svc` as the read-only role `grafana_ro`, which can read only three aggregate views. The
+password comes from the Secret `grafana-opsdb` (env `GRAFANA_DB_PASSWORD`). take566/ansible
+`playbooks/grafana_opsdb.yml` sets it on the role and in the Secret from sops. Run that play before syncing a fresh
+cluster: the Grafana Pod does not start without the Secret.
