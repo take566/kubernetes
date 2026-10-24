@@ -44,7 +44,14 @@ prometheus:
 
 grafana:
   enabled: true
-  adminPassword: "admin"
+  # Admin credentials from the Secret grafana-admin, written from sops by
+  # take566/ansible playbooks/grafana_secrets.yml (#1022), which also resets the
+  # password in Grafana's DB - the env value applies only when the DB is created.
+  # Also used by the dashboard / datasource sidecars for their reload calls.
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
   persistence:
     enabled: true
     size: 5Gi
@@ -61,7 +68,7 @@ grafana:
   # dashboards query Postgres as the read-only role grafana_ro (OpenClaw
   # migrations 118/119: SELECT on three aggregate views only). Its password is
   # the Secret grafana-opsdb, written with the role by take566/ansible
-  # playbooks/grafana_opsdb.yml from sops - never in this repo.
+  # playbooks/grafana_secrets.yml from sops - never in this repo.
   envFromSecrets:
     - name: grafana-opsdb
   additionalDataSources:
