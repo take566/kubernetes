@@ -4,7 +4,24 @@
 
 prometheus:
   prometheusSpec:
-    retention: 7d
+    # Central metrics store (take566/ansible#991, #1015): tmf-m3 (mac-k3s) and
+    # deploy-note remote_write their OpenClaw Prometheus here through
+    # http://100.84.245.6:19090/api/v1/write (WSL socat + Windows portproxy,
+    # take566/ansible inventory host_vars ubuntu / tmf-desktop). The receiver
+    # has no auth, so it is exposed on the tailnet only, never the LAN.
+    enableRemoteWriteReceiver: true
+    # Every series scraped here gets cluster="tmf-desktop", the label the edges
+    # set through external_labels, so count by (cluster) (up) sees all three.
+    scrapeClasses:
+      - name: cluster
+        default: true
+        relabelings:
+          - targetLabel: cluster
+            replacement: tmf-desktop
+    # 30 days like the OpenClaw Prometheus it replaces; the size cap keeps the
+    # TSDB inside the 8Gi PVC with three clusters writing.
+    retention: 30d
+    retentionSize: 6GB
     resources:
       requests:
         cpu: 250m
