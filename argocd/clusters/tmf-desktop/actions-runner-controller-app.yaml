@@ -4,8 +4,9 @@ kind: Application
 metadata:
   name: actions-runner-controller
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  # No resources-finalizer (take566/ansible#1002): this app owns the live actions.github.com
+  # CRDs, which take566/ansible terraform/k8s arc.tf's ARC (k8s-x64-tmf) uses.
+  # Without it, removing this file prunes only the Application. Step 1 of 2.
 spec:
   project: default
   source:
