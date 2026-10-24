@@ -26,7 +26,8 @@ This `monitoring/` directory is the replacement using HelmChartInflator.
 ```bash
 # Grafana
 kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80
-# Username: admin / Password: admin
+# Username: admin / Password: secrets/runtime/grafana-admin.sops.env in take566/ansible
+# (sops decrypt on a recipient host; set by playbooks/grafana_secrets.yml, take566/ansible#1022)
 
 # Prometheus
 kubectl port-forward svc/monitoring-kube-prometheus-prometheus -n monitoring 9090:9090
@@ -53,5 +54,5 @@ The Argo Application `monitoring` has no automated sync: sync it after a merge.
 Grafana has a Postgres datasource `opsdb` for OpenClaw's `hermes-overview` / `openclaw-ops-jobs` dashboards. It logs in
 to `ops-postgres.openclaw.svc` as the read-only role `grafana_ro`, which can read only three aggregate views. The
 password comes from the Secret `grafana-opsdb` (env `GRAFANA_DB_PASSWORD`). take566/ansible
-`playbooks/grafana_opsdb.yml` sets it on the role and in the Secret from sops. Run that play before syncing a fresh
-cluster: the Grafana Pod does not start without the Secret.
+`playbooks/grafana_secrets.yml` sets it on the role and in the Secret from sops. Run that play before syncing a fresh
+cluster: the Grafana Pod does not start without the Secrets grafana-opsdb and grafana-admin.
