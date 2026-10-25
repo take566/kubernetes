@@ -1,0 +1,137 @@
+# GitLab CE (Omnibus single container). Replaces the former Helm chart, which
+# needs far more memory (#115). Image tag is pinned; bump deliberately because
+# GitLab requires stepping through upgrade-stop versions.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  replicas: 1
+  serviceName: gitlab
+  # Never run two Omnibus instances against the same volumes.
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      # Omnibus runs its own runsvdir as root and drops privileges per service
+      # internally, so runAsNonRoot / readOnlyRootFilesystem cannot be set.
+      terminationGracePeriodSeconds: 300
+      containers:
+        - name: gitlab
+          image: gitlab/gitlab-ce:19.5.1-ce.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: GITLAB_OMNIBUS_CONFIG
+              value: |
+                external_url 'http://localhost:30080'
+                # external_url carries port 30080 (reached via port-forward 30080:80); keep nginx listening on 80 in the pod.
+                nginx['listen_port'] = 80
+                nginx['listen_https'] = false
+                letsencrypt['enable'] = false
+                gitlab_rails['gitlab_shell_ssh_port'] = 30022
+                gitlab_rails['time_zone'] = 'Asia/Tokyo'
+                gitlab_rails['usage_ping_enabled'] = false
+                # Memory reduction
+                puma['worker_processes'] = 0
+                sidekiq['concurrency'] = 10
+                prometheus_monitoring['enable'] = false
+                registry['enable'] = false
+                gitlab_pages['enable'] = false
+                gitlab_kas['enable'] = false
+                alertmanager['enable'] = false
+                gitlab_exporter['enable'] = false
+                node_exporter['enable'] = false
+                postgres_exporter['enable'] = false
+                redis_exporter['enable'] = false
+                puma['exporter_enabled'] = false
+            - name: GITLAB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gitlab-initial-root-password
+                  key: password
+                  optional: true
+          ports:
+            - name: http
+              containerPort: 80
+            - name: ssh
+              containerPort: 22
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 500m
+            limits:
+              memory: 6Gi
+              cpu: "2"
+          # exec probes, not httpGet: kubelet connects from 10.244.0.1, which is outside
+          # GitLab's monitoring_whitelist, so /-/readiness answers 404 to httpGet.
+          # First boot runs migrations: allow up to 180 x 10s = 30 min.
+          startupProbe:
+            exec:
+              command: ["/opt/gitlab/embedded/bin/curl", "-sf", "-o", "/dev/null", "http://localhost/-/readiness"]
+            periodSeconds: 10
+            failureThreshold: 180
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: ["/opt/gitlab/embedded/bin/curl", "-sf", "-o", "/dev/null", "http://localhost/-/readiness"]
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["/opt/gitlab/embedded/bin/curl", "-sf", "-o", "/dev/null", "http://localhost/-/liveness"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          lifecycle:
+            preStop:
+              # The image wrapper also stops services on SIGTERM; this is insurance.
+              exec:
+                command: ["gitlab-ctl", "stop"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/gitlab
+            - name: logs
+              mountPath: /var/log/gitlab
+            - name: data
+              mountPath: /var/opt/gitlab
+            - name: dshm
+              mountPath: /dev/shm
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: config
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi
+    - metadata:
+        name: logs
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 2Gi
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 20Gi
