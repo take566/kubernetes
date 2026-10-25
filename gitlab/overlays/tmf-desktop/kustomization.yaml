@@ -1,0 +1,10 @@
+# tmf-desktop 用 overlay (#115)
+# tmf-desktop はメモリが逼迫しているため、GitLab (常駐 約 4〜6GiB) は既定で停止しておく。
+# 使う時だけ replicas を 1 にする (README 参照)。PVC は StatefulSet を 0 にしても残る。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+replicas:
+  - name: gitlab
+    count: 0

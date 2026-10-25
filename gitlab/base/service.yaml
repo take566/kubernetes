@@ -1,0 +1,35 @@
+# Headless service required by the StatefulSet (serviceName).
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  clusterIP: None
+  selector:
+    app: gitlab
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# External access. external_url (localhost:30080) and the NodePort must match,
+# otherwise clone URLs and redirects point to the wrong port.
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab-nodeport
+  namespace: gitlab
+spec:
+  type: NodePort
+  selector:
+    app: gitlab
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      nodePort: 30080
+    - name: ssh
+      port: 22
+      targetPort: ssh
+      nodePort: 30022
