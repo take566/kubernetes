@@ -14,3 +14,11 @@ resources:
   - hermes-pvc.yaml
   - hermes-deployment.yaml
   - hermes-service.yaml
+patches:
+  # Argo CD の cascade delete で消さない (take566/ansible#1147)
+  - path: patch-keep-on-delete.yaml
+    target:
+      kind: PersistentVolumeClaim
+  - path: patch-keep-on-delete.yaml
+    target:
+      kind: Namespace
