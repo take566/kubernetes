@@ -1,0 +1,8 @@
+# Keep the data when the Argo CD Application is deleted (take566/ansible#1147):
+# a cascading delete skips resources carrying Delete=false. The Namespace needs
+# it too, or deleting the Namespace would take the PVC with it.
+# "add" replaces any sync-options value already set on these objects (none
+# today); merge by hand if one is added later.
+- op: add
+  path: /metadata/annotations/argocd.argoproj.io~1sync-options
+  value: Delete=false
